@@ -1,21 +1,21 @@
 {
   "browser-current": {
     "proof_id": "browser-current",
-    "receipt_sha256": "4eafa1ab0e122e126aa62dfd195994e864a3b308f26ed400080a41ab3dcc4f48",
-    "started_at_utc": "2026-10-09T22:46:23.455Z",
-    "finished_at_utc": "2026-10-09T22:46:39.625Z",
+    "receipt_sha256": "4bcec8f32d73c3c126386efdeca41d71a58b342ddc632a243fa783b0b84c2b17",
+    "started_at_utc": "2026-10-09T22:57:26.271Z",
+    "finished_at_utc": "2026-10-09T22:57:43.362Z",
     "overall_passed": true,
     "source_snapshot_matches_current": true,
     "checks": [
       {
         "name": "app renders without empty placeholder content",
         "passed": true,
-        "ms": 20
+        "ms": 18
       },
       {
         "name": "actual 0.1.0 editable design migrates strictly with original layers and embedded raster",
         "passed": true,
-        "ms": 91
+        "ms": 93
       },
       {
         "name": "group multi-selection, marquee across one member and keyboard nudge preserve spacing",
@@ -25,72 +25,72 @@
       {
         "name": "alignment, lock, hide and keyboard copy/paste respect rich selection",
         "passed": true,
-        "ms": 384
+        "ms": 366
       },
       {
         "name": "add-page undo leaves a live current page and subsequent editing persists",
         "passed": true,
-        "ms": 275
+        "ms": 189
       },
       {
         "name": "brand palette/font and named library copies remain independent across reload",
         "passed": true,
-        "ms": 508
+        "ms": 510
       },
       {
         "name": "raster crop and filters alter actual full-size native PNG pixels",
         "passed": true,
-        "ms": 757
+        "ms": 659
       },
       {
         "name": "edge-connected colour removal downloads real transparent PNG and applies with undo",
         "passed": true,
-        "ms": 380
+        "ms": 525
       },
       {
         "name": "CSV bulk creates separate row pages and rejects malformed data without replacing design",
         "passed": true,
-        "ms": 306
+        "ms": 302
       },
       {
         "name": "presentation navigation and native multi-page PDF include both actual pages",
         "passed": true,
-        "ms": 390
+        "ms": 358
       },
       {
         "name": "editable table and proportional chart create real grouped primitive layers",
         "passed": true,
-        "ms": 285
+        "ms": 295
       },
       {
         "name": "native v2 JSON roundtrip and invalid document import preserve rich content",
         "passed": true,
-        "ms": 84
+        "ms": 98
       },
       {
         "name": "video visual preview seeks through real red and blue scene frames",
         "passed": true,
-        "ms": 479
+        "ms": 458
       },
       {
         "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
         "passed": true,
-        "ms": 4138
+        "ms": 4205
       },
       {
         "name": "cancelled video stops tracks and permits a fresh successful native export",
         "passed": true,
-        "ms": 1899
+        "ms": 2598
       },
       {
         "name": "optional AI unavailable state is clear and source design remains editable",
         "passed": true,
-        "ms": 3979
+        "ms": 4219
       },
       {
         "name": "mobile editor exposes library, elements, page controls and settled original poster",
         "passed": true,
-        "ms": 182
+        "ms": 174
       },
       {
         "name": "mobile layout has no document overflow",
@@ -128,7 +128,7 @@
     "all_qualified_feature_components_match": null,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": null,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-2": {
     "proof_id": "component-2",
@@ -144,14 +144,15 @@
     "qualification": "Retained independent component receipt; proof applies only to its original scope.",
     "qualified_feature_components": {
       "scripts/workspace-backend.mjs": true,
-      "src/cloud-client.mjs": true
+      "src/cloud-client.mjs": false
     },
-    "all_qualified_feature_components_match": true,
+    "all_qualified_feature_components_match": false,
     "mismatched_recorded_source_files": [
+      "src/cloud-client.mjs",
       "tests/workspace-backend.test.mjs"
     ],
     "all_compared_components_match": false,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-3": {
     "proof_id": "component-3",
@@ -167,12 +168,14 @@
     "qualification": "Actual optional backend through ephemeral loopback HTTP with real app validators and synthetic v1 fixtures; no browser or deployment proof. Tokens held in RAM only; evidence omits capability credentials.",
     "qualified_feature_components": {
       "scripts/workspace-backend.mjs": true,
-      "src/cloud-client.mjs": true
+      "src/cloud-client.mjs": false
     },
-    "all_qualified_feature_components_match": true,
-    "mismatched_recorded_source_files": [],
-    "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "all_qualified_feature_components_match": false,
+    "mismatched_recorded_source_files": [
+      "src/cloud-client.mjs"
+    ],
+    "all_compared_components_match": false,
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-4": {
     "proof_id": "component-4",
@@ -214,7 +217,7 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-5": {
     "proof_id": "component-5",
@@ -243,7 +246,7 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-6": {
     "proof_id": "component-6",
@@ -266,7 +269,7 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-7": {
     "proof_id": "component-7",
@@ -284,7 +287,7 @@
     "all_qualified_feature_components_match": null,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": null,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-8": {
     "proof_id": "component-8",
@@ -302,7 +305,7 @@
     "all_qualified_feature_components_match": null,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": null,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-9": {
     "proof_id": "component-9",
@@ -339,12 +342,12 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-10": {
     "proof_id": "component-10",
     "receipt_kind": "runtime/stencil-studio-cloud/receipt.json",
-    "receipt_sha256": "a45a4e9ea0f2df01228b3c1011b25ea09659628c9956c62fcf74d45919970b4d",
+    "receipt_sha256": "b991de39d3da2e0d7427ef4680f980334697d09f4deaaad0a6a832db8c7dfd21",
     "overall_passed": true,
     "checks": [
       {
@@ -403,20 +406,14 @@
     "artifact_sha256": null,
     "qualification": "Retained independent component receipt; proof applies only to its original scope.",
     "qualified_feature_components": {
-      "src/ai-client.js": true,
       "src/app.js": true,
-      "src/bulk.js": true,
       "src/cloud-client.mjs": true,
-      "src/export.js": true,
-      "src/image-tools.js": true,
-      "src/library.js": true,
-      "src/model.js": true,
-      "src/video.js": true
+      "src/model.js": true
     },
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-11": {
     "proof_id": "component-11",
@@ -466,6 +463,71 @@
     "qualified_feature_components": {
       "src/ai-client.js": true,
       "src/app.js": true,
+      "src/model.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [
+      "src/cloud-client.mjs"
+    ],
+    "all_compared_components_match": false,
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-12": {
+    "proof_id": "component-12",
+    "receipt_kind": "runtime/stencil-studio-ui-polish/receipt.json",
+    "receipt_sha256": "f7f9d3b6ffd3eac935ac9fdc1ae64d1e0b9e655f931dda4fdfec093610dba702",
+    "overall_passed": true,
+    "checks": [
+      {
+        "name": "app renders without empty placeholder content",
+        "passed": true
+      },
+      {
+        "name": "keyboard dialogs and native action navigation preserve working content",
+        "passed": true
+      },
+      {
+        "name": "desktop 1440px layout exposes primary controls without document overflow",
+        "passed": true
+      },
+      {
+        "name": "tablet 768px layout exposes primary controls without document overflow",
+        "passed": true
+      },
+      {
+        "name": "mobile 390px layout exposes primary controls without document overflow",
+        "passed": true
+      },
+      {
+        "name": "small-mobile 320px layout exposes primary controls without document overflow",
+        "passed": true
+      },
+      {
+        "name": "200% text enlargement reflows without document overflow",
+        "passed": true
+      },
+      {
+        "name": "mobile layout has no document overflow",
+        "passed": true
+      },
+      {
+        "name": "no uncaught browser errors or failed requests",
+        "passed": true
+      },
+      {
+        "name": "app source remained stable during verification",
+        "passed": true
+      }
+    ],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualified_feature_components": {
+      "src/ai-client.js": true,
+      "src/app.js": true,
       "src/bulk.js": true,
       "src/cloud-client.mjs": true,
       "src/export.js": true,
@@ -477,10 +539,10 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
-  "component-12": {
-    "proof_id": "component-12",
+  "component-13": {
+    "proof_id": "component-13",
     "receipt_kind": "runtime/stencil-video-native/receipt.json",
     "receipt_sha256": "00c951f1a9ae6737a6cec40dbebcc7d659e7ecf5dfc8773508550dee59469bc5",
     "overall_passed": true,
@@ -607,6 +669,6 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
-    "limitation": "Matching app/model/client/backend component hashes qualify their recorded workflows. Changed CSS/geometry is qualified separately by browser-current; earlier whole-source receipts remain distinct. Untested criteria, provider quality and deployment are not inferred."
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   }
 }

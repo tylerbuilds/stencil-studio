@@ -53,7 +53,10 @@ export function createCloudClient({ baseURL = '/api/workspaces', fetchImpl = glo
   };
   const scoped = (args, route, method, body) => { connection(args.id, args.token); return request(`/${args.id}${route}`, { token: args.token, method, body, signal: args.signal }); };
   const client = {
-    status: ({ signal } = {}) => request('/status', { signal }),
+    status: async ({ signal } = {}) => {
+      if (globalThis.location?.hostname?.endsWith('.github.io')) return { enabled: false };
+      return request('/status', { signal });
+    },
     create: ({ kind, title, document, signal }) => request('', { method: 'POST', body: { kind, title, document }, signal }),
     open: args => scoped(args, '', 'GET'),
     update: args => scoped(args, '', 'PUT', { baseRevision: args.baseRevision, document: args.document, ...(args.title === undefined ? {} : { title: args.title }) }),

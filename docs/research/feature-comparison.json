@@ -2,7 +2,7 @@
   "schema_version": 1,
   "application": "stencil-studio",
   "reference_product": "Canva",
-  "checked_at_utc": "2026-10-09T22:50:22.316659+00:00",
+  "checked_at_utc": "2026-10-09T22:59:46.540685+00:00",
   "tier_scope": [
     "Free",
     "Pro",
@@ -34,7 +34,7 @@
     "AI/provider samples, pure tests, browser outputs, platform CI and public deployment are separate proofs."
   ],
   "source_snapshot": {
-    "head": "516463401f538b3184832a82032109837494e356",
+    "head": "af0db82f4940c12a065475147c05efb8f603065d",
     "file_sha256": {
       "scripts/ai.mjs": "d7dd0feff904789b7950217f7ee4c243e77a76f28f1567d7ebb72947272e3652",
       "scripts/browser-smoke.mjs": "7bf199ac7463a49c3ca3205f5b398db396e123cd11763a1f4104544e6c04a907",
@@ -44,7 +44,7 @@
       "src/ai-client.js": "64ac2a79ec0e2b20750bf1095403b4a026ad92f6f29fe92559461d871c89e06a",
       "src/app.js": "81fe993a972ec4999feffb29c59e15a2acb19320ab415cc361ae42dd852a8edd",
       "src/bulk.js": "42848b23ef2af25db6f189e9c7b7cda6afbede8ce65a8ce14e07af0a1b6daead",
-      "src/cloud-client.mjs": "7ce383928b72c3e11ea250297d11c0e0ccca60dc297f920f1ef724d6f6ef4360",
+      "src/cloud-client.mjs": "e9ffdac6f7f3ca3606315ec16d024ef3fe30e48676283a9ea24b22764c85a860",
       "src/export.js": "ac1804b617ed80c61a754494f5c921a6c3b9d91ad3a56f83ee1262a51ffc252a",
       "src/image-tools.js": "0a7d935657d1a94552a8536da95dbb15db87cf3c314982f406b690860c6f963f",
       "src/library.js": "6c2c510a29562d8514010a49deb2ee08a7083c880ac9d211223aebc06319bb83",
@@ -53,6 +53,7 @@
       "tests/ai.test.js": "27753d46fe03a7970f245054064dd542e58e222b4b4eb381c41d33f4bc4fc995",
       "tests/bulk.test.js": "0b4f9488faa01157af991993d7a324d94470c46eea83f76fb4a8f2c3195327b3",
       "tests/cloud-server-boundaries.test.mjs": "26f98900b5e1fb39d62b873eb65f102e23cce1b36246ae8795ab8580f6b37ca7",
+      "tests/cloud-static.test.mjs": "aa5ac434806ac8970a2b33315a1799979365ba523b356d21a1766ff9116a4da5",
       "tests/export.test.js": "861d1b8ababe186cb671556dec2b8e8da9d5bf879e095556f07dbeecd08db647",
       "tests/image-tools.test.js": "f8be6112e45fa22048282850cc7b85bb7118ff114408f1cc0291497c93cda424",
       "tests/library.test.js": "f8a2af78b28b3dd81185d1f572568bd4665ebbe00817790fe4f5fe1ed4c8d4e4",
@@ -70,7 +71,7 @@
     "file": "official-feature-inventory.json",
     "sha256": "3fe3bdd498787b167475f5dcf79a645042d8f74cd74f7abb9b4262e698608d71"
   },
-  "comparison_input_sha256": "5bbf31fed90e49fd8585260570fe3e2efefef0c6f13a2c654c0b0d158bd4a4fc",
+  "comparison_input_sha256": "9e15f4ceb14402f69aab774364eb7f22237e3c7bc675afdaf854d42da9d19db8",
   "features": [
     {
       "reference_id": "design-template",
@@ -208,7 +209,7 @@
           {
             "name": "actual 0.1.0 editable design migrates strictly with original layers and embedded raster",
             "passed": true,
-            "ms": 91
+            "ms": 93
           }
         ],
         "additional_proof_ids": [],
@@ -348,7 +349,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -613,7 +616,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -762,7 +767,9 @@
             "ms": 394
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -898,7 +905,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -1036,7 +1045,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -1181,7 +1192,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -1326,7 +1339,7 @@
           {
             "name": "alignment, lock, hide and keyboard copy/paste respect rich selection",
             "passed": true,
-            "ms": 384
+            "ms": 366
           }
         ],
         "additional_proof_ids": [],
@@ -1479,10 +1492,12 @@
           {
             "name": "alignment, lock, hide and keyboard copy/paste respect rich selection",
             "passed": true,
-            "ms": 384
+            "ms": 366
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -1632,7 +1647,9 @@
             "ms": 394
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -1768,7 +1785,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -1907,7 +1926,7 @@
           {
             "name": "alignment, lock, hide and keyboard copy/paste respect rich selection",
             "passed": true,
-            "ms": 384
+            "ms": 366
           }
         ],
         "additional_proof_ids": [],
@@ -2051,10 +2070,12 @@
           {
             "name": "alignment, lock, hide and keyboard copy/paste respect rich selection",
             "passed": true,
-            "ms": 384
+            "ms": 366
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -2195,10 +2216,12 @@
           {
             "name": "add-page undo leaves a live current page and subsequent editing persists",
             "passed": true,
-            "ms": 275
+            "ms": 189
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -2246,7 +2269,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -2283,7 +2308,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -2380,15 +2407,16 @@
           {
             "name": "add-page undo leaves a live current page and subsequent editing persists",
             "passed": true,
-            "ms": 275
+            "ms": 189
           },
           {
             "name": "brand palette/font and named library copies remain independent across reload",
             "passed": true,
-            "ms": 508
+            "ms": 510
           }
         ],
         "additional_proof_ids": [
+          "component-12",
           "component-7"
         ],
         "provider_limit": null,
@@ -2486,7 +2514,8 @@
         "browser_checks": [],
         "additional_proof_ids": [
           "component-6",
-          "component-8"
+          "component-8",
+          "component-12"
         ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
@@ -2597,7 +2626,8 @@
           "component-2",
           "component-3",
           "component-10",
-          "component-4"
+          "component-4",
+          "component-12"
         ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
@@ -2774,10 +2804,12 @@
           {
             "name": "add-page undo leaves a live current page and subsequent editing persists",
             "passed": true,
-            "ms": 275
+            "ms": 189
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -2917,10 +2949,12 @@
           {
             "name": "presentation navigation and native multi-page PDF include both actual pages",
             "passed": true,
-            "ms": 390
+            "ms": 358
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -3058,7 +3092,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -3196,7 +3232,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -3247,10 +3285,11 @@
           {
             "name": "raster crop and filters alter actual full-size native PNG pixels",
             "passed": true,
-            "ms": 757
+            "ms": 659
           }
         ],
         "additional_proof_ids": [
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,
@@ -3461,10 +3500,11 @@
           {
             "name": "edge-connected colour removal downloads real transparent PNG and applies with undo",
             "passed": true,
-            "ms": 380
+            "ms": 525
           }
         ],
         "additional_proof_ids": [
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,
@@ -3533,12 +3573,13 @@
           {
             "name": "presentation navigation and native multi-page PDF include both actual pages",
             "passed": true,
-            "ms": 390
+            "ms": 358
           }
         ],
         "additional_proof_ids": [
           "component-6",
           "component-8",
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,
@@ -3613,7 +3654,9 @@
         "source_inspected": true,
         "browser_proof_id": null,
         "browser_checks": [],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -3728,16 +3771,17 @@
           {
             "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
             "passed": true,
-            "ms": 4138
+            "ms": 4205
           },
           {
             "name": "cancelled video stops tracks and permits a fresh successful native export",
             "passed": true,
-            "ms": 1899
+            "ms": 2598
           }
         ],
         "additional_proof_ids": [
           "component-12",
+          "component-13",
           "component-5",
           "component-9"
         ],
@@ -4002,15 +4046,17 @@
           {
             "name": "actual 0.1.0 editable design migrates strictly with original layers and embedded raster",
             "passed": true,
-            "ms": 91
+            "ms": 93
           },
           {
             "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
             "passed": true,
-            "ms": 4138
+            "ms": 4205
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -4210,10 +4256,12 @@
           {
             "name": "brand palette/font and named library copies remain independent across reload",
             "passed": true,
-            "ms": 508
+            "ms": 510
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -4354,10 +4402,12 @@
           {
             "name": "raster crop and filters alter actual full-size native PNG pixels",
             "passed": true,
-            "ms": 757
+            "ms": 659
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -4498,10 +4548,12 @@
           {
             "name": "raster crop and filters alter actual full-size native PNG pixels",
             "passed": true,
-            "ms": 757
+            "ms": 659
           }
         ],
-        "additional_proof_ids": [],
+        "additional_proof_ids": [
+          "component-12"
+        ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
       }
@@ -4576,10 +4628,11 @@
           {
             "name": "edge-connected colour removal downloads real transparent PNG and applies with undo",
             "passed": true,
-            "ms": 380
+            "ms": 525
           }
         ],
         "additional_proof_ids": [
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,
@@ -4725,16 +4778,16 @@
           {
             "name": "video visual preview seeks through real red and blue scene frames",
             "passed": true,
-            "ms": 479
+            "ms": 458
           },
           {
             "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
             "passed": true,
-            "ms": 4138
+            "ms": 4205
           }
         ],
         "additional_proof_ids": [
-          "component-12",
+          "component-13",
           "component-5"
         ],
         "provider_limit": null,
@@ -4845,16 +4898,16 @@
           {
             "name": "video visual preview seeks through real red and blue scene frames",
             "passed": true,
-            "ms": 479
+            "ms": 458
           },
           {
             "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
             "passed": true,
-            "ms": 4138
+            "ms": 4205
           }
         ],
         "additional_proof_ids": [
-          "component-12",
+          "component-13",
           "component-5"
         ],
         "provider_limit": null,
@@ -4965,11 +5018,11 @@
           {
             "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
             "passed": true,
-            "ms": 4138
+            "ms": 4205
           }
         ],
         "additional_proof_ids": [
-          "component-12",
+          "component-13",
           "component-5"
         ],
         "provider_limit": null,
@@ -5081,11 +5134,11 @@
           {
             "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
             "passed": true,
-            "ms": 4138
+            "ms": 4205
           }
         ],
         "additional_proof_ids": [
-          "component-12",
+          "component-13",
           "component-5"
         ],
         "provider_limit": null,
@@ -5165,6 +5218,7 @@
       "classification": "partial",
       "delivered_scope": "Optional owner/edit/view capability links with server enforcement and revocation.",
       "remaining_gaps": [
+        "Static GitHub Pages demos have no workspace backend; configured self-hosting is required.",
         "No authenticated user identity, comment-only role or account/team membership."
       ],
       "source_evidence": [
@@ -5178,7 +5232,7 @@
           "file": "src/cloud-client.mjs",
           "line": 36,
           "symbol_or_handler": "createCloudClient",
-          "sha256": "7ce383928b72c3e11ea250297d11c0e0ccca60dc297f920f1ef724d6f6ef4360"
+          "sha256": "e9ffdac6f7f3ca3606315ec16d024ef3fe30e48676283a9ea24b22764c85a860"
         },
         {
           "file": "scripts/workspace-backend.mjs",
@@ -5250,6 +5304,17 @@
             }
           ],
           "status": "test definitions inspected; not rerun by comparison agent"
+        },
+        {
+          "file": "tests/cloud-static.test.mjs",
+          "sha256": "aa5ac434806ac8970a2b33315a1799979365ba523b356d21a1766ff9116a4da5",
+          "test_cases": [
+            {
+              "line": 5,
+              "name": "opening sharing on GitHub Pages makes no request to its absent backend"
+            }
+          ],
+          "status": "test definitions inspected; not rerun by comparison agent"
         }
       ],
       "original_authenticated_behaviour": "not-exercised",
@@ -5262,7 +5327,8 @@
           "component-2",
           "component-3",
           "component-10",
-          "component-4"
+          "component-4",
+          "component-12"
         ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
@@ -5282,6 +5348,7 @@
       "classification": "partial",
       "delivered_scope": "Capability links can be used in independent anonymous clients.",
       "remaining_gaps": [
+        "Static GitHub Pages disables backend discovery with zero request.",
         "Editor links can comment/upload/export locally; no target guest permission matrix or account upgrade boundary."
       ],
       "source_evidence": [
@@ -5289,7 +5356,7 @@
           "file": "src/cloud-client.mjs",
           "line": 17,
           "symbol_or_handler": "shareLink",
-          "sha256": "7ce383928b72c3e11ea250297d11c0e0ccca60dc297f920f1ef724d6f6ef4360"
+          "sha256": "e9ffdac6f7f3ca3606315ec16d024ef3fe30e48676283a9ea24b22764c85a860"
         },
         {
           "file": "src/app.js",
@@ -5361,6 +5428,17 @@
             }
           ],
           "status": "test definitions inspected; not rerun by comparison agent"
+        },
+        {
+          "file": "tests/cloud-static.test.mjs",
+          "sha256": "aa5ac434806ac8970a2b33315a1799979365ba523b356d21a1766ff9116a4da5",
+          "test_cases": [
+            {
+              "line": 5,
+              "name": "opening sharing on GitHub Pages makes no request to its absent backend"
+            }
+          ],
+          "status": "test definitions inspected; not rerun by comparison agent"
         }
       ],
       "original_authenticated_behaviour": "not-exercised",
@@ -5373,7 +5451,8 @@
           "component-2",
           "component-3",
           "component-10",
-          "component-4"
+          "component-4",
+          "component-12"
         ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
@@ -5406,7 +5485,7 @@
           "file": "src/cloud-client.mjs",
           "line": 36,
           "symbol_or_handler": "createCloudClient",
-          "sha256": "7ce383928b72c3e11ea250297d11c0e0ccca60dc297f920f1ef724d6f6ef4360"
+          "sha256": "e9ffdac6f7f3ca3606315ec16d024ef3fe30e48676283a9ea24b22764c85a860"
         },
         {
           "file": "scripts/workspace-backend.mjs",
@@ -5490,7 +5569,8 @@
           "component-2",
           "component-3",
           "component-10",
-          "component-4"
+          "component-4",
+          "component-12"
         ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
@@ -5608,7 +5688,8 @@
           "component-2",
           "component-3",
           "component-10",
-          "component-4"
+          "component-4",
+          "component-12"
         ],
         "provider_limit": null,
         "qualification": "Current Linux browser receipt qualifies only its listed checks and source pins; macOS browser, platform CI and deployment remain separate evidence."
@@ -5696,6 +5777,7 @@
         "additional_proof_ids": [
           "component-1",
           "component-11",
+          "component-12",
           "component-5"
         ],
         "provider_limit": "Real-model samples and UI checks cover only the recorded tasks, source snapshots and explicit review/cancellation workflows; no all-task quality or original-model equivalence is established.",
@@ -5778,6 +5860,7 @@
         "additional_proof_ids": [
           "component-1",
           "component-11",
+          "component-12",
           "component-5"
         ],
         "provider_limit": "Real-model samples and UI checks cover only the recorded tasks, source snapshots and explicit review/cancellation workflows; no all-task quality or original-model equivalence is established.",
@@ -5933,12 +6016,13 @@
           {
             "name": "editable table and proportional chart create real grouped primitive layers",
             "passed": true,
-            "ms": 285
+            "ms": 295
           }
         ],
         "additional_proof_ids": [
           "component-6",
           "component-8",
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,
@@ -6006,12 +6090,13 @@
           {
             "name": "CSV bulk creates separate row pages and rejects malformed data without replacing design",
             "passed": true,
-            "ms": 306
+            "ms": 302
           }
         ],
         "additional_proof_ids": [
           "component-6",
           "component-8",
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,
@@ -6065,10 +6150,11 @@
           {
             "name": "presentation navigation and native multi-page PDF include both actual pages",
             "passed": true,
-            "ms": 390
+            "ms": 358
           }
         ],
         "additional_proof_ids": [
+          "component-12",
           "component-9"
         ],
         "provider_limit": null,

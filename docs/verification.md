@@ -1,6 +1,6 @@
 # Release verification
 
-The expanded 0.2.0 working source was checked on Fedora with Node.js 24.14.0 and system Chrome. **79 Node tests** and **20 independent browser workflow checks** passed. The browser runs recorded application hashes and reported no uncaught page or console errors or unrelated failed requests.
+The expanded 0.2.0 working source was checked on Fedora with Node.js 24.14.0 and system Chrome. **80 Node tests** and **20 independent browser workflow checks** passed. The browser runs recorded application hashes and reported no uncaught page or console errors or unrelated failed requests.
 
 Grouping, snapping, locked layers, saved designs, page history, tables, CSV bulk work, raster/SVG/PDF exports and local colour-key processing. Real page videos were decoded to inspect scene pixels, timestamps and non-silent Opus audio; cancellation releases tracks and a fresh retry succeeds.
 
