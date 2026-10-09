@@ -1,4 +1,6 @@
-# Public Canva feature observations and Stencil Studio scope
+# Initial Canva feature study (v0.1.0)
+
+This document preserves the first release scope. The expanded free and premium workflow study is maintained in the [current parity ledger](parity-ledger.md), with its own source, implementation and verification distinctions. The initial gaps below are historical rather than a list of every capability currently delivered.
 
 Research date: **9 October 2026**. Source: publicly accessible official Canva Help Center pages. This is a bounded behavioural feature study; it does not inspect private account data, bypass access controls, reproduce proprietary assets or recover Canva source code.
 

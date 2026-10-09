@@ -1,7 +1,13 @@
-# Initial verification
+# Release verification
 
-The initial Linux build was checked with Node.js 24.14.0. All 9 model tests passed and the static build completed. Independent system-Chromium browser checks passed 15 checks with no page, console or failed-request errors. The browser checks exercised editing, persistence, validated JSON round-tripping and real exports, with desktop and mobile captures.
+The expanded 0.2.0 working source was checked on Fedora with Node.js 24.14.0 and system Chrome. **79 Node tests** and **20 independent browser workflow checks** passed. The browser runs recorded application hashes and reported no uncaught page or console errors or unrelated failed requests.
 
-[The live GitHub workflow](https://github.com/tylerbuilds/stencil-studio/actions/workflows/verify.yml) is the current authority for platform checks. It runs model tests, builds and real built-app browser smoke on Ubuntu and macOS. The public demo deploys after both platforms pass.
+Grouping, snapping, locked layers, saved designs, page history, tables, CSV bulk work, raster/SVG/PDF exports and local colour-key processing. Real page videos were decoded to inspect scene pixels, timestamps and non-silent Opus audio; cancellation releases tracks and a fresh retry succeeds.
 
-This is an initial independent implementation. See [research provenance](research/rea-provenance.md) for what REA observed and what remains unknown.
+A separate ten-check UI pass exercised keyboard controls, desktop, tablet, 390px and 320px layouts, and a text-only enlargement simulation. Independent screenshot review checked the original visual identity, readability and control placement. The enlargement simulation is not native browser zoom or a complete accessibility certification. [Desktop](screenshots/desktop.png) and [mobile](screenshots/mobile.png) captures use synthetic example content.
+
+Configured model writing and persistent shared-workspace workflows have separate integration checks. These services require the Node server; the static demo provides local design workflows.
+
+The [Linux/macOS workflow](https://github.com/tylerbuilds/stencil-studio/actions/workflows/verify.yml) runs the current commit's Node tests, production build, real Chromium browser smoke and static-server checks on Ubuntu and macOS. GitHub Pages publication requires both platform jobs to pass. Its run status is the authority for remote qualification; local checks do not substitute for a macOS run.
+
+[All-tier feature comparison](research/feature-comparison.md) records delivered workflows, explicit gaps, primary sources and sanitised proof metadata. Original authenticated target behaviour and proprietary algorithm equivalence remain unverified. No full commercial feature parity is claimed.

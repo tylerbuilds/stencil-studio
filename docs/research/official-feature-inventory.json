@@ -1,0 +1,2801 @@
+{
+  "schema_version": 2,
+  "reference_product": "Canva",
+  "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+  "scope": "Free and premium publicly documented workflows across listed tiers, retained REA evidence, and independent functional acceptance criteria. This is a broad inventory, not an exhaustive original-service audit.",
+  "claim_boundary": "Documentation confirms advertised workflows and named tier boundaries. Only the retained REA evidence proves the limited anonymous observations. No original authenticated or paid workflow was executed.",
+  "priority_definitions": {
+    "P0": "Primary product editing or game loop workflows",
+    "P1": "Broader mature workflows and import/export depth",
+    "P2": "Network, provider, licensed catalogue or expanded suite parity"
+  },
+  "evidence_reused": [
+    {
+      "file": "public-findings/stencil-studio.json",
+      "scope": "Public help catalogue and scoped homepage bundle metadata"
+    },
+    {
+      "evidence_id": "ev_056d76d9d7c4880c962b88c0d8937e246217f8cf6f4a6828ea7fec2424ecfde5",
+      "scope": "24 public homepage scripts; no authenticated editor runtime"
+    }
+  ],
+  "sources": [
+    {
+      "id": "catalogue",
+      "url": "https://www.canva.com/help/editing-designing/",
+      "title": "Editing and designing catalogue",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "templates",
+      "url": "https://www.canva.com/design-school/resources/using-and-customizing-templates/",
+      "title": "Customising templates",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "elements",
+      "url": "https://www.canva.com/design-school/resources/using-and-editing-elements/",
+      "title": "Exploring the element library",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "group",
+      "url": "https://www.canva.com/help/layer-group-align/",
+      "title": "Group, layer and align elements",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "rotate",
+      "url": "https://www.canva.com/help/flip-and-rotate/",
+      "title": "Flip and rotate elements",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "pages",
+      "url": "https://www.canva.com/help/manage-pages/",
+      "title": "Add, duplicate and delete pages",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "views",
+      "url": "https://www.canva.com/help/page-view-settings/",
+      "title": "Page view settings",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "lock",
+      "url": "https://www.canva.com/design-school/resources/how-to-design-unbreakable-brand-templates/",
+      "title": "Locking template elements",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "resize",
+      "url": "https://www.canva.com/en_au/help/resize-variantb/",
+      "title": "Resize designs and size limits",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "export",
+      "url": "https://www.canva.com/help/download-file-types/",
+      "title": "Download file types",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "names",
+      "url": "https://www.canva.com/help/download-filenames/",
+      "title": "Download filenames and page ZIPs",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "print",
+      "url": "https://www.canva.com/help/margins-bleed-crop-marks/",
+      "title": "Margins, bleed, rulers and crop marks",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "accessible",
+      "url": "https://www.canva.com/help/create-accessible-pdfs/",
+      "title": "Accessible PDF workflow",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "collaborate",
+      "url": "https://www.canva.com/design-school/resources/sharing-collaborating-and-downloading/",
+      "title": "Sharing and real-time collaboration",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "guest",
+      "url": "https://www.canva.com/en_in/help/collaborate-with-anyone-variantb/",
+      "title": "Collaborate with guests and permission limits",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "photo",
+      "url": "https://www.canva.com/photo-editor/",
+      "title": "Photo editor and premium effects",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "photoai",
+      "url": "https://www.canva.com/features/ai-photo-editing/",
+      "title": "AI photo editing",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "videoguide",
+      "url": "https://www.canva.com/design-school/resources/meet-your-video-editor/",
+      "title": "Video editor guide",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": "2026-10-08"
+    },
+    {
+      "id": "video",
+      "url": "https://www.canva.com/video-editor/desktop-download/",
+      "title": "Desktop video editor workflows",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "audio",
+      "url": "https://www.canva.com/help/stock-music/",
+      "title": "Audio tracks and sound effects",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "audioedit",
+      "url": "https://www.canva.com/en_au/help/edit-audio/",
+      "title": "Edit audio",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "extract",
+      "url": "https://www.canva.com/help/extract-audio-from-videos/",
+      "title": "Extract audio from uploaded video",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "voice",
+      "url": "https://www.canva.com/help/record-voiceover/",
+      "title": "Record a voiceover",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "ai",
+      "url": "https://www.canva.com/help/ai-access-variantb/",
+      "title": "AI usage and plan allowances",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "imports",
+      "url": "https://www.canva.com/help/upload-formats-requirements/",
+      "title": "Upload formats and requirements",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "charts",
+      "url": "https://www.canva.com/newsroom/news/canva-create-2025/",
+      "title": "Visual Suite, bulk design and data tools",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": "2025"
+    },
+    {
+      "id": "docs",
+      "url": "https://www.canva.com/en_gb/help/create-business-proposals-canva-docs/",
+      "title": "Canva Docs editing and collaboration",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "whiteboards",
+      "url": "https://www.canva.com/en_au/help/map-customer-journeys-whiteboards/",
+      "title": "Whiteboard workflows",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "trash",
+      "url": "https://www.canva.com/help/deleted-designs/",
+      "title": "Trash and recovery",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "converters",
+      "url": "https://www.canva.com/features/ppt-converter/",
+      "title": "Presentation conversion",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "pricing",
+      "url": "https://www.canva.com/pricing/",
+      "title": "Current plan comparison",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T21:58:41.803123+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "business",
+      "url": "https://www.canva.com/canva-business/",
+      "title": "Business team and marketing workflows",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "enterprise",
+      "url": "https://www.canva.com/enterprise/",
+      "title": "Enterprise governance and integrations",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "brand",
+      "url": "https://www.canva.com/solutions/brand-management-tools/",
+      "title": "Brand systems and approval workflows",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "security",
+      "url": "https://www.canva.com/business/features/security-sso/",
+      "title": "Security, SSO and account administration",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "layers",
+      "url": "https://www.canva.com/magic-layers/",
+      "title": "Flat-image to editable-layer reconstruction",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+      "visible_updated_date": null
+    },
+    {
+      "id": "code",
+      "url": "https://www.canva.com/ai-code-generator/",
+      "title": "Generated interactive experiences and captured responses",
+      "type": "official-help-or-product-page",
+      "checked_at_utc": "2026-10-09T22:04:25.355743+00:00",
+      "visible_updated_date": null
+    }
+  ],
+  "features": [
+    {
+      "id": "design-template",
+      "workflow": "library",
+      "feature": "Create designs from reusable templates",
+      "source_ids": [
+        "templates"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Create a document from a template and independently edit its text, graphics and layout; source template remains reusable."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "design-presets",
+      "workflow": "library",
+      "feature": "Design type, page format and custom dimensions",
+      "source_ids": [
+        "templates",
+        "resize"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/",
+        "https://www.canva.com/en_au/help/resize-variantb/"
+      ],
+      "acceptance_criteria": [
+        "Create a selected preset or custom size and verify page dimensions in the saved document and export."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "asset-search",
+      "workflow": "library",
+      "feature": "Search, filter and browse elements",
+      "source_ids": [
+        "elements"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-editing-elements/"
+      ],
+      "acceptance_criteria": [
+        "Search and filter an independently licensed catalogue; insert the chosen asset and preserve its attribution metadata."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "asset-organise",
+      "workflow": "library",
+      "feature": "Star assets, folders and related collections",
+      "source_ids": [
+        "elements"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "original-or-licensed-catalogue",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-editing-elements/"
+      ],
+      "acceptance_criteria": [
+        "Star assets and organise saved assets into folders; navigation and persisted membership agree."
+      ],
+      "prerequisites": [
+        "Original or appropriately licensed media and templates, searchable metadata and licence records."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "asset-types",
+      "workflow": "library",
+      "feature": "Graphics, shapes, frames, photos, video and audio",
+      "source_ids": [
+        "elements"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "original-or-licensed-catalogue",
+      "unknowns": [
+        "Original catalogue and licensing cannot be copied; use original or authorised assets."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-editing-elements/"
+      ],
+      "acceptance_criteria": [
+        "Insert real graphics, frames, photos, video and audio from original or licensed sources and verify each media type renders."
+      ],
+      "prerequisites": [
+        "Original or appropriately licensed media and templates, searchable metadata and licence records."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-transform",
+      "workflow": "editor",
+      "feature": "Move, resize and rotate objects",
+      "source_ids": [
+        "templates",
+        "rotate"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/",
+        "https://www.canva.com/help/flip-and-rotate/"
+      ],
+      "acceptance_criteria": [
+        "Drag, resize and rotate an object with correct hit testing; saved geometry and exports match the canvas."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-flip",
+      "workflow": "editor",
+      "feature": "Flip supported media horizontally or vertically",
+      "source_ids": [
+        "rotate"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/flip-and-rotate/"
+      ],
+      "acceptance_criteria": [
+        "Flip an image independently on each axis; exported pixels and reopened state preserve the transform."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-style",
+      "workflow": "editor",
+      "feature": "Shape fills, borders and line styles",
+      "source_ids": [
+        "elements"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-editing-elements/"
+      ],
+      "acceptance_criteria": [
+        "Edit fill, stroke and supported line styles; render the changed appearance in exported output."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-text",
+      "workflow": "editor",
+      "feature": "Editable text and typography",
+      "source_ids": [
+        "templates",
+        "catalogue"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/",
+        "https://www.canva.com/help/editing-designing/"
+      ],
+      "acceptance_criteria": [
+        "Edit text, font, size, colour and alignment; verify wrapping and Unicode survive reload and export."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-duplicate",
+      "workflow": "editor",
+      "feature": "Duplicate and delete objects",
+      "source_ids": [
+        "templates"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Duplicate an object with an independent identity; edit or delete the copy without affecting its source."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-multiselect",
+      "workflow": "editor",
+      "feature": "Multi-select objects with modifier keys",
+      "source_ids": [
+        "group"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/layer-group-align/"
+      ],
+      "acceptance_criteria": [
+        "Select multiple objects with keyboard and pointer actions; transform or delete exactly the selected set."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-group",
+      "workflow": "editor",
+      "feature": "Group, ungroup and edit within groups",
+      "source_ids": [
+        "group"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/layer-group-align/"
+      ],
+      "acceptance_criteria": [
+        "Group mixed elements, transform them together, edit a child and ungroup without losing world-space geometry."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-stack",
+      "workflow": "editor",
+      "feature": "Forward, backward, front and back layers",
+      "source_ids": [
+        "group"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/layer-group-align/"
+      ],
+      "acceptance_criteria": [
+        "Change stacking order; canvas hit testing and exported compositing use that same order."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-align",
+      "workflow": "editor",
+      "feature": "Align to page or selected objects",
+      "source_ids": [
+        "group"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/layer-group-align/"
+      ],
+      "acceptance_criteria": [
+        "Align selected objects to one another or the page and verify resulting bounds numerically."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "object-lock",
+      "workflow": "editor",
+      "feature": "Lock and unlock protected elements",
+      "source_ids": [
+        "lock"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/how-to-design-unbreakable-brand-templates/"
+      ],
+      "acceptance_criteria": [
+        "Prevent pointer and keyboard mutation of locked content; unlock restores normal editing and history."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-history",
+      "workflow": "editor",
+      "feature": "Undo and redo editing operations",
+      "source_ids": [
+        "templates"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Undo and redo multiple distinct operations, including delete and grouping, without losing unrelated state."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-views",
+      "workflow": "editor",
+      "feature": "Zoom, fit, thumbnails and grid view",
+      "source_ids": [
+        "views"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/page-view-settings/"
+      ],
+      "acceptance_criteria": [
+        "Zoom and switch page/grid views without altering document geometry or selecting the wrong page."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-guides",
+      "workflow": "editor",
+      "feature": "Rulers, guides and margins",
+      "source_ids": [
+        "views",
+        "print"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/page-view-settings/",
+        "https://www.canva.com/help/margins-bleed-crop-marks/"
+      ],
+      "acceptance_criteria": [
+        "Create or move guides and snap elements to them; guides remain absent from final exports."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-autosave",
+      "workflow": "documents",
+      "feature": "Autosave and visible save state",
+      "source_ids": [
+        "templates"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Persist changed state, display saving/saved/error status and recover after reload; never display saved on a failed write."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-offline",
+      "workflow": "documents",
+      "feature": "Offline editing with later cloud sync",
+      "source_ids": [
+        "templates"
+      ],
+      "priority": "P2",
+      "documented_tier": "Availability varies by device, design and plan",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "offline-and-account-sync-service",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Edit a cached document without network access, then reconnect and merge or explicitly resolve divergent cloud revisions."
+      ],
+      "prerequisites": [
+        "Cached documents/assets, durable offline operation log, account sync and conflict handling."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-versions",
+      "workflow": "documents",
+      "feature": "Restore or copy prior saved versions",
+      "source_ids": [
+        "resize"
+      ],
+      "priority": "P1",
+      "documented_tier": "Exact history entitlement not established",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/en_au/help/resize-variantb/"
+      ],
+      "acceptance_criteria": [
+        "Inspect a saved revision, restore it or make an independent copy, and retain the later revision for recovery."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "editor-trash",
+      "workflow": "documents",
+      "feature": "Trash and design recovery",
+      "source_ids": [
+        "trash"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/deleted-designs/"
+      ],
+      "acceptance_criteria": [
+        "Delete into recoverable trash, restore the design with assets intact and confirm permanent-delete confirmation rules."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "page-crud",
+      "workflow": "pages",
+      "feature": "Add, duplicate, delete and reorder pages",
+      "source_ids": [
+        "pages"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/manage-pages/"
+      ],
+      "acceptance_criteria": [
+        "Add, duplicate, delete and reorder pages with independent content; preview and export preserve page order."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "page-titles",
+      "workflow": "pages",
+      "feature": "Page titles and navigation",
+      "source_ids": [
+        "pages",
+        "views"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/manage-pages/",
+        "https://www.canva.com/help/page-view-settings/"
+      ],
+      "acceptance_criteria": [
+        "Rename and navigate pages; saved titles remain attached to the correct page after reorder."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "page-types",
+      "workflow": "pages",
+      "feature": "Mixed page types in one design",
+      "source_ids": [
+        "templates"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Design-type compatibility matrix not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Combine supported page types and reopen them with the correct editor; identify unsupported combinations explicitly."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "page-resize",
+      "workflow": "pages",
+      "feature": "Resize or copy designs into multiple sizes",
+      "source_ids": [
+        "resize"
+      ],
+      "priority": "P1",
+      "documented_tier": "Pro, Business, Enterprise, Education, Higher education, Nonprofits and Teams",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/en_au/help/resize-variantb/"
+      ],
+      "acceptance_criteria": [
+        "Resize or make sized copies with reviewable element positioning; originals remain intact and outputs have the chosen dimensions."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-image",
+      "workflow": "export",
+      "feature": "JPG and PNG image export",
+      "source_ids": [
+        "export"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Produce decodable PNG and JPEG files with the requested dimensions, page content and compositing."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-svg",
+      "workflow": "export",
+      "feature": "Scalable SVG export",
+      "source_ids": [
+        "export"
+      ],
+      "priority": "P1",
+      "documented_tier": "Help groups SVG controls with eligible premium/education plans; marketing differs",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Produce valid SVG with intended editable/vector geometry and text or documented font handling; reopen independently."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-transparent",
+      "workflow": "export",
+      "feature": "Transparent PNG or SVG backgrounds",
+      "source_ids": [
+        "export"
+      ],
+      "priority": "P1",
+      "documented_tier": "Pro, Teams, Education or Nonprofits listed in help",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Export a PNG with real non-opaque alpha where requested; verify alpha values independently."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-pdf",
+      "workflow": "export",
+      "feature": "PDF standard and print exports",
+      "source_ids": [
+        "export"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Export valid standard and print PDFs with correct pages, dimensions, text and embedded images."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-print",
+      "workflow": "export",
+      "feature": "Bleed, crop marks and print colour controls",
+      "source_ids": [
+        "print",
+        "export"
+      ],
+      "priority": "P1",
+      "documented_tier": "CMYK/advanced export controls limited to eligible plans",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/margins-bleed-crop-marks/",
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Export crop marks and bleed correctly; independently inspect CMYK colour space when CMYK is selected."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-pages",
+      "workflow": "export",
+      "feature": "Page selection and multi-page image ZIPs",
+      "source_ids": [
+        "names",
+        "export"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-filenames/",
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Export only chosen pages and unpack a real ZIP containing correctly named page image files."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-video",
+      "workflow": "export",
+      "feature": "MP4 and animated GIF rendering",
+      "source_ids": [
+        "export"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "media-rendering-pipeline",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Export playable MP4 and GIF with the chosen duration, frame sequence and audio where supported; inspect with an independent decoder."
+      ],
+      "prerequisites": [
+        "Real media decoder/encoder, timeline model and export renderer; independently inspectable files."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-office",
+      "workflow": "export",
+      "feature": "Presentation PPTX and Docs DOCX export",
+      "source_ids": [
+        "export"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "document-format-conversion",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/download-file-types/"
+      ],
+      "acceptance_criteria": [
+        "Open exported PPTX or DOCX in an independent office reader; verify page/slide structure and documented editable content."
+      ],
+      "prerequisites": [
+        "Office/PDF parser and writer, font/layout handling and independent interoperability fixtures."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "export-accessibility",
+      "workflow": "export",
+      "feature": "Tagged PDF headings, alt text and reading order",
+      "source_ids": [
+        "accessible"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "accessible-document-rendering",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/create-accessible-pdfs/"
+      ],
+      "acceptance_criteria": [
+        "Inspect PDF tags, heading hierarchy, alt text and reading order with an independent accessibility tool."
+      ],
+      "prerequisites": [
+        "PDF writer supporting semantic tags, reading order and alt text; accessibility inspection."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "import-media",
+      "workflow": "import",
+      "feature": "Upload images, video and audio",
+      "source_ids": [
+        "imports"
+      ],
+      "priority": "P0",
+      "documented_tier": "Free and paid storage limits differ",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/upload-formats-requirements/"
+      ],
+      "acceptance_criteria": [
+        "Decode supported image, audio and video files; show unsupported or corrupt-file errors and preserve reusable originals."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "import-documents",
+      "workflow": "import",
+      "feature": "Import PDF, PowerPoint, Word and design formats",
+      "source_ids": [
+        "imports"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "document-format-import",
+      "unknowns": [
+        "Some imported layers flatten; original editability, layout fidelity and font replacement untested."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/upload-formats-requirements/"
+      ],
+      "acceptance_criteria": [
+        "Import representative PDF, PPTX and DOCX fixtures; identify which content remains editable and report substitutions or flattened content."
+      ],
+      "prerequisites": [
+        "Supported format parsers, asset extraction and honest editability/fidelity reporting."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "import-fonts",
+      "workflow": "brand",
+      "feature": "Upload licensed custom fonts",
+      "source_ids": [
+        "imports"
+      ],
+      "priority": "P1",
+      "documented_tier": "Pro, Teams, Business, Education and Nonprofits listed",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/upload-formats-requirements/"
+      ],
+      "acceptance_criteria": [
+        "Upload an authorised font, use it in text and verify rendering plus permitted export embedding; reject malformed fonts."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "brand-kit",
+      "workflow": "brand",
+      "feature": "Brand logos, colours and font sets",
+      "source_ids": [
+        "docs",
+        "pricing"
+      ],
+      "priority": "P1",
+      "documented_tier": "Workspace and plan dependent; current plan comparison required",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/en_gb/help/create-business-proposals-canva-docs/",
+        "https://www.canva.com/pricing/"
+      ],
+      "acceptance_criteria": [
+        "Save named logos, colours and fonts, apply them to multiple designs and preserve separate brand identities."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "photo-crop",
+      "workflow": "photo",
+      "feature": "Crop and reposition media in frames",
+      "source_ids": [
+        "elements"
+      ],
+      "priority": "P0",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-editing-elements/"
+      ],
+      "acceptance_criteria": [
+        "Crop and reposition an image inside a frame while retaining its original pixels for later recropping."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "photo-adjust",
+      "workflow": "photo",
+      "feature": "Colour, lighting, filters and effects",
+      "source_ids": [
+        "photo"
+      ],
+      "priority": "P1",
+      "documented_tier": "Core photo editor advertised free",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/photo-editor/"
+      ],
+      "acceptance_criteria": [
+        "Apply chosen adjustments to actual image pixels; export and undo produce the expected before/after images."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "photo-background",
+      "workflow": "photo",
+      "feature": "Remove backgrounds or unwanted objects",
+      "source_ids": [
+        "photo"
+      ],
+      "priority": "P2",
+      "documented_tier": "Background Remover and Magic Eraser documented for Pro, Teams and Education",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "segmentation-and-inpainting-model",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/photo-editor/"
+      ],
+      "acceptance_criteria": [
+        "Produce a real alpha mask for background removal or changed pixels for object erasure; retain the original and provide undo."
+      ],
+      "prerequisites": [
+        "Actual segmentation/inpainting model and image mask pipeline; provider or supported local inference."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "photo-generative",
+      "workflow": "photo",
+      "feature": "Prompt edits, generated backgrounds and isolated subjects",
+      "source_ids": [
+        "photoai"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "generative-model-provider",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/features/ai-photo-editing/"
+      ],
+      "acceptance_criteria": [
+        "Send a selected image region and prompt to a configured generator; return changed pixels, preserve unrelated content and allow review/cancel."
+      ],
+      "prerequisites": [
+        "Configured image generation/edit provider or local model plus region masks, provenance and reversible output."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "video-edit",
+      "workflow": "video",
+      "feature": "Timeline clips, trim, split, reorder and speed",
+      "source_ids": [
+        "video"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "media-timeline-and-renderer",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/video-editor/desktop-download/"
+      ],
+      "acceptance_criteria": [
+        "Trim, split, reorder and retime real decoded clips; preview and exported media agree on timing and content."
+      ],
+      "prerequisites": [
+        "Decoded media, clip/track time model, playback and a real encoded export pipeline."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "video-animation",
+      "workflow": "video",
+      "feature": "Animate pages, text and objects",
+      "source_ids": [
+        "videoguide"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "animation-and-renderer",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/meet-your-video-editor/"
+      ],
+      "acceptance_criteria": [
+        "Animate object or page properties over time and verify exported frames differ as the animation specifies."
+      ],
+      "prerequisites": [
+        "Time-based property model and frame renderer integrated with exported media."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "audio-tracks",
+      "workflow": "audio",
+      "feature": "Add layered audio and sound effects",
+      "source_ids": [
+        "audio"
+      ],
+      "priority": "P1",
+      "documented_tier": "Free assets and licensed premium tracks differ",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "media-timeline-and-authorised-assets",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/stock-music/"
+      ],
+      "acceptance_criteria": [
+        "Place multiple real audio tracks on a timeline; playback and export mix their timing and preserve authorised asset provenance."
+      ],
+      "prerequisites": [
+        "Licensed audio or user uploads, actual decoding/mixing and durable track timing."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "audio-edit",
+      "workflow": "audio",
+      "feature": "Trim, fade, volume and video synchronisation",
+      "source_ids": [
+        "audio",
+        "audioedit"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "media-timeline-and-renderer",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/stock-music/",
+        "https://www.canva.com/en_au/help/edit-audio/"
+      ],
+      "acceptance_criteria": [
+        "Trim, change volume and apply fades to audio; independent waveform/duration checks agree with the exported media."
+      ],
+      "prerequisites": [
+        "Decoded media, clip/track time model, playback and a real encoded export pipeline."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "audio-extract",
+      "workflow": "audio",
+      "feature": "Extract audio from uploaded video",
+      "source_ids": [
+        "extract"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "media-decoder",
+      "unknowns": [
+        "Documented for uploaded clips; separate audio-file export is unavailable."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/extract-audio-from-videos/"
+      ],
+      "acceptance_criteria": [
+        "Extract decoded audio from an uploaded video into an editable track without altering its synchronisation."
+      ],
+      "prerequisites": [
+        "Actual audio/video demuxing and decoding, with synchronised track metadata."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "voice-record",
+      "workflow": "audio",
+      "feature": "Record voiceover while previewing a design",
+      "source_ids": [
+        "voice"
+      ],
+      "priority": "P1",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "microphone-capture",
+      "unknowns": [
+        "Requires explicit microphone access; excluded in some design types."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/record-voiceover/"
+      ],
+      "acceptance_criteria": [
+        "Record microphone input after permission, preview it and insert the captured audio at the selected timeline position."
+      ],
+      "prerequisites": [
+        "Browser/device microphone permission and an actual audio recording pipeline."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "share-permissions",
+      "workflow": "collaboration",
+      "feature": "View, comment and edit access permissions",
+      "source_ids": [
+        "collaborate",
+        "guest"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "identity-and-access-service",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/sharing-collaborating-and-downloading/",
+        "https://www.canva.com/en_in/help/collaborate-with-anyone-variantb/"
+      ],
+      "acceptance_criteria": [
+        "Verify view, comment and edit roles from independent authenticated clients; enforce denied mutations server-side and test revocation."
+      ],
+      "prerequisites": [
+        "Real authenticated identities, server-enforced permissions and revocation."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "share-guests",
+      "workflow": "collaboration",
+      "feature": "Anonymous edit links with restricted guest actions",
+      "source_ids": [
+        "guest"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "collaboration-service",
+      "unknowns": [
+        "Guests cannot download, upload or comment without the required account access."
+      ],
+      "source_links": [
+        "https://www.canva.com/en_in/help/collaborate-with-anyone-variantb/"
+      ],
+      "acceptance_criteria": [
+        "A separate anonymous client edits an allowed link; disallowed upload, download and comment actions are rejected by the service."
+      ],
+      "prerequisites": [
+        "Shared document service with independent clients and server-enforced guest limits."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "collaborate-live",
+      "workflow": "collaboration",
+      "feature": "Concurrent updates and collaborator cursors",
+      "source_ids": [
+        "collaborate"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "network-collaboration-service",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/sharing-collaborating-and-downloading/"
+      ],
+      "acceptance_criteria": [
+        "Two independent clients concurrently edit one document; updates converge, cursors identify the right participant and reconnect preserves acknowledged edits."
+      ],
+      "prerequisites": [
+        "Reachable collaboration backend, operation ordering/convergence, persistence and independent clients."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "comments",
+      "workflow": "collaboration",
+      "feature": "Comments, mentions and feedback",
+      "source_ids": [
+        "collaborate",
+        "whiteboards"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "comments-and-identity-service",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/sharing-collaborating-and-downloading/",
+        "https://www.canva.com/en_au/help/map-customer-journeys-whiteboards/"
+      ],
+      "acceptance_criteria": [
+        "Create anchored comments and replies with stable author identity; permissions, resolved state and mentions persist across clients."
+      ],
+      "prerequisites": [
+        "Authenticated authors, durable comment threads and access-controlled notification routing."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-writing",
+      "workflow": "ai",
+      "feature": "Generate, rewrite and translate text",
+      "source_ids": [
+        "ai"
+      ],
+      "priority": "P2",
+      "documented_tier": "Free monthly allowance; paid Standard tools subject to fair use",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "model-provider",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/ai-access-variantb/"
+      ],
+      "acceptance_criteria": [
+        "Generate or rewrite editable text through a configured model, then review and apply it; show cancellation, quota and provider errors."
+      ],
+      "prerequisites": [
+        "Configured inference provider or local model, user-controlled inputs, request cancellation and error handling."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-design",
+      "workflow": "ai",
+      "feature": "Generate designs, images and interactive content",
+      "source_ids": [
+        "ai"
+      ],
+      "priority": "P2",
+      "documented_tier": "Shared Premium/Ultra allowance depends on plan; Ultra excluded on Free",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "model-and-generation-service",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/ai-access-variantb/"
+      ],
+      "acceptance_criteria": [
+        "Return a generated design with independently editable objects or a labelled raster result; user edits, undo and export must work."
+      ],
+      "prerequisites": [
+        "Configured generation provider plus editable result schema and provenance, cancellation and quota handling."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-media",
+      "workflow": "ai",
+      "feature": "Generate video, music and voices",
+      "source_ids": [
+        "ai",
+        "audio"
+      ],
+      "priority": "P2",
+      "documented_tier": "Tool quality tier and allowance vary",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "multimodal-generation-provider",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/ai-access-variantb/",
+        "https://www.canva.com/help/stock-music/"
+      ],
+      "acceptance_criteria": [
+        "Return decodable generated media from a configured provider with duration and provenance; do not substitute canned media for a generation result."
+      ],
+      "prerequisites": [
+        "Configured supported video/audio/voice providers, actual media outputs and usage/error reporting."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "docs",
+      "workflow": "suite",
+      "feature": "Flowing documents and structured text",
+      "source_ids": [
+        "docs"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "document-editor",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/en_gb/help/create-business-proposals-canva-docs/"
+      ],
+      "acceptance_criteria": [
+        "Edit flowing paragraphs, headings and embedded content across pages; preserve structure in saved and exported documents."
+      ],
+      "prerequisites": [
+        "Flowing text document model, pagination, formatting and export engine."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "whiteboards",
+      "workflow": "suite",
+      "feature": "Expanding boards, connectors and sticky notes",
+      "source_ids": [
+        "whiteboards"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "whiteboard-editor",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/en_au/help/map-customer-journeys-whiteboards/"
+      ],
+      "acceptance_criteria": [
+        "Create sticky notes and connectors on an expanding board; pan/zoom and move connected nodes without losing topology."
+      ],
+      "prerequisites": [
+        "Infinite-canvas object and connector model, selection and spatial navigation."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "tables-charts",
+      "workflow": "suite",
+      "feature": "Editable tables and data-backed charts",
+      "source_ids": [
+        "elements",
+        "charts"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "data-and-chart-editor",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/design-school/resources/using-and-editing-elements/",
+        "https://www.canva.com/newsroom/news/canva-create-2025/"
+      ],
+      "acceptance_criteria": [
+        "Edit underlying table data and verify an independently rendered chart changes with that data."
+      ],
+      "prerequisites": [
+        "Editable tabular data model and charts driven by underlying data."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "sheets-bulk",
+      "workflow": "suite",
+      "feature": "Sheets and bulk personalised design creation",
+      "source_ids": [
+        "charts",
+        "imports"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "spreadsheet-and-template-data-engine",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/newsroom/news/canva-create-2025/",
+        "https://www.canva.com/help/upload-formats-requirements/"
+      ],
+      "acceptance_criteria": [
+        "Import tabular records, bind fields to template elements and create distinct editable outputs for each chosen row with validation errors shown."
+      ],
+      "prerequisites": [
+        "Spreadsheet parser/model, field binding, validation and per-record design generation."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "publish-integrations",
+      "workflow": "suite",
+      "feature": "Apps, websites, presenting and print workflows",
+      "source_ids": [
+        "catalogue",
+        "templates"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "external-app-and-publication-services",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/editing-designing/",
+        "https://www.canva.com/design-school/resources/using-and-customizing-templates/"
+      ],
+      "acceptance_criteria": [
+        "Complete each declared integration with a real exported or published result and a returned receipt; unsupported routes remain explicitly unavailable."
+      ],
+      "prerequisites": [
+        "Explicit supported integrations with authenticated routes or publishing backend; publication is a separate governed action."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "conversion-tools",
+      "workflow": "tools",
+      "feature": "Presentation and document format conversion",
+      "source_ids": [
+        "converters"
+      ],
+      "priority": "P2",
+      "documented_tier": "Not explicitly stated",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "document-format-conversion",
+      "unknowns": [
+        "Original runtime and detailed edge cases not exercised."
+      ],
+      "source_links": [
+        "https://www.canva.com/features/ppt-converter/"
+      ],
+      "acceptance_criteria": [
+        "Convert representative office/PDF fixtures and independently open the results; disclose unsupported formatting instead of silently dropping content."
+      ],
+      "prerequisites": [
+        "Office/PDF parser and writer, font/layout handling and independent interoperability fixtures."
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "brand-templates",
+      "workflow": "brand",
+      "feature": "Reusable governed brand templates",
+      "source_ids": [
+        "brand",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Pro and higher",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Create a reusable brand template, instantiate it independently and enforce protected versus editable template fields."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "source_links": [
+        "https://www.canva.com/solutions/brand-management-tools/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "components",
+      "workflow": "brand",
+      "feature": "Reusable Components",
+      "source_ids": [
+        "pricing",
+        "brand"
+      ],
+      "priority": "P2",
+      "documented_tier": "Pro and higher",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "local-functional-reconstruction",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Create a reusable component and instantiate it in multiple designs; document whether updates propagate or create independent copies."
+      ],
+      "prerequisites": [
+        "Persistent document model and functional renderer; no remote provider inherently required."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/",
+        "https://www.canva.com/solutions/brand-management-tools/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "brand-approvals",
+      "workflow": "brand",
+      "feature": "Approval workflows",
+      "source_ids": [
+        "business",
+        "brand",
+        "enterprise"
+      ],
+      "priority": "P2",
+      "documented_tier": "Business; Enterprise adds tiered approvals",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-governance",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Submit a design, request changes, approve or reject it with authorised reviewers and a durable audit trail; blocked designs cannot publish through the service."
+      ],
+      "prerequisites": [
+        "Server-enforced tenant roles/policies, immutable activity events and auditable workflow transitions."
+      ],
+      "source_links": [
+        "https://www.canva.com/canva-business/",
+        "https://www.canva.com/solutions/brand-management-tools/",
+        "https://www.canva.com/enterprise/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "brand-controls",
+      "workflow": "brand",
+      "feature": "Brand and sharing controls",
+      "source_ids": [
+        "brand",
+        "enterprise"
+      ],
+      "priority": "P2",
+      "documented_tier": "Business/Enterprise, precise controls vary",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-governance",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Apply organisation brand/sharing policies, attempt a forbidden change from another role and verify server-side enforcement."
+      ],
+      "prerequisites": [
+        "Server-enforced tenant roles/policies, immutable activity events and auditable workflow transitions."
+      ],
+      "source_links": [
+        "https://www.canva.com/solutions/brand-management-tools/",
+        "https://www.canva.com/enterprise/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "team-admin",
+      "workflow": "administration",
+      "feature": "Team membership and roles",
+      "source_ids": [
+        "business",
+        "enterprise"
+      ],
+      "priority": "P2",
+      "documented_tier": "Business and Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-governance",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Invite an independent account, accept into the correct tenant, change its role and remove it; the service consistently enforces access changes."
+      ],
+      "prerequisites": [
+        "Server-enforced tenant roles/policies, immutable activity events and auditable workflow transitions."
+      ],
+      "source_links": [
+        "https://www.canva.com/canva-business/",
+        "https://www.canva.com/enterprise/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "multi-team",
+      "workflow": "administration",
+      "feature": "Multiple teams and tiered governance",
+      "source_ids": [
+        "enterprise",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-governance",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Create separate teams, assign scoped roles and show that documents and policies cannot cross tenant/team boundaries without authorised sharing."
+      ],
+      "prerequisites": [
+        "Server-enforced tenant roles/policies, immutable activity events and auditable workflow transitions."
+      ],
+      "source_links": [
+        "https://www.canva.com/enterprise/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "enterprise-sso",
+      "workflow": "security",
+      "feature": "Single sign-on",
+      "source_ids": [
+        "security",
+        "enterprise",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-identity",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Complete sign-in through a configured identity provider, enforce the chosen SSO policy and verify logout and invalid identities fail correctly."
+      ],
+      "prerequisites": [
+        "Real account/tenant service, identity-provider integration and independently verified provisioning/deprovisioning."
+      ],
+      "source_links": [
+        "https://www.canva.com/business/features/security-sso/",
+        "https://www.canva.com/enterprise/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "enterprise-scim",
+      "workflow": "security",
+      "feature": "SCIM provisioning",
+      "source_ids": [
+        "security",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-identity",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Provision, update, suspend and deprovision an account from an independent SCIM client; removed access is immediately enforced."
+      ],
+      "prerequisites": [
+        "Real account/tenant service, identity-provider integration and independently verified provisioning/deprovisioning."
+      ],
+      "source_links": [
+        "https://www.canva.com/business/features/security-sso/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "security-mfa",
+      "workflow": "security",
+      "feature": "Multi-factor authentication",
+      "source_ids": [
+        "security",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Free and paid comparison lists MFA",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-identity",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Enrol a real second factor, require it on sign-in, reject an invalid factor and verify the explicit recovery path."
+      ],
+      "prerequisites": [
+        "Real account/tenant service, identity-provider integration and independently verified provisioning/deprovisioning."
+      ],
+      "source_links": [
+        "https://www.canva.com/business/features/security-sso/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "security-audit",
+      "workflow": "security",
+      "feature": "Activity and audit controls",
+      "source_ids": [
+        "enterprise",
+        "security"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-governance",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Record attributable membership, design and sharing events; an authorised admin can inspect them and ordinary editors cannot mutate the records."
+      ],
+      "prerequisites": [
+        "Server-enforced tenant roles/policies, immutable activity events and auditable workflow transitions."
+      ],
+      "source_links": [
+        "https://www.canva.com/enterprise/",
+        "https://www.canva.com/business/features/security-sso/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "security-ai-controls",
+      "workflow": "security",
+      "feature": "Organisation AI controls",
+      "source_ids": [
+        "enterprise",
+        "security"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "enterprise-governance",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Disable an AI tool or external connector for a tenant and prove an independent member cannot invoke it through an alternate client."
+      ],
+      "prerequisites": [
+        "Server-enforced tenant roles/policies, immutable activity events and auditable workflow transitions."
+      ],
+      "source_links": [
+        "https://www.canva.com/enterprise/",
+        "https://www.canva.com/business/features/security-sso/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "security-residency",
+      "workflow": "security",
+      "feature": "Data residency controls",
+      "source_ids": [
+        "enterprise",
+        "security"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise options",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "tenant-storage",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Persist and process configured tenant data only in the selected region, with storage and routing evidence; disclose excluded service data."
+      ],
+      "prerequisites": [
+        "Authenticated object storage, per-tenant quota accounting and deletion/recovery rules."
+      ],
+      "source_links": [
+        "https://www.canva.com/enterprise/",
+        "https://www.canva.com/business/features/security-sso/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "social-schedule",
+      "workflow": "publishing",
+      "feature": "Scheduled social content",
+      "source_ids": [
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Pro and higher",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "social-scheduler",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Schedule an authorised post in an explicit timezone, edit or cancel it, and record one real delivery receipt despite worker retries."
+      ],
+      "prerequisites": [
+        "Authenticated social provider, durable queue/outbox and idempotent delivery receipts; no live sends performed."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "website-publish",
+      "workflow": "publishing",
+      "feature": "Design and launch websites",
+      "source_ids": [
+        "pricing",
+        "code"
+      ],
+      "priority": "P2",
+      "documented_tier": "Free and paid, exact hosting entitlements vary",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "hosted-websites",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Publish a responsive design to a reachable URL, verify it from an independent client and update/unpublish it without exposing draft-only content."
+      ],
+      "prerequisites": [
+        "Responsive page exporter/renderer, reachable hosting and controlled publish/unpublish lifecycle."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/",
+        "https://www.canva.com/ai-code-generator/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "share-personalised",
+      "workflow": "collaboration",
+      "feature": "Personalised share links",
+      "source_ids": [
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Pro comparison lists up to five",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "identity-and-access-service",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Create distinct named shared links with stable destinations and revocation; permissions remain enforced after link renaming."
+      ],
+      "prerequisites": [
+        "Real authenticated identities, server-enforced permissions and revocation."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-connectors",
+      "workflow": "integrations",
+      "feature": "AI connectors",
+      "source_ids": [
+        "pricing",
+        "enterprise"
+      ],
+      "priority": "P2",
+      "documented_tier": "External-agent connectors Free/Pro; in-product connectors Pro and higher, Enterprise marked soon",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "provider-connector",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Connect an authorised external data source, use selected data in a reviewable action and prove revoked access stops further retrieval."
+      ],
+      "prerequisites": [
+        "Revocable user-scoped external credentials, data-consent boundaries and actual API error handling."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/",
+        "https://www.canva.com/enterprise/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "apps-platform",
+      "workflow": "integrations",
+      "feature": "App marketplace and SDK",
+      "source_ids": [
+        "pricing",
+        "enterprise"
+      ],
+      "priority": "P2",
+      "documented_tier": "SDK/marketplace Free and paid; premium apps paid",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "external-app-integration",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "An independently built app reads only permitted document data, adds a valid editable result and reports permission or provider failure."
+      ],
+      "prerequisites": [
+        "Document-scoped authenticated integration, revocable access and an independently runnable client."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/",
+        "https://www.canva.com/enterprise/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "custom-org-apps",
+      "workflow": "integrations",
+      "feature": "Custom organisation apps",
+      "source_ids": [
+        "enterprise",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "external-app-integration",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Install a private organisation app into a scoped tenant, exercise it from a permitted member and reject access from another tenant."
+      ],
+      "prerequisites": [
+        "Document-scoped authenticated integration, revocable access and an independently runnable client."
+      ],
+      "source_links": [
+        "https://www.canva.com/enterprise/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-layers",
+      "workflow": "ai",
+      "feature": "Flat-image to editable layers",
+      "source_ids": [
+        "layers"
+      ],
+      "priority": "P2",
+      "documented_tier": "Premium AI allowance, including Free limited use",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "raster-layer-reconstruction",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Reconstruct text and objects from a supplied flat image into independently movable/editable layers; retain the original and expose unrecovered regions."
+      ],
+      "prerequisites": [
+        "OCR, segmentation and layout reconstruction engine returning editable objects, with original retained."
+      ],
+      "source_links": [
+        "https://www.canva.com/magic-layers/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-code",
+      "workflow": "ai",
+      "feature": "Generated interactive experiences",
+      "source_ids": [
+        "code"
+      ],
+      "priority": "P2",
+      "documented_tier": "Pricing lists Pro and higher; tool-page trial wording varies",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "sandboxed-code-generation",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Generate a working interactive artefact, change it through a reviewed prompt and execute it in isolation; captured responses persist in an authorised data table."
+      ],
+      "prerequisites": [
+        "Configured model and isolated generated-code runtime with controlled network/data capabilities."
+      ],
+      "source_links": [
+        "https://www.canva.com/ai-code-generator/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-style-match",
+      "workflow": "ai",
+      "feature": "Style matching",
+      "source_ids": [
+        "pricing",
+        "photoai"
+      ],
+      "priority": "P2",
+      "documented_tier": "Premium AI allowance Free and paid",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "generative-model-provider",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Transform selected artwork to the chosen visual style using an actual model output while retaining unmodified source assets."
+      ],
+      "prerequisites": [
+        "Configured image generation/edit provider or local model plus region masks, provenance and reversible output."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/",
+        "https://www.canva.com/features/ai-photo-editing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "ai-upscale",
+      "workflow": "photo",
+      "feature": "Image upscaling",
+      "source_ids": [
+        "photo",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Standard AI allowance; paid fair use",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "generative-model-provider",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Return a real higher-resolution image, verify dimensions and altered pixel detail and label the chosen algorithm/provider."
+      ],
+      "prerequisites": [
+        "Configured image generation/edit provider or local model plus region masks, provenance and reversible output."
+      ],
+      "source_links": [
+        "https://www.canva.com/photo-editor/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "video-background",
+      "workflow": "video",
+      "feature": "Video background removal",
+      "source_ids": [
+        "pricing",
+        "video"
+      ],
+      "priority": "P2",
+      "documented_tier": "Pro and higher",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "segmentation-and-inpainting-model",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Generate temporally consistent subject masks for a real clip and export playable media with the chosen replacement background."
+      ],
+      "prerequisites": [
+        "Actual segmentation/inpainting model and image mask pipeline; provider or supported local inference."
+      ],
+      "source_links": [
+        "https://www.canva.com/pricing/",
+        "https://www.canva.com/video-editor/desktop-download/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "cloud-quota",
+      "workflow": "documents",
+      "feature": "Plan-based cloud storage",
+      "source_ids": [
+        "imports",
+        "pricing"
+      ],
+      "priority": "P2",
+      "documented_tier": "Free 5GB; Pro 100GB; Business 500GB; Enterprise options differ",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "tenant-storage",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Store assets against authenticated tenant ownership, account byte usage and handle quota exceeded/deletion without corrupting documents."
+      ],
+      "prerequisites": [
+        "Authenticated object storage, per-tenant quota accounting and deletion/recovery rules."
+      ],
+      "source_links": [
+        "https://www.canva.com/help/upload-formats-requirements/",
+        "https://www.canva.com/pricing/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "marketing-ads",
+      "workflow": "marketing",
+      "feature": "Connected ad insights and creation",
+      "source_ids": [
+        "business"
+      ],
+      "priority": "P2",
+      "documented_tier": "Business includes broader ad-account and analysis workflows",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "provider-connector",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Connect an authorised ad account, retrieve dated metrics and create reviewable content; separate preview from authorised publication."
+      ],
+      "prerequisites": [
+        "Revocable user-scoped external credentials, data-consent boundaries and actual API error handling."
+      ],
+      "source_links": [
+        "https://www.canva.com/canva-business/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    },
+    {
+      "id": "interactive-data",
+      "workflow": "suite",
+      "feature": "Flourish data visualisation integration",
+      "source_ids": [
+        "business",
+        "enterprise"
+      ],
+      "priority": "P2",
+      "documented_tier": "Business and Enterprise",
+      "observation_basis": "official-public-documentation",
+      "implementation_lane": "external-app-integration",
+      "unknowns": [
+        "Authenticated original workflow and precise edge cases remain unobserved."
+      ],
+      "acceptance_criteria": [
+        "Import a data fixture into a real interactive chart/map, embed it and verify the interaction from an independent viewer."
+      ],
+      "prerequisites": [
+        "Document-scoped authenticated integration, revocable access and an independently runnable client."
+      ],
+      "source_links": [
+        "https://www.canva.com/canva-business/",
+        "https://www.canva.com/enterprise/"
+      ],
+      "reference_runtime_status": "not-exercised",
+      "implementation_status": "not-assessed-by-research-agent"
+    }
+  ],
+  "counts": {
+    "features": 88,
+    "by_priority": {
+      "P0": 22,
+      "P1": 20,
+      "P2": 46
+    },
+    "by_workflow": {
+      "library": 5,
+      "editor": 13,
+      "documents": 5,
+      "pages": 4,
+      "export": 9,
+      "import": 2,
+      "brand": 6,
+      "photo": 5,
+      "video": 3,
+      "audio": 4,
+      "collaboration": 5,
+      "ai": 6,
+      "suite": 6,
+      "tools": 1,
+      "administration": 2,
+      "security": 6,
+      "publishing": 2,
+      "integrations": 3,
+      "marketing": 1
+    }
+  },
+  "blockers": [
+    {
+      "id": "auth-editor",
+      "scope": "Authenticated editor and paid features",
+      "status": "not-inspected",
+      "reason": "REA captured public help and homepage scripts, not a user-owned authenticated editor design."
+    },
+    {
+      "id": "network-collaboration",
+      "scope": "Sharing, comments, permissions, live editing and sync",
+      "status": "service-dependent",
+      "reason": "Requires a real multi-user service and independently verified permission/conflict handling; local multi-tab state is narrower."
+    },
+    {
+      "id": "model-services",
+      "scope": "AI design, photo segmentation, inpainting, video and voice generation",
+      "status": "provider-dependent",
+      "reason": "No generation calls or private service credentials used; original models and quota enforcement remain unknown."
+    },
+    {
+      "id": "catalogue-rights",
+      "scope": "Template, photo, font, audio and video catalogue",
+      "status": "independent-assets-required",
+      "reason": "Functional asset-library parity requires original or licensed assets and catalogue/search work; proprietary catalogue copying is excluded."
+    },
+    {
+      "id": "formats-and-suite",
+      "scope": "Video/audio rendering, office format fidelity, Docs, Sheets and Whiteboards",
+      "status": "separate-implementation-required",
+      "reason": "A static graphic editor or download button does not implement these distinct engines."
+    }
+  ],
+  "source_conflicts_and_limits": [
+    "Canva's official upload help describes imported PDF pages as images, whereas marketing describes editable PDF content. Import fidelity and design-type behaviour require an actual representative workflow.",
+    "Photo-editor marketing says some SVG exports are free while download help groups SVG/advanced export controls with eligible paid plans. Preserve the discrepancy rather than guess entitlement.",
+    "Some current help still names Canva Teams; pricing now presents Free, Pro, Business and Enterprise. Feature-specific help remains the source for explicit entitlements.",
+    "Published numerical storage, page and AI limits are service limits, not evidence that local reconstruction has reached equivalent scale.",
+    "The retained 24-script analysis is complete only within its public-homepage origin scope; it does not identify editor document formats or collaboration protocols."
+  ],
+  "verification_rules": [
+    "A control or static menu is insufficient: execute its workflow and inspect durable output.",
+    "Only call a feature complete after appropriate Linux and macOS build/runtime evidence.",
+    "Local state or tab coordination does not prove network collaboration or account-sync parity.",
+    "Deterministic hints do not prove AI model, ATS score, economy or original-algorithm parity.",
+    "Do not publish captured proprietary assets, raw site DOM, scripts, account data or request logs."
+  ],
+  "tier_scope": [
+    "Free",
+    "Pro",
+    "Business",
+    "Enterprise",
+    "Legacy Teams where help explicitly retains it",
+    "Education/Higher Education/Nonprofits where named by feature help",
+    "AI Pass and eligible top-ups"
+  ],
+  "tier_notes": [
+    "Paid workflow scope includes licensed premium media, resize, background tools, brand templates/components, scheduling, bulk creation, organisation controls and integrations.",
+    "The independent OSS implementation may expose these workflows freely; reproducing source paywalls is not an acceptance requirement.",
+    "The current pricing comparison says Free template customisation is unavailable, while official free-template/editor pages describe customisation. Preserve the contradiction.",
+    "Enterprise AI 2.0/connectors are marked soon on pricing; a future-listed capability must not be represented as universally available today.",
+    "Current pricing and upload help disagree on some Enterprise storage bounds; tiers and exact limits require account-level verification."
+  ],
+  "non_software_offerings": [
+    {
+      "offering": "Physical print fulfilment and plan-specific print discount",
+      "source_links": [
+        "https://www.canva.com/pricing/"
+      ],
+      "prerequisite": "Manufacturing/shipping provider and authorised order workflow; exporting a print PDF is a narrower capability."
+    },
+    {
+      "offering": "Support, dedicated success and professional services",
+      "source_links": [
+        "https://www.canva.com/enterprise/"
+      ],
+      "prerequisite": "Staffed operations and contracted support delivery; these are not editor controls."
+    },
+    {
+      "offering": "Affinity access/premium AI entitlement",
+      "source_links": [
+        "https://www.canva.com/pricing/"
+      ],
+      "prerequisite": "Separate application/platform scope and licence entitlement; Stencil Studio does not establish Affinity parity."
+    }
+  ],
+  "criteria_basis": "Acceptance criteria and prerequisites are independently designed engineering requirements, not observed original-service tests or recovered implementation."
+}

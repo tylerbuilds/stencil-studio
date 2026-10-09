@@ -1,0 +1,50 @@
+import { id, validateDocument } from './model.js';
+const fail = message => { throw new Error(message); };
+/** RFC 4180-style parsing, without evaluating cells or fetching linked resources. */
+export function parseCSV(value) {
+  if (typeof value !== 'string' || new TextEncoder().encode(value).byteLength > 1024 * 1024) fail('Choose a CSV file up to 1 MB.');
+  const csv = value.replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], field = '', quoted = false, endedQuote = false;
+  const pushField = () => { if (field.length > 10000) fail('CSV cells must be under 10,000 characters.'); row.push(field); field = ''; endedQuote = false; };
+  const pushRow = () => { pushField(); if (row.some(cell => cell !== '')) rows.push(row); row = []; if (rows.length > 31) fail('Bulk creation supports up to 30 rows.'); };
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i];
+    if (quoted) {
+      if (ch === '"') { if (csv[i + 1] === '"') { field += '"'; i++; } else { quoted = false; endedQuote = true; } }
+      else field += ch;
+    } else if (ch === '"') { if (field || endedQuote) fail('CSV has a misplaced quote.'); quoted = true; }
+    else if (ch === ',') pushField();
+    else if (ch === '\r' || ch === '\n') { if (ch === '\r' && csv[i + 1] === '\n') i++; pushRow(); }
+    else { if (endedQuote) fail('A quoted CSV cell must be followed by a comma or a new line.'); field += ch; }
+  }
+  if (quoted) fail('CSV has an unclosed quoted cell.');
+  if (field || row.length || endedQuote) pushRow();
+  if (rows.length < 2) fail('CSV needs a header and at least one data row.');
+  const headers = rows.shift().map(header => header.trim());
+  if (headers.length > 30 || headers.some(header => !header || header.length > 100) || new Set(headers).size !== headers.length) fail('CSV needs up to 30 unique, non-empty column names.');
+  if (headers.some(header => ['__proto__', 'prototype', 'constructor'].includes(header))) fail('This CSV column name is reserved.');
+  if (rows.some(values => values.length !== headers.length)) fail('Each CSV row must have the same number of cells as the header.');
+  return { headers, rows: rows.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index]]))) };
+}
+export function bulkCreate(document, pageId, csv) {
+  const original = validateDocument(document), parsed = typeof csv === 'string' ? parseCSV(csv) : csv;
+  const base = original.pages.find(page => page.id === pageId);
+  if (!base) fail('Select a template page first.');
+  if (!parsed || !Array.isArray(parsed.headers) || !Array.isArray(parsed.rows) || !parsed.rows.length || parsed.rows.length > 30) fail('Bulk creation needs between 1 and 30 CSV rows.');
+  const placeholders = new Set();
+  for (const source of [base.name, ...base.elements.filter(e => e.type === 'text').map(e => e.text)]) for (const match of source.matchAll(/\{\{([^{}]+)\}\}/g)) placeholders.add(match[1].trim());
+  if (!placeholders.size) fail('Add a {{column}} placeholder to page text or its name first.');
+  for (const placeholder of placeholders) if (!parsed.headers.includes(placeholder)) fail(`CSV is missing the column “${placeholder}”.`);
+  const replace = (text, values) => text.replace(/\{\{([^{}]+)\}\}/g, (_, key) => {
+    if (!Object.hasOwn(values, key.trim()) || typeof values[key.trim()] !== 'string') fail('CSV data does not match its headers.');
+    return values[key.trim()];
+  });
+  const pages = parsed.rows.map((values, index) => {
+    const page = structuredClone(base), groups = new Map(); page.id = id(); page.name = replace(page.name, values);
+    if (page.name === base.name) page.name = `${base.name.slice(0, 82)} · ${index + 1}`;
+    page.elements.forEach(e => { e.id = id(); if (e.groupId) { if (!groups.has(e.groupId)) groups.set(e.groupId, id()); e.groupId = groups.get(e.groupId); } if (e.type === 'text') e.text = replace(e.text, values); });
+    return page;
+  });
+  return validateDocument({ ...original, title: `${original.title.slice(0, 140)} · bulk`, pages });
+}

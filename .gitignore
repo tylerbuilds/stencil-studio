@@ -5,3 +5,4 @@ test-results/
 .env*
 .DS_Store
 *.log
+.workspace-data/
