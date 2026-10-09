@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDocument, createElement, templateDocument } from '../src/model.js';
+import { VERSION, createDocument, createElement, templateDocument } from '../src/model.js';
 import { LIBRARY_KEY, LIBRARY_SCHEMA, LIBRARY_VERSION, MAX_DESIGNS, MAX_LIBRARY_BYTES, LibraryError, listDesigns, saveDesign, loadDesign, duplicateDesign, deleteDesign, exportLibrary, importLibrary } from '../src/library.js';
 
 class MemoryStorage {
@@ -109,12 +109,12 @@ test('prototype, accessor, hidden and cyclic object payloads are rejected withou
 test('legacy v1 documents migrate through the model at save and library-import boundaries', () => {
   const legacy = { schema: 'stencil-studio', version: 1, title: 'Legacy poster', pages: [{ id: 'legacy-page', name: 'Poster', width: 720, height: 960, background: '#f6f1e7', elements: [{ id: 'legacy-text', type: 'text', x: 64, y: 64, width: 360, height: 130, rotation: 0, fill: '#232a27', opacity: 1, text: 'A saved idea', fontFamily: 'Arial', fontSize: 48, fontWeight: 700, align: 'left' }] }] };
   const storage = new MemoryStorage(), saved = saveDesign(legacy, {}, storage);
-  assert.equal(saved.document.version, 2); assert.equal(saved.document.pages[0].elements[0].locked, false);
+  assert.equal(saved.document.version, VERSION); assert.equal(saved.document.pages[0].elements[0].locked, false);
   assert.equal(saved.document.pages[0].elements[0].text, 'A saved idea'); assert.equal(legacy.version, 1);
   const destination = new MemoryStorage();
   importLibrary(backup([{ ...saved, document: legacy }]), {}, destination);
   assert.deepEqual(loadDesign(saved.id, destination), saved.document);
-  assert.equal(JSON.parse(exportLibrary(destination)).designs[0].document.version, 2);
+  assert.equal(JSON.parse(exportLibrary(destination)).designs[0].document.version, VERSION);
 });
 
 test('unsafe document images cannot enter a saved or imported library', () => {

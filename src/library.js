@@ -1,5 +1,6 @@
 /** Named local designs. A failed validation or storage write never replaces a library. */
 import { id as createId, validateDocument } from './model.js';
+import { writeWithMigrationBackup } from './migration-storage.js';
 
 export const LIBRARY_KEY = 'stencil-studio.library.v1';
 export const LIBRARY_SCHEMA = 'stencil-studio-library';
@@ -132,7 +133,7 @@ function readLibrary(storage) {
 function writeLibrary(library, storage) {
   const valid = validateLibrary(library);
   const payload = JSON.stringify(valid, null, 2);
-  try { storageFor(storage).setItem(LIBRARY_KEY, payload); }
+  try { writeWithMigrationBackup(storageFor(storage), LIBRARY_KEY, payload, 'library'); }
   catch (cause) { throw new LibraryError('The library could not be saved because browser storage is full or unavailable. Your previous saved library is unchanged. Export your open design as JSON to keep a copy.', 'storage-write-failed', cause); }
   return valid;
 }

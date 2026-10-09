@@ -1,12 +1,22 @@
-import { FONTS, TEMPLATES, PRESETS, History, id, createDocument, createPage, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, pageSVG, escapeXML } from './model.js';
+import { FONTS, TEMPLATES, PRESETS, History, id, createDocument, createPage, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, pageSVG, escapeXML, reorderPage, addPageGuide, updatePageGuide, removePageGuide, setPageGuideSettings, resizePageDocument, snapMovement } from './model.js';
 import { listDesigns, saveDesign, loadDesign, duplicateDesign, deleteDesign, exportLibrary, importLibrary } from './library.js';
 import { parseCSV, bulkCreate } from './bulk.js';
+import { parseDataCSV, serialiseDataCSV } from './data-csv.js';
+import { TABLE_FIELDS, CHART_FIELDS } from './data-elements.js';
 import { buildPDF } from './export.js';
 import { getAiStatus, generateWriting } from './ai-client.js';
+import { needsMigration, preserveMigrationSource, writeWithMigrationBackup } from './migration-storage.js';
 const $ = selector => document.querySelector(selector);
 const STORAGE_KEY = 'stencil-studio.document.v1'; // Retained so earlier installations migrate in place.
 let initial, recoveryMessage, recoveryRaw = null, recoveryPreserved = true, storageHealthy = true, storedRaw = null;
-try { storedRaw = localStorage.getItem(STORAGE_KEY); initial = storedRaw ? parseDocument(storedRaw) : templateDocument('poster'); }
+try {
+  storedRaw = localStorage.getItem(STORAGE_KEY); initial = storedRaw ? parseDocument(storedRaw) : templateDocument('poster');
+  if (storedRaw && needsMigration(storedRaw)) {
+    recoveryRaw = storedRaw;
+    try { preserveMigrationSource(localStorage, STORAGE_KEY, storedRaw); recoveryMessage = 'Your earlier design is open. Its exact original data is kept in a local migration backup.'; }
+    catch { recoveryPreserved = false; recoveryMessage = 'Your earlier design is open, but its migration backup could not be saved. Automatic saves are blocked to preserve the original. Save your new work as JSON.'; }
+  }
+}
 catch {
   initial = templateDocument('poster'); recoveryRaw = storedRaw; recoveryPreserved = false;
   if (typeof storedRaw === 'string') {
@@ -20,7 +30,7 @@ catch {
   recoveryMessage = recoveryPreserved ? 'Your previous design could not be loaded. Its original data has been preserved as a recovery copy; a fresh template is open.' : 'Your previous design could not be loaded. Its original data is kept, and automatic saves are blocked until a recovery copy is possible. Save your new work as JSON.';
 }
 const history = new History(initial);
-let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, clipboard = [], snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
+let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, clipboard = [], snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
 const page = () => history.current.pages.find(item => item.id === pageId) ?? history.current.pages[0];
 const selectedElements = () => page().elements.filter(element => selection.has(element.id));
 const selected = () => selectedElements().at(-1);
@@ -29,20 +39,28 @@ const selectionIds = () => [...selection];
 const effectivelyLocked = e => e.locked || Boolean(e.groupId && page().elements.some(member => member.groupId === e.groupId && member.locked));
 function toast(message, error = false) { const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { node.hidden = true; }, error ? 6500 : 3500); }
 function persist() {
-  if (!recoveryPreserved) { storageHealthy = false; $('#save-status').textContent = 'Recovery data retained — save JSON'; toast('Automatic saves are blocked to preserve your earlier unreadable design. Save your new work as JSON.', true); return false; }
-  try { localStorage.setItem(STORAGE_KEY, serialiseDocument(history.current)); $('#save-status').textContent = 'Saved on this device'; storageHealthy = true; return true; }
+  if (!recoveryPreserved) { storageHealthy = false; $('#save-status').textContent = 'Recovery data retained — save JSON'; toast('Automatic saves are blocked to preserve your earlier saved design. Save your new work as JSON.', true); return false; }
+  try { writeWithMigrationBackup(localStorage, STORAGE_KEY, serialiseDocument(history.current)); $('#save-status').textContent = 'Saved on this device'; storageHealthy = true; return true; }
   catch { storageHealthy = false; $('#save-status').textContent = 'Browser storage full — save JSON'; toast('Your design is open, but browser storage is unavailable or full. Use Save JSON to keep a copy.', true); return false; }
 }
 function attempt(operation) { try { return operation(); } catch (error) { toast(error.message || 'That change could not be made.', true); return false; } }
 function commit(next, options = {}) {
   if (cloudSession?.role === 'view' && !options.fromCloud) throw new Error('This shared design is view-only. Keep a local copy and disconnect to edit your own version.');
   if (!history.commit(next)) return false;
+  drag = null; // A new accepted edit invalidates any preview based on the earlier document.
   if (!history.current.pages.some(item => item.id === pageId)) pageId = history.current.pages[0].id;
   selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId)));
   const saved = persist(); render(options); return saved;
 }
+function closePageTools() {
+  guideTarget = null; dataDraft = null; dataTarget = null; dataCSVDirty = false; dataCSVBaseline = null;
+  for (const selector of ['#guides-dialog', '#table-dialog']) if ($(selector).open) $(selector).close();
+}
+function requireGuideTarget(target = guideTarget) {
+  if (!target || target !== guideTarget || target.pageId !== pageId || !$('#guides-dialog').open) throw new Error('The active design changed. Reopen Guides & rulers before applying a change.');
+}
 function openDocument(next, savedId = null) {
-  const valid = validateDocument(next); cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
+  const valid = validateDocument(next); closePageTools(); drag = null; cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
   const unchanged = JSON.stringify(valid) === JSON.stringify(history.current), saved = commit(valid); if (!saved) render(); return unchanged ? storageHealthy : saved;
 }
 function field(label, key, value, options = {}) {
@@ -56,14 +74,19 @@ function checkbox(label, key, value) { return `<label class="checkbox-field"><in
 function bounds(elements) { const left = Math.min(...elements.map(e => e.x)), top = Math.min(...elements.map(e => e.y)); return { x: left, y: top, width: Math.max(...elements.map(e => e.x + e.width)) - left, height: Math.max(...elements.map(e => e.y + e.height)) - top }; }
 function renderProperties() {
   const elements = selectedElements(), element = elements.length === 1 ? elements[0] : null, p = page();
-  $('#inspector-heading').textContent = elements.length > 1 ? `${elements.length} selected` : element ? { text: 'Typography', rect: 'Rectangle', circle: 'Circle', image: 'Image' }[element.type] : 'Artboard';
+  $('#inspector-heading').textContent = elements.length > 1 ? `${elements.length} selected` : element ? { text: 'Typography', rect: 'Rectangle', circle: 'Circle', image: 'Image', table: 'Table', chart: 'Chart' }[element.type] : 'Artboard';
   let content = '';
   if (!elements.length) {
-    content = field('Page name', 'name', p.name, { type: 'text', maxlength: 100 }) + selectField('Canvas preset', 'preset', '', [['', 'Choose dimensions'], ...PRESETS.map(preset => [preset.key, `${preset.name} · ${preset.width} × ${preset.height}`])]) + '<label class="checkbox-field"><input id="scale-layout" type="checkbox" checked>Scale the layout when resizing</label><div class="property-grid">' + field('Canvas width', 'width', p.width, { min: 64, max: 4096 }) + field('Canvas height', 'height', p.height, { min: 64, max: 4096 }) + '</div>' + colourField('Background', 'background', p.background) + '<p class="panel-hint">Shift-click to select several layers. Drag empty space to select an area. Alt-click edits inside a group.</p>';
+    content = field('Page name', 'name', p.name, { type: 'text', maxlength: 100 }) + selectField('Canvas preset', 'preset', '', [['', 'Choose dimensions'], ...PRESETS.map(preset => [preset.key, `${preset.name} · ${preset.width} × ${preset.height}`])]) + '<label class="checkbox-field"><input id="scale-layout" type="checkbox" checked>Scale the layout when resizing</label><div class="property-grid">' + field('Canvas width', 'width', p.width, { min: 64, max: 4096 }) + field('Canvas height', 'height', p.height, { min: 64, max: 4096 }) + '</div>' + colourField('Background', 'background', p.background) + checkbox('Transparent background', 'transparentBackground', p.transparentBackground) + '<p class="panel-hint">Shift-click to select several layers. Drag empty space to select an area. Alt-click edits inside a group.</p>';
   } else {
     content = '<div class="selection-actions"><button id="duplicate-element">Duplicate</button><button id="delete-element" class="danger">Delete</button><button id="deselect">Done</button></div>';
     if (element?.locked) content += '<p class="selection-summary">This layer is locked. Unlock it to change its design.</p>';
     if (element?.type === 'text') content += `<label class="property-field"><span>Text</span><textarea data-property="text" aria-label="Text" maxlength="10000">${safe(element.text)}</textarea></label>` + selectField('Font', 'fontFamily', element.fontFamily, FONTS.map(font => [font, font])) + '<div class="property-grid">' + field('Font size', 'fontSize', element.fontSize, { min: 4, max: 500 }) + selectField('Weight', 'fontWeight', element.fontWeight, [[400, 'Regular'], [700, 'Bold']]) + field('Line height', 'lineHeight', element.lineHeight, { min: .8, max: 3, step: .05 }) + field('Letter spacing', 'letterSpacing', element.letterSpacing, { min: -10, max: 100 }) + '</div>' + selectField('Alignment', 'align', element.align, [['left', 'Left'], ['center', 'Centre'], ['right', 'Right']]);
+    if (element && ['table', 'chart'].includes(element.type)) {
+      content += '<button id="edit-data-element" class="quiet-button">Edit data</button>' + selectField('Font', 'fontFamily', element.fontFamily, FONTS.map(font => [font, font])) + field('Font size', 'fontSize', element.fontSize, { min: 4, max: 100 }) + colourField('Text colour', 'textFill', element.textFill);
+      if (element.type === 'table') content += checkbox('Show header', 'header', element.header) + colourField('Header colour', 'headerFill', element.headerFill) + colourField('Header text colour', 'headerTextFill', element.headerTextFill) + colourField('Border colour', 'borderColor', element.borderColor) + field('Border width', 'borderWidth', element.borderWidth, { min: 0, max: 10 });
+      else content += checkbox('Show labels', 'showLabels', element.showLabels) + checkbox('Show values', 'showValues', element.showValues) + field('Pie palette (comma separated)', 'palette', element.palette.join(', '), { type: 'text', maxlength: 80 });
+    }
     if (element && element.type !== 'image') content += colourField('Colour', 'fill', element.fill);
     if (element) {
       content += '<div class="property-grid">' + field('X position', 'x', element.x, { min: -8192, max: 8192 }) + field('Y position', 'y', element.y, { min: -8192, max: 8192 }) + field('Width', 'width', element.width, { min: 1, max: 8192 }) + field('Height', 'height', element.height, { min: 1, max: 8192 }) + field('Rotation', 'rotation', element.rotation, { min: -360, max: 360 }) + field('Opacity', 'opacity', element.opacity, { min: 0, max: 1, step: .05 }) + '</div>';
@@ -83,6 +106,7 @@ function renderProperties() {
     try {
       const key = input.dataset.property; let value = input.type === 'checkbox' ? input.checked : input.value;
       if (input.type === 'number' || key === 'fontWeight') { if (String(value).trim() === '') throw new Error('Enter a number before applying this change.'); value = Number(value); }
+      if (key === 'palette') value = value.split(',').map(colour => colour.trim());
       let next;
       if (key.startsWith('brand.')) { const prop = key.split('.')[1]; if (prop === 'colours') value = value.split(',').map(c => c.trim()); next = { ...history.current, brand: { ...history.current.brand, [prop]: value } }; }
       else if (key === 'preset') {
@@ -91,7 +115,7 @@ function renderProperties() {
       } else if (elements.length) {
         if (key.includes('.')) { const [section, prop] = key.split('.'); next = updateElement(history.current, p.id, element.id, { [section]: { ...selected()[section], [prop]: section === 'crop' ? value / 100 : value } }); }
         else next = updateElements(history.current, p.id, selectionIds(), { [key]: value });
-      } else if (key === 'width' || key === 'height') next = resizePage(key === 'width' ? value : p.width, key === 'height' ? value : p.height, $('#scale-layout')?.checked);
+      } else if (key === 'width' || key === 'height') next = resizePage(key === 'width' ? value : page().width, key === 'height' ? value : page().height, $('#scale-layout')?.checked);
       else next = editPage(history.current, p.id, nextPage => { nextPage[key] = value; });
       commit(next, { keepInspector: key !== 'preset' && !key.startsWith('brand.') });
       if (input.type === 'color') input.closest('.colour-field').querySelector('code').textContent = value.toUpperCase();
@@ -102,6 +126,8 @@ function renderProperties() {
   $('#reset-crop')?.addEventListener('click', () => applySelection({ crop: { x: 0, y: 0, width: 1, height: 1 } }));
   $('#reset-filters')?.addEventListener('click', () => applySelection({ filters: { brightness: 1, contrast: 1, saturation: 1, grayscale: 0, blur: 0 } }));
   $('#remove-background-colour')?.addEventListener('click', openBackgroundTool);
+  $('#edit-data-element')?.addEventListener('click', () => attempt(() => { const current = page().elements.find(item => item.id === element.id); if (!current) throw new Error('Select the current data layer before editing.'); openDataEditor(current.type, current); }));
+  if (element && effectivelyLocked(element)) $('#edit-data-element')?.setAttribute('disabled', '');
   const actions = { 'lock-selection': { locked: true }, 'unlock-selection': { locked: false }, 'hide-selection': { hidden: true } };
   for (const [buttonId, patch] of Object.entries(actions)) $(`#${buttonId}`)?.addEventListener('click', () => applySelection(patch));
   $('#flip-selection-x')?.addEventListener('click', () => toggleSelection('flipX')); $('#flip-selection-y')?.addEventListener('click', () => toggleSelection('flipY'));
@@ -117,12 +143,7 @@ function restoreInput(input) {
   else value = (selection.size ? selected() : page())?.[key];
   if (input.type === 'checkbox') input.checked = Boolean(value); else input.value = Array.isArray(value) ? value.join(', ') : value ?? '';
 }
-function resizePage(width, height, scale) {
-  const p = page(); return editPage(history.current, p.id, next => {
-    const sx = width / p.width, sy = height / p.height; next.width = width; next.height = height;
-    if (scale) next.elements.forEach(e => { if (!effectivelyLocked(e)) { e.x *= sx; e.y *= sy; e.width *= sx; e.height *= sy; if (e.type === 'text') e.fontSize = Math.max(4, Math.min(500, e.fontSize * Math.min(sx, sy))); } });
-  });
-}
+function resizePage(width, height, scale) { return resizePageDocument(history.current, pageId, width, height, Boolean(scale)); }
 function applySelection(patch) { attempt(() => commit(updateElements(history.current, pageId, selectionIds(), patch))); }
 function toggleSelection(key) { attempt(() => commit(updateElements(history.current, pageId, selectionIds(), e => ({ [key]: !e[key] })))); }
 function chooseElement(elementId, shift = false, individual = false) {
@@ -139,7 +160,7 @@ function renderLayers() {
   $('#layers').querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => attempt(() => commit(removeElement(history.current, pageId, button.dataset.delete)))));
   for (const key of ['locked', 'hidden']) $('#layers').querySelectorAll(key === 'locked' ? '[data-lock]' : '[data-hide]').forEach(button => button.addEventListener('click', () => { const e = page().elements.find(item => item.id === (key === 'locked' ? button.dataset.lock : button.dataset.hide)); attempt(() => commit(updateElement(history.current, pageId, e.id, { [key]: !e[key] }))); }));
 }
-function layerName(e) { return e.type === 'text' ? e.text.replaceAll('\n', ' ').slice(0, 40) || 'Empty text' : e.type === 'rect' ? 'Rectangle' : e.type === 'circle' ? 'Circle' : 'Image'; }
+function layerName(e) { return e.type === 'text' ? e.text.replaceAll('\n', ' ').slice(0, 40) || 'Empty text' : e.type === 'rect' ? 'Rectangle' : e.type === 'circle' ? 'Circle' : e.type === 'table' ? 'Table' : e.type === 'chart' ? `${e.data.kind[0].toUpperCase() + e.data.kind.slice(1)} chart` : 'Image'; }
 function calculateZoom() { const area = $('#canvas-area'), p = page(), margin = window.innerWidth <= 1150 ? 48 : 76; return Math.max(.05, Math.min(2, (area.clientWidth - margin) / p.width, (area.clientHeight - margin) / p.height)); }
 function renderCanvas(previewPage = page()) {
   if (fit) zoom = calculateZoom();
@@ -148,11 +169,18 @@ function renderCanvas(previewPage = page()) {
   if (elements.length > 1) { const b = bounds(elements); overlay += `<rect class="selection-outline" stroke-dasharray="4 4" x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}"/>`; }
   if (drag?.guides) overlay += drag.guides.map(guide => guide.axis === 'x' ? `<line class="snap-guide" x1="${guide.value}" x2="${guide.value}" y1="0" y2="${previewPage.height}"/>` : `<line class="snap-guide" x1="0" x2="${previewPage.width}" y1="${guide.value}" y2="${guide.value}"/>`).join('');
   if (drag?.marquee && drag.current) { const a = drag.start, b = drag.current; overlay += `<rect class="marquee" x="${Math.min(a.x, b.x)}" y="${Math.min(a.y, b.y)}" width="${Math.abs(b.x - a.x)}" height="${Math.abs(b.y - a.y)}"/>`; }
-  $('#canvas-mount').innerHTML = pageSVG(previewPage, true).replace('</svg>', `${overlay}</svg>`);
+  if (previewPage.guideSettings.visible) overlay += previewPage.guides.map(guide => {
+    const attrs = guide.axis === 'x' ? `x1="${guide.position}" x2="${guide.position}" y1="0" y2="${previewPage.height}"` : `x1="0" x2="${previewPage.width}" y1="${guide.position}" y2="${guide.position}"`;
+    return `<g data-guide-id="${safe(guide.id)}" class="manual-guide"><line class="guide-hit" ${attrs}/><line class="guide-line" ${attrs}/></g>`;
+  }).join('');
+  const markup = pageSVG(previewPage, true), end = markup.lastIndexOf('</svg>');
+  $('#canvas-mount').innerHTML = markup.slice(0, end) + overlay + markup.slice(end);
+  $('#canvas-mount').classList.toggle('transparent-page', previewPage.transparentBackground);
   const svg = $('#artboard'); svg.style.width = `${previewPage.width * zoom}px`; svg.style.height = `${previewPage.height * zoom}px`;
   $('#canvas-mount').style.width = `${previewPage.width * zoom}px`; $('#canvas-mount').style.height = `${previewPage.height * zoom}px`;
   $('#canvas-area').style.justifyContent = previewPage.width * zoom > $('#canvas-area').clientWidth - 40 ? 'flex-start' : 'center'; $('#canvas-area').style.alignItems = previewPage.height * zoom > $('#canvas-area').clientHeight - 40 ? 'flex-start' : 'center';
   $('#zoom-value').textContent = `${Math.round(zoom * 100)}%`; svg.addEventListener('pointerdown', startDrag);
+  renderRulers(previewPage);
 }
 function render(options = {}) {
   const p = page(); pageId = p.id; selection = new Set([...selection].filter(elementId => p.elements.some(e => e.id === elementId)));
@@ -164,13 +192,74 @@ function render(options = {}) {
   $('#pages').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { pageId = button.dataset.pageId; selection.clear(); render(); }));
   const pages = $('#pages'), activePage = pages.querySelector('[aria-current="true"]');
   if (activePage) { const activeRect = activePage.getBoundingClientRect(), listRect = pages.getBoundingClientRect(); if (activeRect.left < listRect.left) pages.scrollLeft -= listRect.left - activeRect.left; else if (activeRect.right > listRect.right) pages.scrollLeft += activeRect.right - listRect.right; }
+  const pageIndex = history.current.pages.findIndex(item => item.id === pageId), readOnly = cloudSession?.role === 'view';
+  $('#move-page-earlier').disabled = readOnly || pageIndex === 0; $('#move-page-later').disabled = readOnly || pageIndex === history.current.pages.length - 1;
+  $('#page-order-position').max = history.current.pages.length; $('#page-order-position').disabled = readOnly; $('#move-page-to').disabled = readOnly;
+  if (document.activeElement !== $('#page-order-position')) $('#page-order-position').value = pageIndex + 1;
   renderCanvas(); renderLayers(); if (!options.keepInspector) renderProperties();
 }
+function rulerMarkup(p, axis) {
+  const size = p[axis === 'x' ? 'width' : 'height'], raw = 50 / zoom, magnitude = 10 ** Math.floor(Math.log10(raw));
+  const interval = [1, 2, 5, 10].find(step => step * magnitude >= raw) * magnitude;
+  const horizontal = axis === 'x', pixels = size * zoom;
+  let ticks = '';
+  for (let value = 0; value <= size; value += interval) {
+    const coordinate = Number((value * zoom).toFixed(3)); ticks += horizontal ? `<line x1="${coordinate}" x2="${coordinate}" y1="16" y2="22"/><text x="${coordinate + 3}" y="12">${value}</text>` : `<line x1="16" x2="22" y1="${coordinate}" y2="${coordinate}"/><text x="3" y="${coordinate + 12}">${value}</text>`;
+  }
+  return `<svg data-ruler-axis="${axis}" class="canvas-ruler ruler-${horizontal ? 'horizontal' : 'vertical'}" width="${horizontal ? pixels : 22}" height="${horizontal ? 22 : pixels}" role="button" tabindex="0" aria-label="${horizontal ? 'Horizontal' : 'Vertical'} ruler: click to add a ${horizontal ? 'vertical' : 'horizontal'} guide; Enter opens guide settings" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%"/>${ticks}</svg>`;
+}
+function renderRulers(p) {
+  if (!p.guideSettings.rulers) return;
+  $('#canvas-mount').insertAdjacentHTML('beforeend', rulerMarkup(p, 'x') + rulerMarkup(p, 'y'));
+  $('#canvas-mount').querySelectorAll('[data-ruler-axis]').forEach(ruler => {
+    ruler.addEventListener('click', event => attempt(() => {
+      const axis = ruler.dataset.rulerAxis, point = svgPoint(event, $('#artboard').getScreenCTM().inverse()), position = Number(Math.max(0, Math.min(p[axis === 'x' ? 'width' : 'height'], point[axis])).toFixed(3));
+      commit(addPageGuide(history.current, pageId, axis, position));
+    }));
+    ruler.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openGuides(); } });
+  });
+}
+function renderGuideList() {
+  const target = guideTarget, p = page(), readOnly = cloudSession?.role === 'view';
+  $('#guide-list').innerHTML = p.guides.length ? p.guides.map(guide => `<div class="guide-row"><span>${guide.axis === 'x' ? 'Vertical · X' : 'Horizontal · Y'}</span><label><span class="sr-only">Guide ${safe(guide.id)} position</span><input type="number" data-guide-position="${safe(guide.id)}" aria-label="${guide.axis === 'x' ? 'Vertical' : 'Horizontal'} guide position" min="0" max="${p[guide.axis === 'x' ? 'width' : 'height']}" step="any" value="${guide.position}"${readOnly ? ' disabled' : ''}></label><button data-remove-guide="${safe(guide.id)}" class="quiet-button"${readOnly ? ' disabled' : ''}>Delete</button></div>`).join('') : '<p class="panel-hint">No guides yet. Add a position above or click a visible ruler.</p>';
+  $('#guide-list').querySelectorAll('[data-guide-position]').forEach(input => input.addEventListener('change', () => {
+    const original = page().guides.find(guide => guide.id === input.dataset.guidePosition);
+    try { requireGuideTarget(target); if (!original) throw new Error('This guide is no longer available. Reopen Guides & rulers.'); if (!input.value.trim()) throw new Error('Enter a guide position.'); commit(updatePageGuide(history.current, pageId, original.id, { position: Number(input.value) })); }
+    catch (error) { input.value = original?.position ?? '';  toast(error.message, true); }
+  }));
+  $('#guide-list').querySelectorAll('[data-remove-guide]').forEach(button => button.addEventListener('click', () => attempt(() => { requireGuideTarget(target); commit(removePageGuide(history.current, pageId, button.dataset.removeGuide)); renderGuideList(); })));
+  $('#add-guide').disabled = readOnly || p.guides.length >= 40;
+}
+function openGuides() {
+  guideTarget = { pageId };
+  const readOnly = cloudSession?.role === 'view';
+  $('#guides-dialog').querySelectorAll('[data-guide-setting]').forEach(input => { if (input.type === 'checkbox') input.checked = page().guideSettings[input.dataset.guideSetting]; else input.value = page().guideSettings[input.dataset.guideSetting]; input.disabled = readOnly; });
+  $('#guide-axis').disabled = $('#guide-position').disabled = readOnly; updateGuideMaximum(); renderGuideList(); $('#guides-dialog').showModal();
+}
+function updateGuideMaximum() { $('#guide-position').max = page()[$('#guide-axis').value === 'x' ? 'width' : 'height']; }
+$('#guides-settings').addEventListener('click', openGuides);
+$('#guides-dialog').addEventListener('close', () => { guideTarget = null; });
+$('#guide-axis').addEventListener('change', updateGuideMaximum);
+$('#guides-dialog').querySelectorAll('[data-guide-setting]').forEach(input => input.addEventListener('change', () => {
+  const key = input.dataset.guideSetting;
+  try { requireGuideTarget(); if (input.type !== 'checkbox' && !input.value.trim()) throw new Error('Enter a snap distance.'); commit(setPageGuideSettings(history.current, pageId, { [key]: input.type === 'checkbox' ? input.checked : Number(input.value) })); }
+  catch (error) { if (input.type === 'checkbox') input.checked = page().guideSettings[key]; else input.value = page().guideSettings[key]; toast(error.message, true); }
+}));
+$('#add-guide').addEventListener('click', () => attempt(() => { requireGuideTarget(); if (!$('#guide-position').value.trim()) throw new Error('Enter a guide position.'); commit(addPageGuide(history.current, pageId, $('#guide-axis').value, Number($('#guide-position').value))); renderGuideList(); }));
+$('#move-page-earlier').addEventListener('click', () => attempt(() => commit(reorderPage(history.current, pageId, history.current.pages.findIndex(p => p.id === pageId) - 1))));
+$('#move-page-later').addEventListener('click', () => attempt(() => commit(reorderPage(history.current, pageId, history.current.pages.findIndex(p => p.id === pageId) + 1))));
+$('#move-page-to').addEventListener('click', () => { try { const value = $('#page-order-position').value; if (!value.trim()) throw new Error('Enter a page position.'); commit(reorderPage(history.current, pageId, Number(value) - 1)); } catch (error) { $('#page-order-position').value = history.current.pages.findIndex(p => p.id === pageId) + 1; toast(error.message, true); } });
+
 const svgPoint = (event, inverse) => new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
 function startDrag(event) {
   if (event.button !== 0) return;
-  const node = event.target.closest('[data-element-id]'), handle = event.target.closest('[data-resize]'), inverse = $('#artboard').getScreenCTM().inverse();
+  const guideNode = event.target.closest('[data-guide-id]'), node = event.target.closest('[data-element-id]'), handle = event.target.closest('[data-resize]'), inverse = $('#artboard').getScreenCTM().inverse();
   event.preventDefault(); $('#canvas-mount').setPointerCapture(event.pointerId);
+  if (guideNode) {
+    if (cloudSession?.role === 'view') return;
+    const guide = page().guides.find(item => item.id === guideNode.dataset.guideId);
+    drag = { guideId: guide.id, axis: guide.axis, inverse, pointerId: event.pointerId, preview: null }; return;
+  }
   if (!node && !handle) { if (!event.shiftKey) selection.clear(); drag = { marquee: true, start: svgPoint(event, inverse), inverse, pointerId: event.pointerId, base: new Set(selection), individual: event.altKey }; render(); return; }
   if (node) {
     const e = page().elements.find(item => item.id === node.dataset.elementId);
@@ -180,22 +269,21 @@ function startDrag(event) {
   const originals = selectedElements().filter(e => !effectivelyLocked(e) && !e.hidden); if (!originals.length) { render(); return; }
   drag = { originals: structuredClone(originals), start: svgPoint(event, inverse), inverse, corner: handle?.dataset.resize, moved: false, preview: null, pointerId: event.pointerId, guides: [] }; render();
 }
-function snapDelta(originals, dx, dy) {
-  const p = page(), b = bounds(originals), others = p.elements.filter(e => !selection.has(e.id) && !e.hidden), threshold = 6 / zoom;
-  const targetsX = [0, p.width / 2, p.width, ...others.flatMap(e => [e.x, e.x + e.width / 2, e.x + e.width])], targetsY = [0, p.height / 2, p.height, ...others.flatMap(e => [e.y, e.y + e.height / 2, e.y + e.height])];
-  const find = (points, targets) => { let best = null; for (const target of targets) for (const point of points) { const difference = target - point; if (Math.abs(difference) <= threshold && (!best || Math.abs(difference) < Math.abs(best.difference))) best = { difference, target }; } return best; };
-  const sx = find([b.x + dx, b.x + b.width / 2 + dx, b.x + b.width + dx], targetsX), sy = find([b.y + dy, b.y + b.height / 2 + dy, b.y + b.height + dy], targetsY);
-  return { dx: dx + (sx?.difference ?? 0), dy: dy + (sy?.difference ?? 0), guides: [...(sx ? [{ axis: 'x', value: sx.target }] : []), ...(sy ? [{ axis: 'y', value: sy.target }] : [])] };
-}
+function snapDelta(originals, dx, dy) { return snapMovement(page(), originals.map(element => element.id), dx, dy, zoom); }
 window.addEventListener('pointermove', event => {
   if (!drag || event.pointerId !== drag.pointerId) return;
   const current = svgPoint(event, drag.inverse); if (drag.marquee) { drag.current = current; renderCanvas(); return; }
+  if (drag.guideId) {
+    const position = Number(Math.max(0, Math.min(page()[drag.axis === 'x' ? 'width' : 'height'], current[drag.axis])).toFixed(3));
+    try { drag.preview = updatePageGuide(history.current, pageId, drag.guideId, { position }); renderCanvas(drag.preview.pages.find(item => item.id === pageId)); } catch { /* Retain the last valid guide. */ }
+    return;
+  }
   let dx = current.x - drag.start.x, dy = current.y - drag.start.y; if (Math.abs(dx) + Math.abs(dy) < 1 && !drag.moved) return; drag.moved = true;
   let next;
   try {
     if (!drag.corner) {
       const snapped = snap && !event.altKey ? snapDelta(drag.originals, dx, dy) : { dx, dy, guides: [] }; dx = snapped.dx; dy = snapped.dy; drag.guides = snapped.guides;
-      const originals = new Map(drag.originals.map(e => [e.id, e])); next = updateElements(history.current, pageId, [...originals.keys()], e => ({ x: Math.round(originals.get(e.id).x + dx), y: Math.round(originals.get(e.id).y + dy) }));
+      const originals = new Map(drag.originals.map(e => [e.id, e])); next = updateElements(history.current, pageId, [...originals.keys()], e => ({ x: Number((originals.get(e.id).x + dx).toFixed(3)), y: Number((originals.get(e.id).y + dy).toFixed(3)) }));
     } else {
       const e = drag.originals[0], angle = e.rotation * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle), localDx = dx * cos + dy * sin, localDy = -dx * sin + dy * cos;
       const west = drag.corner.includes('w'), north = drag.corner.includes('n'), width = Math.max(1, Math.min(8192, e.width + (west ? -localDx : localDx))), height = Math.max(1, Math.min(8192, e.height + (north ? -localDy : localDy)));
@@ -227,7 +315,7 @@ $('#templates').querySelectorAll('button').forEach(button => button.addEventList
 $('#blank-design').addEventListener('click', () => { openDocument(createDocument()); switchLibrary('elements'); });
 $('#add-text').addEventListener('click', () => addElement('text')); $('#add-rectangle').addEventListener('click', () => addElement('rect')); $('#add-circle').addEventListener('click', () => addElement('circle'));
 $('#document-title').addEventListener('change', event => attempt(() => commit({ ...history.current, title: event.target.value }, { keepInspector: true })));
-function undoRedo(redo = false) { if (cloudSession?.role === 'view') { toast('This shared design is view-only. Keep a local copy and disconnect to edit.', true); return; } if (redo ? history.redo() : history.undo()) { pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } }
+function undoRedo(redo = false) { const hadDrag = Boolean(drag); drag = null; if (cloudSession?.role === 'view') { if (hadDrag) render(); toast('This shared design is view-only. Keep a local copy and disconnect to edit.', true); return; } if (redo ? history.redo() : history.undo()) { pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } else if (hadDrag) render(); }
 $('#undo').addEventListener('click', () => undoRedo()); $('#redo').addEventListener('click', () => undoRedo(true));
 $('#select-all').addEventListener('click', () => { selection = new Set(page().elements.filter(e => !e.hidden && !effectivelyLocked(e)).map(e => e.id)); render(); });
 $('#group-selection').addEventListener('click', () => attempt(() => commit(groupElements(history.current, pageId, selectionIds())))); $('#ungroup-selection').addEventListener('click', () => attempt(() => commit(ungroupElements(history.current, pageId, selectionIds()))));
@@ -277,7 +365,7 @@ $('#export-svg').addEventListener('click', () => attempt(() => { download(pageSV
 async function renderRaster(p, type = 'image/png') {
   const url = URL.createObjectURL(new Blob([pageSVG(p)], { type: 'image/svg+xml' })); let image;
   try { image = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('This page could not be rendered. Try SVG instead.')); img.src = url; }); } finally { URL.revokeObjectURL(url); }
-  const canvas = document.createElement('canvas'); canvas.width = Math.round(p.width); canvas.height = Math.round(p.height); const context = canvas.getContext('2d'); if (!context) throw new Error('Your browser could not create an image canvas.'); context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const canvas = document.createElement('canvas'); canvas.width = Math.round(p.width); canvas.height = Math.round(p.height); const context = canvas.getContext('2d'); if (!context) throw new Error('Your browser could not create an image canvas.'); if (type === 'image/jpeg') { context.fillStyle = p.background; context.fillRect(0, 0, canvas.width, canvas.height); } context.drawImage(image, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise(resolve => canvas.toBlob(resolve, type, .95)); if (!blob) throw new Error('Image export failed. Try SVG instead.'); return blob;
 }
 $('#export-png').addEventListener('click', async () => { const button = $('#export-png'); button.disabled = true; try { const p = structuredClone(page()), blob = await renderRaster(p); download(blob, 'image/png', `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.png`); toast('Current page downloaded as PNG at full size.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
@@ -302,26 +390,57 @@ $('#library-input').addEventListener('change', async event => { const file = eve
 $('#bulk-create').addEventListener('click', () => $('#bulk-dialog').showModal()); $('#load-csv').addEventListener('click', () => $('#csv-input').click());
 $('#csv-input').addEventListener('change', async event => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { if (file.size > 1024 * 1024) throw new Error('Choose a CSV file up to 1 MB.'); $('#bulk-csv').value = await file.text(); } catch (error) { toast(error.message, true); } });
 $('#create-bulk-pages').addEventListener('click', () => attempt(() => { const next = bulkCreate(history.current, pageId, $('#bulk-csv').value); const saved = openDocument(next); $('#bulk-dialog').close(); if (saved) toast(`${next.pages.length} pages created from CSV. Undo restores your previous design.`); }));
-function createDataLayers(kind, csv) {
-  const data = parseCSV(csv), p = page(), palette = history.current.brand.colours, font = history.current.brand.fontFamily, groupId = id(), created = [];
-  const text = (value, x, y, width, size = 20, fill = '#232a27', weight = 400) => createElement('text', { text: value, x, y, width, height: size * 1.5, fontSize: size, fontFamily: font, fontWeight: weight, fill, groupId });
-  const shape = (x, y, width, height, fill) => createElement('rect', { x, y, width, height, fill, groupId });
-  const x = p.width * .1, y = p.height * .12, width = p.width * .8;
-  if (kind === 'table') {
-    if (data.headers.length > 6 || data.rows.length > 12) throw new Error('Editable tables support up to 6 columns and 12 rows.');
-    const cellWidth = width / data.headers.length, cellHeight = Math.min(54, p.height * .7 / (data.rows.length + 1));
-    const rows = [data.headers, ...data.rows.map(row => data.headers.map(key => row[key]))];
-    rows.forEach((values, rowIndex) => values.forEach((value, colIndex) => { const px = x + colIndex * cellWidth, py = y + rowIndex * cellHeight; created.push(shape(px, py, cellWidth - 2, cellHeight - 2, rowIndex === 0 ? palette[2] ?? '#232a27' : rowIndex % 2 ? palette[0] : palette[3] ?? '#c5d6c8')); created.push(text(value, px + 9, py + 9, cellWidth - 16, Math.max(10, Math.min(20, cellHeight * .38)), rowIndex === 0 ? '#ffffff' : '#232a27', rowIndex === 0 ? 700 : 400)); }));
-  } else {
-    if (data.headers.length !== 2 || data.rows.length > 20) throw new Error('Bar charts need two columns (label,value) and up to 20 rows.');
-    const [labelKey, valueKey] = data.headers, values = data.rows.map(row => { const value = Number(row[valueKey]); if (!row[valueKey].trim() || !Number.isFinite(value) || value < 0 || value > 1000000) throw new Error('Chart values must be numbers between 0 and 1,000,000.'); return value; }), max = Math.max(1, ...values);
-    const rowHeight = Math.min(62, p.height * .72 / data.rows.length), labelWidth = width * .27, barWidth = width * .57;
-    data.rows.forEach((row, index) => { const py = y + index * rowHeight; created.push(text(row[labelKey], x, py + rowHeight * .25, labelWidth - 10, Math.max(10, Math.min(21, rowHeight * .33)))); created.push(shape(x + labelWidth, py + rowHeight * .15, Math.max(1, barWidth * values[index] / max), rowHeight * .65, palette[index % palette.length])); created.push(text(String(values[index]), x + labelWidth + barWidth + 10, py + rowHeight * .25, width * .13, Math.max(10, Math.min(20, rowHeight * .33)))); });
-  }
-  const next = editPage(history.current, pageId, updated => updated.elements.push(...created)); selection = new Set(created.map(e => e.id)); commit(next);
+function openDataEditor(kind, element = null) {
+  if (cloudSession?.role === 'view') { toast('This shared design is view-only.', true); return; }
+  if (element && effectivelyLocked(element)) { toast('Unlock this layer before editing its data.', true); return; }
+  dataTool = kind; dataDraft = structuredClone(element ?? createElement(kind, { fontFamily: history.current.brand.fontFamily, ...(kind === 'chart' ? { palette: history.current.brand.colours } : {}) }));
+  dataTarget = { pageId, elementId: element?.id ?? null }; dataCSVDirty = false;
+  $('#data-tool-heading').textContent = `${element ? 'Edit' : 'Add'} ${kind === 'table' ? 'a table' : 'a chart'}`;
+  $('#data-tool-hint').textContent = kind === 'table' ? 'Keep the source data with your design. Edit up to 8 columns and 50 rows, then reopen this table whenever you need it.' : 'Edit labels and non-negative values, then choose a bar, line or pie chart. The source data stays editable in your design.';
+  $('#chart-kind-field').hidden = kind !== 'chart'; if (kind === 'chart') $('#chart-kind').value = dataDraft.data.kind;
+  $('#data-add-column').hidden = $('#data-remove-column').hidden = kind !== 'table';
+  $('#create-data-tool').textContent = `${element ? 'Update' : 'Create'} ${kind}`; $('#data-csv-panel').open = false;
+  renderDataGrid(); $('#table-dialog').showModal();
 }
-for (const kind of ['table', 'chart']) $(`#add-${kind}`).addEventListener('click', () => { dataTool = kind; $('#data-tool-heading').textContent = kind === 'table' ? 'Add an editable table' : 'Add a bar chart'; $('#data-tool-hint').textContent = kind === 'table' ? 'Paste CSV data. Each cell becomes editable text and a rectangle, grouped together.' : 'Paste two CSV columns: label,value. Non-negative values become editable bars and labels.'; $('#table-dialog').showModal(); });
-$('#create-data-tool').addEventListener('click', () => attempt(() => { createDataLayers(dataTool, $('#tool-csv').value); $('#table-dialog').close(); toast('Editable layers created and grouped. Alt-click to edit one layer.'); }));
+function syncDataCSV() { const original = serialiseDataCSV(dataTool, dataDraft.data); $('#tool-csv').value = original; dataCSVBaseline = { original, normalised: $('#tool-csv').value }; dataCSVDirty = false; }
+function renderDataGrid() {
+  const data = dataDraft.data, columns = dataTool === 'table' ? data.columns : ['Label', 'Value'], rows = dataTool === 'table' ? data.rows : data.labels.map((label, index) => [label, data.values[index]]);
+  $('#data-grid').innerHTML = `<table><thead><tr>${columns.map((column, index) => `<th>${dataTool === 'table' ? `<textarea data-column="${index}" aria-label="Column ${index + 1} name" maxlength="100" rows="${/[\r\n]/.test(column) ? 2 : 1}">${safe(column)}</textarea>` : safe(column)}</th>`).join('')}<th><span class="sr-only">Remove row</span></th></tr></thead><tbody>${rows.map((row, rowIndex) => `<tr>${row.map((value, colIndex) => `<td>${dataTool === 'chart' && colIndex === 1 ? `<input data-cell-row="${rowIndex}" data-cell-column="${colIndex}" aria-label="Row ${rowIndex + 1}, Value" type="number" min="0" max="1000000000" step="any" value="${safe(value ?? '')}">` : `<textarea data-cell-row="${rowIndex}" data-cell-column="${colIndex}" aria-label="Row ${rowIndex + 1}, ${safe(columns[colIndex])}" maxlength="${dataTool === 'chart' ? 100 : 1000}" rows="${/[\r\n]/.test(String(value)) ? 2 : 1}">${safe(value)}</textarea>`}</td>`).join('')}<td><button data-remove-row="${rowIndex}" aria-label="Remove row ${rowIndex + 1}"${dataTool === 'chart' && rows.length === 1 ? ' disabled' : ''}>×</button></td></tr>`).join('')}</tbody></table>`;
+  const literalValues = new WeakMap();
+  // Preserve exact retained strings when the textarea's normalised display is unchanged.
+  $('#data-grid').querySelectorAll('textarea').forEach(input => {
+    const original = input.dataset.column !== undefined ? data.columns[Number(input.dataset.column)] : dataTool === 'table' ? data.rows[Number(input.dataset.cellRow)][Number(input.dataset.cellColumn)] : data.labels[Number(input.dataset.cellRow)];
+    input.value = original; literalValues.set(input, { original, normalised: input.value });
+  });
+  $('#data-grid').querySelectorAll('input,textarea').forEach(input => input.addEventListener('input', () => {
+    const literal = literalValues.get(input), value = literal && input.value === literal.normalised ? literal.original : input.value;
+    if (input.dataset.column !== undefined) data.columns[Number(input.dataset.column)] = value;
+    else { const row = Number(input.dataset.cellRow), col = Number(input.dataset.cellColumn); if (dataTool === 'table') data.rows[row][col] = value; else if (col === 0) data.labels[row] = value; else data.values[row] = input.value.trim() === '' ? null : Number(input.value); }
+    syncDataCSV();
+  }));
+  $('#data-grid').querySelectorAll('[data-remove-row]').forEach(button => button.addEventListener('click', () => { const row = Number(button.dataset.removeRow); if (dataTool === 'table') data.rows.splice(row, 1); else { data.labels.splice(row, 1); data.values.splice(row, 1); } renderDataGrid(); }));
+  $('#data-add-row').disabled = rows.length >= (dataTool === 'table' ? 50 : 30); $('#data-add-column').disabled = columns.length >= 8; $('#data-remove-column').disabled = columns.length <= 1;
+  $('#data-editor-status').textContent = `${rows.length} rows${dataTool === 'table' ? ` · ${columns.length} columns` : ''}`; syncDataCSV();
+}
+function loadDataCSV() { const csv = $('#tool-csv').value === dataCSVBaseline?.normalised ? dataCSVBaseline.original : $('#tool-csv').value, parsed = parseDataCSV(csv, dataTool); dataDraft.data = dataTool === 'table' ? parsed : { ...parsed, kind: $('#chart-kind').value }; renderDataGrid(); }
+for (const kind of ['table', 'chart']) $(`#add-${kind}`).addEventListener('click', () => attempt(() => openDataEditor(kind)));
+$('#tool-csv').addEventListener('input', () => { dataCSVDirty = $('#tool-csv').value !== dataCSVBaseline?.normalised; }); $('#load-data-csv').addEventListener('click', () => attempt(loadDataCSV));
+$('#chart-kind').addEventListener('change', event => { dataDraft.data.kind = event.target.value; });
+$('#data-add-row').addEventListener('click', () => { if (dataTool === 'table') dataDraft.data.rows.push(dataDraft.data.columns.map(() => '')); else { dataDraft.data.labels.push(`Item ${dataDraft.data.labels.length + 1}`); dataDraft.data.values.push(0); } renderDataGrid(); });
+$('#data-add-column').addEventListener('click', () => { dataDraft.data.columns.push(`Column ${dataDraft.data.columns.length + 1}`); dataDraft.data.rows.forEach(row => row.push('')); renderDataGrid(); });
+$('#data-remove-column').addEventListener('click', () => { dataDraft.data.columns.pop(); dataDraft.data.rows.forEach(row => row.pop()); renderDataGrid(); });
+$('#create-data-tool').addEventListener('click', () => attempt(() => {
+  if (dataCSVDirty) loadDataCSV();
+  if (dataTarget.pageId !== pageId) throw new Error('The active page changed. Reopen the data editor before applying.');
+  let next, elementId = dataTarget.elementId;
+  if (elementId) {
+    const target = page().elements.find(element => element.id === elementId); if (!target || effectivelyLocked(target)) throw new Error('This data layer is unavailable or locked. Reopen the editor.');
+    const fields = dataTool === 'table' ? TABLE_FIELDS : CHART_FIELDS; next = updateElement(history.current, pageId, elementId, Object.fromEntries(fields.map(field => [field, dataDraft[field]])));
+  } else {
+    const p = page(), element = createElement(dataTool, { ...dataDraft, x: p.width * .1, y: p.height * .12, width: p.width * .8, height: Math.min(p.height * .65, 400) }); elementId = element.id; next = editPage(history.current, pageId, updated => updated.elements.push(element));
+  }
+  selection = new Set([elementId]); const saved = commit(next); $('#table-dialog').close(); if (saved) toast(`${dataTool === 'table' ? 'Table' : 'Chart'} ${dataTarget.elementId ? 'updated' : 'created'}. Reopen Edit data to change its source values.`);
+}));
 function renderSlide() { const p = history.current.pages[presentationIndex]; $('#slide-art').innerHTML = pageSVG(p); $('#slide-name').textContent = p.name || history.current.title; $('#slide-number').textContent = `${presentationIndex + 1} / ${history.current.pages.length}`; $('#previous-slide').disabled = presentationIndex === 0; $('#next-slide').disabled = presentationIndex === history.current.pages.length - 1; }
 function changeSlide(direction) { presentationIndex = Math.max(0, Math.min(history.current.pages.length - 1, presentationIndex + direction)); renderSlide(); }
 $('#present-design').addEventListener('click', () => { presentationIndex = history.current.pages.findIndex(p => p.id === pageId); renderSlide(); $('#presentation-dialog').showModal(); }); $('#previous-slide').addEventListener('click', () => changeSlide(-1)); $('#next-slide').addEventListener('click', () => changeSlide(1));
@@ -348,10 +467,10 @@ $('#video-preview-start').addEventListener('click', async () => {
 $('#video-preview-play').addEventListener('click', () => videoPreview?.play()); $('#video-preview-pause').addEventListener('click', () => videoPreview?.pause()); $('#video-seek').addEventListener('input', event => videoPreview?.seek(Number(event.target.value) / 100 * videoPreview.duration));
 $('#video-dialog').addEventListener('close', () => { videoSessionGeneration++; videoPreviewGeneration++; videoController?.abort(); videoPreviewController?.abort(); videoPreviewController = null; videoPreview?.stop(); videoPreview = null; $('#video-live-preview').hidden = true; $('#video-preview-play').disabled = true; $('#video-preview-pause').disabled = true; $('#video-seek').disabled = true; $('#video-result video')?.pause(); if (videoURL) { URL.revokeObjectURL(videoURL); videoURL = null; $('#video-result').innerHTML = ''; } });
 async function getCloudClient() { if (!cloudClient) { const module = await import('./cloud-client.mjs'); cloudClient = module.createCloudClient({ baseURL: '/api/workspaces' }); } return cloudClient; }
-function cloudDirty() { const active = document.activeElement, editing = active?.matches('input,textarea,select') && (active.id === 'document-title' || active.closest('#properties')); return cloudBaseline !== null && (Boolean(editing) || serialiseDocument(history.current) !== cloudBaseline); }
+function cloudDirty() { const active = document.activeElement, editing = active?.matches('input,textarea,select') && (active.id === 'document-title' || active.closest('#properties,#table-dialog,#guides-dialog,.page-order')); return cloudBaseline !== null && (Boolean(editing) || Boolean(drag) || $('#table-dialog').open || $('#guides-dialog').open || serialiseDocument(history.current) !== cloudBaseline); }
 async function openCloudSnapshot(snapshot, token) {
   if (snapshot.workspace.kind !== 'stencil-studio') throw new Error('This access link belongs to a different application.');
-  const valid = validateDocument(snapshot.workspace.document), unchanged = serialiseDocument(valid) === serialiseDocument(history.current); cloudSession = { ...snapshot, token }; cloudBaseline = serialiseDocument(valid); cloudPending = null; if (!unchanged || !valid.pages.some(p => p.id === pageId)) { pageId = valid.pages[0].id; selection.clear(); fit = true; } libraryId = null;
+  const valid = validateDocument(snapshot.workspace.document), unchanged = serialiseDocument(valid) === serialiseDocument(history.current); cloudSession = { ...snapshot, token }; cloudBaseline = serialiseDocument(valid); cloudPending = null; if (!unchanged || !valid.pages.some(p => p.id === pageId)) { pageId = valid.pages[0].id; selection.clear(); fit = true; } libraryId = null; closePageTools(); drag = null;
   commit(valid, { fromCloud: true }); render(); await renderCloud(); startCloudWatch();
 }
 async function renderCloud() {
@@ -397,7 +516,7 @@ $('#cloud-create').addEventListener('click', async () => {
   try {
     const result = await (await getCloudClient()).create({ kind: 'stencil-studio', title: parseDocument(requested).title || 'Untitled design', document: parseDocument(requested) });
     if (cloudGeneration !== generation || cloudSession) { await keepReturnedWorkspace(result, result.tokens.owner); return; }
-    if (serialiseDocument(history.current) !== requested) { cloudSession = { ...result, token: result.tokens.owner }; cloudBaseline = serialiseDocument(validateDocument(result.workspace.document)); cloudPending = null; await renderCloud(); startCloudWatch(); toast('Shared snapshot created. Newer local edits are retained and still need saving.'); }
+    if (Boolean(drag) || serialiseDocument(history.current) !== requested) { cloudSession = { ...result, token: result.tokens.owner }; cloudBaseline = serialiseDocument(validateDocument(result.workspace.document)); cloudPending = null; await renderCloud(); startCloudWatch(); toast('Shared snapshot created. Newer local edits are retained and still need saving.'); }
     else await openCloudSnapshot(result, result.tokens.owner);
   } catch (error) { if (cloudGeneration === generation) cloudError(error); } finally { $('#cloud-create').disabled = false; }
 });
@@ -406,14 +525,14 @@ $('#cloud-save').addEventListener('click', async () => {
   try {
     const result = await (await getCloudClient()).update({ id: session.workspace.id, token: session.token, baseRevision: session.workspace.revision, document: parseDocument(requested), title: parseDocument(requested).title || 'Untitled design' });
     if (cloudGeneration !== generation || cloudSession !== session) return;
-    if (serialiseDocument(history.current) !== requested) { cloudSession = { ...result, token: session.token, tokens: session.tokens }; cloudBaseline = serialiseDocument(validateDocument(result.workspace.document)); cloudPending = null; await renderCloud(); startCloudWatch(); toast('Shared snapshot saved. Newer local edits are retained and still need saving.'); }
+    if (Boolean(drag) || serialiseDocument(history.current) !== requested) { cloudSession = { ...result, token: session.token, tokens: session.tokens }; cloudBaseline = serialiseDocument(validateDocument(result.workspace.document)); cloudPending = null; await renderCloud(); startCloudWatch(); toast('Shared snapshot saved. Newer local edits are retained and still need saving.'); }
     else { await openCloudSnapshot({ ...result, tokens: session.tokens }, session.token); toast('Shared design saved to the server.'); }
   } catch (error) { if (cloudGeneration === generation && cloudSession === session) cloudError(error); } finally { $('#cloud-save').disabled = cloudSession?.role === 'view'; }
 });
 $('#cloud-refresh').addEventListener('click', async () => {
   const session = cloudSession, generation = cloudGeneration; if (!session) return; const before = serialiseDocument(history.current);
   if (cloudDirty() && !window.confirm('Replace your local edits with the current shared revision? Save a local JSON copy first if you need to keep them.')) return;
-  try { const snapshot = await (await getCloudClient()).open({ id: session.workspace.id, token: session.token }); if (cloudGeneration !== generation || cloudSession !== session) return; if (serialiseDocument(history.current) !== before && !window.confirm('You made new edits while refreshing. Replace those newer edits with the shared revision?')) { cloudPending = snapshot; $('#cloud-status').textContent = 'Refresh retained your newer local edits. The remote revision is available when you are ready.'; return; } await openCloudSnapshot({ ...snapshot, tokens: session.tokens }, session.token); } catch (error) { if (cloudGeneration === generation && cloudSession === session) cloudError(error); }
+  try { const snapshot = await (await getCloudClient()).open({ id: session.workspace.id, token: session.token }); if (cloudGeneration !== generation || cloudSession !== session) return; if ((Boolean(drag) || serialiseDocument(history.current) !== before) && !window.confirm('You made new edits while refreshing. Replace those newer edits with the shared revision?')) { cloudPending = snapshot; $('#cloud-status').textContent = 'Refresh retained your newer local edits. The remote revision is available when you are ready.'; return; } await openCloudSnapshot({ ...snapshot, tokens: session.tokens }, session.token); } catch (error) { if (cloudGeneration === generation && cloudSession === session) cloudError(error); }
 });
 $('#cloud-add-comment').addEventListener('click', async () => {
   const session = cloudSession, generation = cloudGeneration; if (!session) return;

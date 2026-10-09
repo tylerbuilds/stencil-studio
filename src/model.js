@@ -1,10 +1,12 @@
 /** Original, dependency-free design document model. All imports pass this schema. */
+import { TABLE_FIELDS, CHART_FIELDS, defaultsForDataElement, validateDataElementFields, renderDataElement } from './data-elements.js';
 export const SCHEMA = 'stencil-studio';
-export const VERSION = 2;
+export const VERSION = 3;
 export const FONTS = ['Arial', 'Georgia', 'Courier New'];
 export const MAX_DOCUMENT_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024 + 64;
-const TYPES = ['text', 'rect', 'circle', 'image'];
+const LEGACY_TYPES = ['text', 'rect', 'circle', 'image'];
+const TYPES = [...LEGACY_TYPES, 'table', 'chart'];
 const LEGACY_COMMON = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'opacity'];
 const COMMON = [...LEGACY_COMMON, 'locked', 'hidden', 'flipX', 'flipY', 'groupId'];
 const LEGACY_TEXT = ['text', 'fontFamily', 'fontSize', 'fontWeight', 'align'];
@@ -12,6 +14,8 @@ const TEXT = [...LEGACY_TEXT, 'lineHeight', 'letterSpacing'];
 const IMAGE = ['src', 'sourceWidth', 'sourceHeight', 'crop', 'filters'];
 const RECT = ['radius'];
 const STROKE = ['stroke', 'strokeWidth'];
+export const DEFAULT_GUIDE_SETTINGS = { visible: true, rulers: false, snapToGuides: true, snapToObjects: true, snapToPage: true, tolerance: 6 };
+const typeFields = (type, version = VERSION) => type === 'text' ? (version === 1 ? LEGACY_TEXT : TEXT) : type === 'image' ? (version === 1 ? ['src'] : IMAGE) : type === 'rect' ? RECT : type === 'table' && version >= 3 ? TABLE_FIELDS : type === 'chart' && version >= 3 ? CHART_FIELDS : [];
 export const DEFAULT_BRAND = { colours: ['#f6f1e7', '#e76543', '#232a27', '#c5d6c8', '#6852a1'], fontFamily: 'Arial' };
 export const PRESETS = [
   { key: 'poster', name: 'Poster', width: 720, height: 960 },
@@ -27,7 +31,16 @@ const clone = value => structuredClone(value);
 const byteLength = value => new TextEncoder().encode(value).byteLength;
 export const id = () => globalThis.crypto?.randomUUID?.() ?? `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
-const record = (value, name) => assert(value && typeof value === 'object' && !Array.isArray(value), `${name} must be an object.`);
+const record = (value, name) => {
+  assert(value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype, `${name} must be a plain object.`);
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  assert(Reflect.ownKeys(descriptors).every(key => typeof key === 'string' && descriptors[key].enumerable && Object.hasOwn(descriptors[key], 'value')), `${name} contains unsupported properties.`);
+};
+const array = (value, name, maximum, minimum = 0) => {
+  assert(Array.isArray(value) && Object.getPrototypeOf(value) === Array.prototype && value.length >= minimum && value.length <= maximum, `${name} needs between ${minimum} and ${maximum} entries.`);
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  assert(Reflect.ownKeys(descriptors).every(key => key === 'length' || typeof key === 'string' && /^(0|[1-9]\d*)$/.test(key) && Number(key) < value.length && descriptors[key].enumerable && Object.hasOwn(descriptors[key], 'value')) && Object.keys(value).length === value.length, `${name} must be a complete ordinary array.`);
+};
 const keys = (value, allowed, name) => assert(Object.keys(value).every(key => allowed.includes(key)), `${name} contains unsupported properties.`);
 const string = (value, name, max = 500) => assert(typeof value === 'string' && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value), `${name} must be valid text (up to ${max} characters).`);
 const numeric = (value, name, low, high) => assert(typeof value === 'number' && Number.isFinite(value) && value >= low && value <= high, `${name} must be between ${low} and ${high}.`);
@@ -39,36 +52,44 @@ function identifier(value, name, seen) {
 }
 function validateSchema(value, version) {
   record(value, 'Document');
-  keys(value, ['schema', 'version', 'title', 'pages', ...(version === 2 ? ['brand'] : [])], 'Document');
-  assert(value.schema === SCHEMA && value.version === version, 'Unsupported document format or version. Use a Stencil Studio v1 or v2 JSON file.');
+  keys(value, ['schema', 'version', 'title', 'pages', ...(version >= 2 ? ['brand'] : [])], 'Document');
+  assert(value.schema === SCHEMA && value.version === version, 'Unsupported document format or version. Use a Stencil Studio v1, v2 or v3 JSON file.');
   string(value.title, 'Document title', 150);
-  if (version === 2) {
+  if (version >= 2) {
     record(value.brand, 'Brand');
     keys(value.brand, ['colours', 'fontFamily'], 'Brand');
-    assert(Array.isArray(value.brand.colours) && value.brand.colours.length >= 1 && value.brand.colours.length <= 8, 'Brand needs between 1 and 8 colours.');
+    array(value.brand.colours, 'Brand colours', 8, 1);
     value.brand.colours.forEach(item => colour(item, 'Brand colour'));
     assert(new Set(value.brand.colours.map(item => item.toLowerCase())).size === value.brand.colours.length, 'Brand colours must be unique.');
     assert(FONTS.includes(value.brand.fontFamily), 'Unsupported brand font family.');
   }
-  assert(Array.isArray(value.pages) && value.pages.length > 0 && value.pages.length <= 30, 'Document needs between 1 and 30 pages.');
+  array(value.pages, 'Document pages', 30, 1);
   const seen = new Set();
   let total = 0;
   const groupPages = new Map();
   for (const page of value.pages) {
     record(page, 'Page');
-    keys(page, ['id', 'name', 'width', 'height', 'background', 'elements'], 'Page');
+    keys(page, ['id', 'name', 'width', 'height', 'background', 'elements', ...(version >= 3 ? ['transparentBackground', 'guides', 'guideSettings'] : [])], 'Page');
     identifier(page.id, 'Page ID', seen);
     string(page.name, 'Page name', 100);
     numeric(page.width, 'Artboard width', 64, 4096);
     numeric(page.height, 'Artboard height', 64, 4096);
     colour(page.background, 'Background');
-    assert(Array.isArray(page.elements) && page.elements.length <= 300, 'A page supports up to 300 elements.');
+    if (version >= 3) {
+      assert(typeof page.transparentBackground === 'boolean', 'Transparent background must be true or false.');
+      record(page.guideSettings, 'Guide settings'); keys(page.guideSettings, Object.keys(DEFAULT_GUIDE_SETTINGS), 'Guide settings');
+      for (const key of ['visible', 'rulers', 'snapToGuides', 'snapToObjects', 'snapToPage']) assert(typeof page.guideSettings[key] === 'boolean', `${key} must be true or false.`);
+      numeric(page.guideSettings.tolerance, 'Snap tolerance', 1, 30);
+      array(page.guides, 'Page guides', 40);
+      for (const guide of page.guides) { record(guide, 'Guide'); keys(guide, ['id', 'axis', 'position'], 'Guide'); identifier(guide.id, 'Guide ID', seen); assert(['x', 'y'].includes(guide.axis), 'Guide axis must be x or y.'); numeric(guide.position, 'Guide position', 0, guide.axis === 'x' ? page.width : page.height); }
+    }
+    array(page.elements, 'Page elements', 300);
     total += page.elements.length;
     assert(total <= 1000, 'A document supports up to 1000 elements.');
     for (const element of page.elements) {
       record(element, 'Element');
-      assert(TYPES.includes(element.type), 'Unsupported element type.');
-      keys(element, [...(version === 1 ? LEGACY_COMMON : COMMON), ...(element.type === 'text' ? (version === 1 ? LEGACY_TEXT : TEXT) : element.type === 'image' ? (version === 1 ? ['src'] : IMAGE) : element.type === 'rect' ? RECT : []), ...(version === 2 && ['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element');
+      assert((version >= 3 ? TYPES : LEGACY_TYPES).includes(element.type), 'Unsupported element type.');
+      keys(element, [...(version === 1 ? LEGACY_COMMON : COMMON), ...typeFields(element.type, version), ...(version >= 2 && ['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element');
       identifier(element.id, 'Element ID', seen);
       numeric(element.x, 'Element x', -8192, 8192);
       numeric(element.y, 'Element y', -8192, 8192);
@@ -77,7 +98,7 @@ function validateSchema(value, version) {
       numeric(element.rotation, 'Rotation', -360, 360);
       numeric(element.opacity, 'Opacity', 0, 1);
       colour(element.fill, 'Element colour');
-      if (version === 2) {
+      if (version >= 2) {
         for (const prop of ['locked', 'hidden', 'flipX', 'flipY']) assert(typeof element[prop] === 'boolean', `${prop} must be true or false.`);
         if (element.groupId !== null) {
           string(element.groupId, 'Group ID', 100);
@@ -96,7 +117,7 @@ function validateSchema(value, version) {
         numeric(element.fontSize, 'Font size', 4, 500);
         assert([400, 700].includes(element.fontWeight), 'Font weight must be 400 or 700.');
         assert(['left', 'center', 'right'].includes(element.align), 'Unsupported text alignment.');
-        if (version === 2) {
+        if (version >= 2) {
           numeric(element.lineHeight, 'Line height', .8, 3);
           numeric(element.letterSpacing, 'Letter spacing', -10, 100);
         }
@@ -104,7 +125,7 @@ function validateSchema(value, version) {
       if (element.type === 'rect') numeric(element.radius, 'Corner radius', 0, 4096);
       if (element.type === 'image') {
         assert(typeof element.src === 'string' && element.src.length <= MAX_IMAGE_BYTES && /^data:image\/(png|jpeg|webp|gif);base64,(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(element.src) && !element.src.endsWith(','), 'Images must be embedded PNG, JPEG, WebP or GIF data (up to 6 MB before encoding).');
-        if (version === 2) {
+        if (version >= 2) {
           numeric(element.sourceWidth, 'Source width', 1, 65535);
           numeric(element.sourceHeight, 'Source height', 1, 65535);
           record(element.crop, 'Image crop');
@@ -121,6 +142,7 @@ function validateSchema(value, version) {
           numeric(element.filters.blur, 'Blur', 0, 20);
         }
       }
+      if (['table', 'chart'].includes(element.type)) validateDataElementFields(element);
     }
   }
   for (const groupId of groupPages.keys()) assert(!seen.has(groupId), 'Group ID must not reuse a page or element identifier.');
@@ -128,13 +150,13 @@ function validateSchema(value, version) {
 }
 export function validateDocument(value) {
   record(value, 'Document');
-  assert(value.schema === SCHEMA && [1, VERSION].includes(value.version), 'Unsupported document format or version. Use a Stencil Studio v1 or v2 JSON file.');
+  assert(value.schema === SCHEMA && [1, 2, VERSION].includes(value.version), 'Unsupported document format or version. Use a Stencil Studio v1, v2 or v3 JSON file.');
   validateSchema(value, value.version);
-  if (value.version === 1) {
+  if (value.version < VERSION) {
     const migrated = clone(value);
     migrated.version = VERSION;
-    migrated.brand = clone(DEFAULT_BRAND);
-    for (const page of migrated.pages) page.elements = page.elements.map(element => createElement(element.type, element));
+    if (value.version === 1) migrated.brand = clone(DEFAULT_BRAND);
+    for (const page of migrated.pages) { if (value.version === 1) page.elements = page.elements.map(element => createElement(element.type, element)); page.transparentBackground = false; page.guides = []; page.guideSettings = clone(DEFAULT_GUIDE_SETTINGS); }
     validateSchema(migrated, VERSION);
     return migrated;
   }
@@ -150,12 +172,13 @@ export function serialiseDocument(value) { return JSON.stringify(validateDocumen
 export function createElement(type, patch = {}) {
   assert(TYPES.includes(type), 'Unsupported element type.');
   record(patch, 'Element patch');
-  keys(patch, [...COMMON, ...(type === 'text' ? TEXT : type === 'image' ? IMAGE : type === 'rect' ? RECT : []), ...(['rect', 'circle'].includes(type) ? STROKE : [])], 'Element patch');
+  keys(patch, [...COMMON, ...typeFields(type), ...(['rect', 'circle'].includes(type) ? STROKE : [])], 'Element patch');
   const element = { id: id(), type, x: 64, y: 64, width: type === 'text' ? 360 : 200, height: type === 'text' ? 130 : 200, rotation: 0, fill: '#e76543', opacity: 1, locked: false, hidden: false, flipX: false, flipY: false, groupId: null };
   if (type === 'text') Object.assign(element, { text: 'Your next big idea', fill: '#232a27', fontFamily: 'Arial', fontSize: 48, fontWeight: 700, align: 'left', lineHeight: 1.16, letterSpacing: 0 });
   if (type === 'rect') element.radius = 0;
   if (type === 'rect' || type === 'circle') Object.assign(element, { stroke: '#232a27', strokeWidth: 0 });
   if (type === 'image') Object.assign(element, { src: '', sourceWidth: patch.width ?? element.width, sourceHeight: patch.height ?? element.height, crop: { x: 0, y: 0, width: 1, height: 1 }, filters: { brightness: 1, contrast: 1, saturation: 1, grayscale: 0, blur: 0 } });
+  if (type === 'table' || type === 'chart') Object.assign(element, { width: 500, height: 300, fill: type === 'table' ? '#ffffff' : '#e76543' }, defaultsForDataElement(type));
   Object.assign(element, clone(patch));
   if (type === 'image') {
     element.crop = { x: 0, y: 0, width: 1, height: 1, ...patch.crop };
@@ -163,7 +186,7 @@ export function createElement(type, patch = {}) {
   }
   return element;
 }
-export function createPage(width = 720, height = 960) { return { id: id(), name: 'Untitled page', width, height, background: '#f6f1e7', elements: [] }; }
+export function createPage(width = 720, height = 960) { return { id: id(), name: 'Untitled page', width, height, background: '#f6f1e7', transparentBackground: false, guides: [], guideSettings: clone(DEFAULT_GUIDE_SETTINGS), elements: [] }; }
 export function createDocument() { return { schema: SCHEMA, version: VERSION, title: 'Untitled design', brand: clone(DEFAULT_BRAND), pages: [createPage()] }; }
 const text = (content, x, y, width, size, fill = '#232a27', other = {}) => createElement('text', { text: content, x, y, width, height: size * (content.split('\n').length * 1.18 + .25), fontSize: size, fill, ...other });
 const rect = (x, y, width, height, fill, radius = 0) => createElement('rect', { x, y, width, height, fill, radius });
@@ -231,7 +254,7 @@ function selectedElements(page, ids, expandGroups = false) {
 }
 function applyPatch(element, patch, blocked = false) {
   record(patch, 'Element patch');
-  keys(patch, [...COMMON, ...(element.type === 'text' ? TEXT : element.type === 'image' ? IMAGE : element.type === 'rect' ? RECT : []), ...(['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element patch');
+  keys(patch, [...COMMON, ...typeFields(element.type), ...(['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element patch');
   if (element.locked || blocked) {
     for (const prop of ['locked', 'hidden']) if (Object.hasOwn(patch, prop)) element[prop] = patch[prop];
     return;
@@ -285,9 +308,50 @@ export function duplicatePage(document, pageId) {
   const next = validateDocument(document), index = next.pages.findIndex(page => page.id === pageId);
   assert(index >= 0, 'Page not found.');
   const page = clone(next.pages[index]); page.id = id(); page.name += ' copy';
+  page.guides.forEach(guide => { guide.id = id(); });
   page.elements = remapElements(page.elements, 0);
   next.pages.splice(index + 1, 0, page);
   return validateDocument(next);
+}
+export function reorderPage(document, pageId, targetIndex) {
+  const next = validateDocument(document), index = next.pages.findIndex(page => page.id === pageId);
+  assert(index >= 0, 'Page not found.');
+  assert(Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < next.pages.length, 'Page position must be an existing page number.');
+  if (index !== targetIndex) { const [page] = next.pages.splice(index, 1); next.pages.splice(targetIndex, 0, page); }
+  return validateDocument(next);
+}
+export function addPageGuide(document, pageId, axis, position) { return editPage(document, pageId, page => { page.guides.push({ id: id(), axis, position }); }); }
+export function updatePageGuide(document, pageId, guideId, patch) {
+  record(patch, 'Guide change'); keys(patch, ['axis', 'position'], 'Guide change');
+  return editPage(document, pageId, page => { const guide = page.guides.find(item => item.id === guideId); assert(guide, 'Guide not found.'); Object.assign(guide, clone(patch)); });
+}
+export function removePageGuide(document, pageId, guideId) { return editPage(document, pageId, page => { assert(page.guides.some(guide => guide.id === guideId), 'Guide not found.'); page.guides = page.guides.filter(guide => guide.id !== guideId); }); }
+export function setPageGuideSettings(document, pageId, patch) {
+  record(patch, 'Guide settings change'); keys(patch, Object.keys(DEFAULT_GUIDE_SETTINGS), 'Guide settings change');
+  return editPage(document, pageId, page => { Object.assign(page.guideSettings, clone(patch)); });
+}
+export function resizePageDocument(document, pageId, width, height, scaleElements = false) {
+  numeric(width, 'Artboard width', 64, 4096); numeric(height, 'Artboard height', 64, 4096); assert(typeof scaleElements === 'boolean', 'Scale layout must be true or false.');
+  return editPage(document, pageId, page => {
+    const sx = width / page.width, sy = height / page.height, lockedGroups = new Set(page.elements.filter(element => element.locked && element.groupId).map(element => element.groupId));
+    if (scaleElements) page.elements.forEach(element => { if (element.locked || lockedGroups.has(element.groupId)) return; element.x *= sx; element.y *= sy; element.width *= sx; element.height *= sy; if (['text', 'table', 'chart'].includes(element.type)) element.fontSize = Math.max(4, Math.min(element.type === 'text' ? 500 : 100, element.fontSize * Math.min(sx, sy))); });
+    page.guides.forEach(guide => { const limit = guide.axis === 'x' ? width : height; guide.position = Math.min(limit, scaleElements ? guide.position * (guide.axis === 'x' ? sx : sy) : guide.position); });
+    page.width = width; page.height = height;
+  });
+}
+/** Screen-pixel snapping with independent sources; guides win equal-distance ties. */
+export function snapMovement(page, ids, dx, dy, zoom = 1) {
+  numeric(dx, 'Movement x', -16384, 16384); numeric(dy, 'Movement y', -16384, 16384); numeric(zoom, 'Zoom', .05, 3);
+  const p = validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [page] }).pages[0];
+  const elements = selectedElements(p, ids), b = boundsOfElements(elements), chosen = new Set(ids), targets = { x: [], y: [] };
+  const add = (axis, values, source) => values.forEach(value => targets[axis].push({ value, source }));
+  if (p.guideSettings.snapToGuides) p.guides.forEach(guide => add(guide.axis, [guide.position], 'guide'));
+  if (p.guideSettings.snapToPage) { add('x', [0, p.width / 2, p.width], 'page'); add('y', [0, p.height / 2, p.height], 'page'); }
+  if (p.guideSettings.snapToObjects) p.elements.filter(element => !chosen.has(element.id) && !element.hidden).forEach(element => { const r = elementBounds(element); add('x', [r.x, r.x + r.width / 2, r.x + r.width], 'object'); add('y', [r.y, r.y + r.height / 2, r.y + r.height], 'object'); });
+  const threshold = p.guideSettings.tolerance / zoom;
+  const closest = (points, values) => { let best = null; for (const target of values) for (const point of points) { const difference = target.value - point; if (Math.abs(difference) <= threshold && (!best || Math.abs(difference) < Math.abs(best.difference))) best = { difference, ...target }; } return best; };
+  const x = closest([b.x + dx, b.x + b.width / 2 + dx, b.x + b.width + dx], targets.x), y = closest([b.y + dy, b.y + b.height / 2 + dy, b.y + b.height + dy], targets.y);
+  return { dx: dx + (x?.difference ?? 0), dy: dy + (y?.difference ?? 0), guides: [...(x ? [{ axis: 'x', value: x.value, source: x.source }] : []), ...(y ? [{ axis: 'y', value: y.value, source: y.source }] : [])] };
 }
 function remapElements(elements, offset) {
   numeric(offset, 'Paste offset', -8192, 8192);
@@ -447,6 +511,7 @@ function renderElement(element, interactive = false) {
     inner = `<defs><clipPath id="${clipId}"><rect width="${e.width}" height="${e.height}"/></clipPath>${filter}</defs><g clip-path="url(#${clipId})"><g${filtered ? ` filter="url(#${filterId})"` : ''}><svg width="${e.width}" height="${e.height}" viewBox="${viewport}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><image width="${e.sourceWidth}" height="${e.sourceHeight}" href="${escapeXML(e.src)}" preserveAspectRatio="xMidYMid slice"/></svg></g></g>`;
     if (interactive) inner += `<rect width="${e.width}" height="${e.height}" fill="transparent"/>`;
   }
+  else if (e.type === 'table' || e.type === 'chart') { inner = renderDataElement(e, escapeXML); if (interactive) inner += `<rect width="${e.width}" height="${e.height}" fill="transparent"/>`; }
   else {
     const anchor = e.align === 'center' ? 'middle' : e.align === 'right' ? 'end' : 'start';
     const x = e.align === 'center' ? e.width / 2 : e.align === 'right' ? e.width : 0;
@@ -474,5 +539,6 @@ export function pageSVG(page, interactive = false) {
     content += renderElement(element, interactive);
   }
   if (currentGroup) content += '</g>';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design artboard" role="img"' : ''}><rect width="100%" height="100%" fill="${page.background}"/>${content}</svg>`;
+  const background = !page.transparentBackground || interactive ? `<rect width="100%" height="100%" fill="${page.transparentBackground ? 'transparent' : page.background}"/>` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design artboard" role="img"' : ''}>${background}${content}</svg>`;
 }

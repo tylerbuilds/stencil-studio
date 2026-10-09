@@ -1,9 +1,9 @@
 {
   "browser-current": {
     "proof_id": "browser-current",
-    "receipt_sha256": "4bcec8f32d73c3c126386efdeca41d71a58b342ddc632a243fa783b0b84c2b17",
-    "started_at_utc": "2026-10-09T22:57:26.271Z",
-    "finished_at_utc": "2026-10-09T22:57:43.362Z",
+    "receipt_sha256": "53d066efaa956706138d8b370c777435456f3809455c6af23d7bb6df0637f74f",
+    "started_at_utc": "2026-10-09T23:50:41.338Z",
+    "finished_at_utc": "2026-10-09T23:50:58.773Z",
     "overall_passed": true,
     "source_snapshot_matches_current": true,
     "checks": [
@@ -15,7 +15,7 @@
       {
         "name": "actual 0.1.0 editable design migrates strictly with original layers and embedded raster",
         "passed": true,
-        "ms": 93
+        "ms": 91
       },
       {
         "name": "group multi-selection, marquee across one member and keyboard nudge preserve spacing",
@@ -30,12 +30,12 @@
       {
         "name": "add-page undo leaves a live current page and subsequent editing persists",
         "passed": true,
-        "ms": 189
+        "ms": 190
       },
       {
         "name": "brand palette/font and named library copies remain independent across reload",
         "passed": true,
-        "ms": 510
+        "ms": 511
       },
       {
         "name": "raster crop and filters alter actual full-size native PNG pixels",
@@ -45,57 +45,57 @@
       {
         "name": "edge-connected colour removal downloads real transparent PNG and applies with undo",
         "passed": true,
-        "ms": 525
+        "ms": 358
       },
       {
         "name": "CSV bulk creates separate row pages and rejects malformed data without replacing design",
         "passed": true,
-        "ms": 302
+        "ms": 490
       },
       {
         "name": "presentation navigation and native multi-page PDF include both actual pages",
         "passed": true,
-        "ms": 358
+        "ms": 379
       },
       {
-        "name": "editable table and proportional chart create real grouped primitive layers",
+        "name": "editable table retains cells and chart renders bars in the real data ratio",
         "passed": true,
-        "ms": 295
+        "ms": 584
       },
       {
-        "name": "native v2 JSON roundtrip and invalid document import preserve rich content",
+        "name": "native v3 JSON roundtrip and invalid document import preserve rich content",
         "passed": true,
-        "ms": 98
+        "ms": 90
       },
       {
         "name": "video visual preview seeks through real red and blue scene frames",
         "passed": true,
-        "ms": 458
+        "ms": 412
       },
       {
         "name": "native browser video export encodes playable timestamped scene pixels and optional audio",
         "passed": true,
-        "ms": 4205
+        "ms": 4801
       },
       {
         "name": "cancelled video stops tracks and permits a fresh successful native export",
         "passed": true,
-        "ms": 2598
+        "ms": 2303
       },
       {
         "name": "optional AI unavailable state is clear and source design remains editable",
         "passed": true,
-        "ms": 4219
+        "ms": 4038
       },
       {
         "name": "mobile editor exposes library, elements, page controls and settled original poster",
         "passed": true,
-        "ms": 174
+        "ms": 183
       },
       {
         "name": "mobile layout has no document overflow",
         "passed": true,
-        "ms": 202
+        "ms": 201
       },
       {
         "name": "no uncaught browser errors or failed requests",
@@ -107,130 +107,136 @@
         "passed": true
       }
     ],
-    "qualification": "Current Linux Chrome run; only the named checks are qualified. Original authenticated product behaviour and macOS browser behaviour were not exercised."
+    "qualification": "Recorded next-wave Linux Chrome checks qualify their exact source snapshot only. Coordinator source freeze is confirmed for this comparison. Original authenticated product and macOS browser behaviour were not exercised."
   },
   "component-1": {
     "proof_id": "component-1",
-    "receipt_kind": "ai/live-summary.json",
-    "receipt_sha256": "22d737c3df75ea6daba8d48578339b6840530a530ff32a346b041f19be37993a",
+    "receipt_kind": "backend/verification-receipt.json",
+    "receipt_sha256": "341cf72eff6a039812cfd06cb8ef16ab44012a475c288a0639dd12ac862a1a8e",
     "overall_passed": null,
+    "recorded_pass_count": null,
     "checks": [],
     "case_observations": [],
     "native_media_summary": [],
-    "result": {
-      "text": "Product designer with six years of experience. Led an onboarding redesign reducing time to first value by 32%. Developed a design system for four product teams.",
-      "model": "fedora-vllm-qwen-coder"
-    },
+    "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualification": "Only isolated 0.3 worktree native data module and focused cloud document integration tests; no canonical edits",
     "qualified_feature_components": {},
     "all_qualified_feature_components_match": null,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": null,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-2": {
     "proof_id": "component-2",
-    "receipt_kind": "backend/verification-receipt.json",
-    "receipt_sha256": "cc287b5bc5422c0bef5723f3f1d43b22e91aa04ffd91eaa9c21cf6e744452acb",
+    "receipt_kind": "review/stencil/bootstrap-migration.json",
+    "receipt_sha256": "78c10845ddd4492f31c337f4548788a20ed65ed53bc2fd4137cf9279507874e5",
     "overall_passed": null,
+    "recorded_pass_count": 23,
     "checks": [],
     "case_observations": [],
     "native_media_summary": [],
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualification": "Actual app bootstrap/persist/recovery-download blocks run in Node VM with DOM/storage fixtures; UI renderer stubbed. Actual library mutation APIs tested directly. No browser or new raster proof.",
     "qualified_feature_components": {
-      "scripts/workspace-backend.mjs": true,
-      "src/cloud-client.mjs": false
+      "src/app.js": true,
+      "src/model.js": true,
+      "src/data-elements.js": true,
+      "src/library.js": true,
+      "src/migration-storage.js": true
     },
-    "all_qualified_feature_components_match": false,
-    "mismatched_recorded_source_files": [
-      "src/cloud-client.mjs",
-      "tests/workspace-backend.test.mjs"
-    ],
-    "all_compared_components_match": false,
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-3": {
     "proof_id": "component-3",
-    "receipt_kind": "review/backend/authority-edges.json",
-    "receipt_sha256": "2093b012d51a27baceda89b7c7b2271d3bfd4affb9a43b4a71d4bfdec83a76e7",
+    "receipt_kind": "review/stencil/clip-collision.json",
+    "receipt_sha256": "878492a5822360c5fb5f75365fb70e0cd92e95f3098198e66e0e31b196d32bac",
     "overall_passed": null,
+    "recorded_pass_count": null,
     "checks": [],
     "case_observations": [],
     "native_media_summary": [],
-    "result": "passed",
+    "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Actual optional backend through ephemeral loopback HTTP with real app validators and synthetic v1 fixtures; no browser or deployment proof. Tokens held in RAM only; evidence omits capability credentials.",
+    "qualification": "Validated model + JSON import/export roundtrip + emitted SVG ID inspection. No browser or raster visual claim.",
     "qualified_feature_components": {
-      "scripts/workspace-backend.mjs": true,
-      "src/cloud-client.mjs": false
+      "src/model.js": true,
+      "src/data-elements.js": false
     },
     "all_qualified_feature_components_match": false,
     "mismatched_recorded_source_files": [
-      "src/cloud-client.mjs"
+      "src/data-elements.js"
     ],
     "all_compared_components_match": false,
+    "binding_status": "earlier-source-observation; current qualification limited to matching components",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-4": {
     "proof_id": "component-4",
-    "receipt_kind": "review/stencil-cloud-async.json",
-    "receipt_sha256": "7758e6cf950d4a0d089a8ddaa6f71ef71b9eea9502a38d40a9fe3e27f77fc07d",
+    "receipt_kind": "review/stencil/cloud-drag.json",
+    "receipt_sha256": "c62fc77ab09e1d084f9a4fa0e4535cdb18c135ffdd2d706944b4ec8d5d4b4a03",
     "overall_passed": null,
-    "checks": [],
-    "case_observations": [
+    "recorded_pass_count": null,
+    "checks": [
       {
-        "operation": "create",
-        "newLocalWorkRetained": true
+        "name": "Remote watch keeps collaborator snapshot pending during an in-progress guide drag",
+        "passed": true
       },
       {
-        "operation": "save",
-        "newLocalWorkRetained": true
+        "name": "Pointer-up preserves the local guide edit without discarding the pending collaborator revision",
+        "passed": true
       },
       {
-        "operation": "refresh",
-        "newLocalWorkRetained": true
-      },
-      {
-        "operation": "disconnect during refresh",
-        "disconnectedRemains": true
-      },
-      {
-        "operation": "remote update during uncommitted focused title typing",
-        "newLocalWorkRetained": true,
-        "remotePending": true
+        "name": "Deliberately accepted shared snapshot cancels stale drag before pointer-up can change it",
+        "passed": true
       }
     ],
+    "case_observations": [],
     "native_media_summary": [],
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Actual app bootstrap/cloud snapshot and click handlers; DOM/rendering/network/polling stubbed with deferred protocol results",
+    "qualification": "Actual cloudDirty/watch/openSnapshot/commit/endDrag handlers with actual model/history and a validated guide drag preview, controlled remote callback and DOM/persistence stubs; no native pointer or network claim",
     "qualified_feature_components": {
-      "src/app.js": true
+      "src/app.js": true,
+      "src/model.js": true
     },
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-5": {
     "proof_id": "component-5",
-    "receipt_kind": "review/stencil-dialog-async.json",
-    "receipt_sha256": "17c6bf7bae596aa927274f7e3ce33f529571eae13e32df279cb8d6272de93415",
+    "receipt_kind": "review/stencil/commit-guide-drag.json",
+    "receipt_sha256": "2ab33f0db6f55698510bf00cbd76a0ab07bda339ee277bdf23ac18158e8bb7d4",
     "overall_passed": null,
+    "recorded_pass_count": null,
     "checks": [
       {
-        "name": "Closed/reopened dialog rejects stale prepared preview and progress, frees stale player, retains new player",
+        "name": "Actual Delete keyboard handler accepts the selected-layer deletion during a held guide preview",
         "passed": true
       },
       {
-        "name": "Closed/reopened AI rejects stale result without disabling current request cancel, accepts only current reviewed candidate",
+        "name": "Pointer-up after the accepted deletion cannot resurrect the deleted layer",
+        "passed": true
+      },
+      {
+        "name": "Accepted unrelated mutation cancels the old guide preview before pointer-up",
+        "passed": true
+      },
+      {
+        "name": "A normal guide pointer-up still accepts the validated preview as exactly one edit",
         "passed": true
       }
     ],
@@ -239,94 +245,35 @@
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Actual dialog click/close handlers; UI/module media/network responses stubbed and deferred, no browser/media inference claim",
-    "qualified_feature_components": {
-      "src/app.js": true
-    },
-    "all_qualified_feature_components_match": true,
+    "qualification": "Actual keydown/Delete/commit/endDrag source with real immutable model/history and validated guide previews; DOM/persist fixtures. No native pointer/browser/network claim.",
+    "qualified_feature_components": {},
+    "all_qualified_feature_components_match": null,
     "mismatched_recorded_source_files": [],
-    "all_compared_components_match": true,
+    "all_compared_components_match": null,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-6": {
     "proof_id": "component-6",
-    "receipt_kind": "review/stencil-exports/dataflow.json",
-    "receipt_sha256": "e8a437001cea9a880df82f2922c0637861b432fd72464397300bb36df056476f",
+    "receipt_kind": "review/stencil/corrupt-library.json",
+    "receipt_sha256": "df646109c80671edd0a2807a1e49c17e425e7b3628ac859e4fa5f35addcb50d5",
     "overall_passed": null,
-    "checks": [],
-    "case_observations": [],
-    "native_media_summary": [],
-    "result": null,
-    "url_annotation_count": null,
-    "artifact_sha256": null,
-    "qualification": "Independent source-function dataflow check; PDF uses generated JPEG fixtures. Browser canvas encoding remains the browser QA lane.",
-    "qualified_feature_components": {
-      "src/model.js": true,
-      "src/bulk.js": true,
-      "src/library.js": true,
-      "src/export.js": true
-    },
-    "all_qualified_feature_components_match": true,
-    "mismatched_recorded_source_files": [],
-    "all_compared_components_match": true,
-    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
-  },
-  "component-7": {
-    "proof_id": "component-7",
-    "receipt_kind": "review/stencil-exports/integration-recovery.json",
-    "receipt_sha256": "a1472c5b1064385382bd4b2235974d540c7e2be76df5acd7e7ad604521d918ac",
-    "overall_passed": null,
-    "checks": [],
-    "case_observations": [],
-    "native_media_summary": [],
-    "result": null,
-    "url_annotation_count": null,
-    "artifact_sha256": null,
-    "qualification": "Actual app bootstrap and storage/import/PDF handlers executed in Node VM; UI rendering stubbed, PDF JPEG rendering stubbed. This is not browser proof.",
-    "qualified_feature_components": {},
-    "all_qualified_feature_components_match": null,
-    "mismatched_recorded_source_files": [],
-    "all_compared_components_match": null,
-    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
-  },
-  "component-8": {
-    "proof_id": "component-8",
-    "receipt_kind": "review/stencil-exports/poppler-validation.json",
-    "receipt_sha256": "a15bcf53571ef2c690c8f2387b711702e510ed5f1ea61d443fd1f0f7229a641e",
-    "overall_passed": null,
-    "checks": [],
-    "case_observations": [],
-    "native_media_summary": [],
-    "result": null,
-    "url_annotation_count": null,
-    "artifact_sha256": null,
-    "qualification": "Independent Poppler 2-page PDF parse and raster decode; not browser-produced export",
-    "qualified_feature_components": {},
-    "all_qualified_feature_components_match": null,
-    "mismatched_recorded_source_files": [],
-    "all_compared_components_match": null,
-    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
-  },
-  "component-9": {
-    "proof_id": "component-9",
-    "receipt_kind": "review/ui/stencil-menu-handlers.json",
-    "receipt_sha256": "e25069eac8c9898fe438e21435807907a232ba2c503232f3cce0190a1740e93f",
-    "overall_passed": null,
+    "recorded_pass_count": null,
     "checks": [
       {
-        "name": "Only one menu remains open; action click closes it",
+        "name": "Mixed corrupt null+valid-v2 stored library blocks ordinary named save without changing raw data",
         "passed": true
       },
       {
-        "name": "Ordinary menu keys do not delete, move or clear the selected artboard layers",
+        "name": "Mixed corrupt null+valid-v2 stored library blocks default merge import without changing raw data",
         "passed": true
       },
       {
-        "name": "Escape closes the menu, stops propagation and restores summary focus",
+        "name": "Explicit validated replacement skips corrupt null and backs up exact valid-old-containing raw library before writing",
         "passed": true
       },
       {
-        "name": "Every relocated File/Tools/Download operation retains exactly one original dispatch ID",
+        "name": "Backup failure still blocks explicit replacement when corrupt library includes valid earlier-format design data",
         "passed": true
       }
     ],
@@ -335,20 +282,257 @@
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Actual menu and window keyboard handlers with DOM/event dispatch stubs; native details focus/layout separately belongs to QA",
+    "qualification": "Independent actual library API recovery case beyond all-null regression: a corrupt null record mixed with a valid committed-v2 document. No DOM/browser/network proof.",
     "qualified_feature_components": {
-      "src/app.js": true
+      "src/library.js": true,
+      "src/migration-storage.js": true,
+      "src/model.js": true
     },
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-7": {
+    "proof_id": "component-7",
+    "receipt_kind": "review/stencil/data-csv.json",
+    "receipt_sha256": "841b2d5be5a61cecb72076ffe4f2c0a02fcc779b19756f584d9966f792557d85",
+    "overall_passed": null,
+    "recorded_pass_count": 26,
+    "checks": [],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Independent valid-model\u2192nativeCSV serialise\u2192parse preservation checks; no browser UI claim.",
+    "qualified_feature_components": {
+      "src/data-csv.js": true,
+      "src/data-elements.js": true,
+      "src/model.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-8": {
+    "proof_id": "component-8",
+    "receipt_kind": "review/stencil/integration.json",
+    "receipt_sha256": "65497a1b0071edf7de3df0e85fd11280c91e69ee2c3c104f02a429af9662597a",
+    "overall_passed": null,
+    "recorded_pass_count": 7,
+    "checks": [],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Independent pure model/helper/library/bulk/timeline integration. No browser UI, new raster download or print proof.",
+    "qualified_feature_components": {
+      "src/model.js": true,
+      "src/data-elements.js": true,
+      "src/library.js": true,
+      "src/bulk.js": true,
+      "src/export.js": true,
+      "src/video.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-9": {
+    "proof_id": "component-9",
+    "receipt_kind": "review/stencil/migration.json",
+    "receipt_sha256": "d5db486300640530e5dc4976528afc13671e35b2a0ed2a66313564be3699d5bd",
+    "overall_passed": null,
+    "recorded_pass_count": null,
+    "checks": [],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Independent committed0.2 synthetic fixture migration; full old page fields and default visible SVG preserved exactly. Node source-function/library proof, no browser or new raster download proof.",
+    "qualified_feature_components": {
+      "src/model.js": true,
+      "src/data-elements.js": true,
+      "src/library.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
   "component-10": {
     "proof_id": "component-10",
+    "receipt_kind": "review/stencil/native-inspector.json",
+    "receipt_sha256": "6401381773171cf6769f829a4b3a65190a0ee3673db9a95114989a3f1cab6546",
+    "overall_passed": null,
+    "recorded_pass_count": null,
+    "checks": [
+      {
+        "name": "Native font inspector change applies the selected value",
+        "passed": true
+      },
+      {
+        "name": "Opening and applying retained data preserves the latest inspector font style",
+        "passed": true
+      },
+      {
+        "name": "A subsequent artboard height edit preserves the newly entered width",
+        "passed": true
+      },
+      {
+        "name": "Actual SVG export dispatch emits the current page with the correct type and page filename",
+        "passed": true
+      }
+    ],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Actual inspector change/Edit-data/Apply/artboard-dimension/SVG-dispatch source executed with actual immutable model/history in a Node VM. DOM renderer stubbed; unrelated callbacks stubbed; trusted literal element patches converted across VM realms. No browser/raster claim.",
+    "qualified_feature_components": {
+      "src/app.js": true,
+      "src/model.js": true,
+      "src/library.js": true,
+      "src/bulk.js": true,
+      "src/data-csv.js": true,
+      "src/data-elements.js": true,
+      "src/export.js": true,
+      "src/ai-client.js": true,
+      "src/migration-storage.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-11": {
+    "proof_id": "component-11",
+    "receipt_kind": "review/stencil/stale-guides.json",
+    "receipt_sha256": "2ec8e05bd43e77778e474459342982fe635ccc4f5459934bfc3e84dbcfb3f49b",
+    "overall_passed": null,
+    "recorded_pass_count": null,
+    "checks": [
+      {
+        "name": "Accepted delayed native document import closes the old page guide dialog",
+        "passed": true
+      },
+      {
+        "name": "A stale retained guide-position callback returns without throwing an exception",
+        "passed": true
+      },
+      {
+        "name": "A stale retained snap-setting callback cannot change the imported page",
+        "passed": true
+      },
+      {
+        "name": "The imported document remains open after stale guide events",
+        "passed": true
+      }
+    ],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Actual bootstrap/import/openGuides/renderGuideList/settings callbacks in Node VM with a deliberately delayed local file.text and DOM/storage fixtures; renderer stubbed. One trusted patch converted across VM realms to match a real browser single-realm model. No browser or network claim.",
+    "qualified_feature_components": {
+      "src/app.js": true,
+      "src/model.js": true,
+      "src/library.js": true,
+      "src/bulk.js": true,
+      "src/data-csv.js": true,
+      "src/data-elements.js": true,
+      "src/export.js": true,
+      "src/ai-client.js": true,
+      "src/migration-storage.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-12": {
+    "proof_id": "component-12",
+    "receipt_kind": "review/stencil/svg-xml.json",
+    "receipt_sha256": "6ba26cd26d1b4211b00ada5fca24f25cda15d2db3f3bd2dbb07c7a4b3e161b56",
+    "overall_passed": null,
+    "recorded_pass_count": null,
+    "checks": [],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Independent stdlib XML parser of actual emitted SVG; structural and local-reference checks only, no visual/raster/browser proof.",
+    "qualified_feature_components": {
+      "src/model.js": true,
+      "src/data-elements.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-13": {
+    "proof_id": "component-13",
+    "receipt_kind": "review/stencil/undo-guide-drag.json",
+    "receipt_sha256": "81909ffa4a2edf3e7739ac3200c7ee63c28761bba762d09e4245e1c1b8c1f9c6",
+    "overall_passed": null,
+    "recorded_pass_count": null,
+    "checks": [
+      {
+        "name": "Undo during a held guide drag retains the undone document after pointer-up",
+        "passed": true
+      },
+      {
+        "name": "Pointer-up cannot apply the stale guide preview after undo",
+        "passed": true
+      },
+      {
+        "name": "The redo branch survives pointer-up after cancelled guide drag",
+        "passed": true
+      },
+      {
+        "name": "Redo during a held guide drag retains the redone document after pointer-up",
+        "passed": true
+      },
+      {
+        "name": "Empty undo and redo histories cancel the preview without creating an edit",
+        "passed": true
+      }
+    ],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Actual undoRedo/commit/endDrag source with real immutable model/history and validated in-progress guide previews; DOM/persist stubs. No native pointer/browser/network claim.",
+    "qualified_feature_components": {},
+    "all_qualified_feature_components_match": null,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": null,
+    "binding_status": "scoped observation; consult recorded counts and component hashes",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-14": {
+    "proof_id": "component-14",
     "receipt_kind": "runtime/stencil-studio-cloud/receipt.json",
-    "receipt_sha256": "b991de39d3da2e0d7427ef4680f980334697d09f4deaaad0a6a832db8c7dfd21",
+    "receipt_sha256": "e479e9ec1ce8007f88f1b3f79b837c4f7c57c97cfe5c2994afb11df8f80e90cc",
     "overall_passed": true,
+    "recorded_pass_count": null,
     "checks": [
       {
         "name": "app renders without empty placeholder content",
@@ -360,6 +544,10 @@
       },
       {
         "name": "fresh editor/viewer contexts open actual shared content without private owner library",
+        "passed": true
+      },
+      {
+        "name": "actual native data alpha guides and reordered pages survive shared editor/viewer loading",
         "passed": true
       },
       {
@@ -404,7 +592,7 @@
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualification": "Retained independent receipt; only the listed checks/counts and source components are exported.",
     "qualified_feature_components": {
       "src/app.js": true,
       "src/cloud-client.mjs": true,
@@ -413,13 +601,129 @@
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
+    "binding_status": "current-component-bound-passing-receipt",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
-  "component-11": {
-    "proof_id": "component-11",
-    "receipt_kind": "runtime/stencil-studio-real-ai/receipt.json",
-    "receipt_sha256": "a88cd7fed073a03b3a9c36dafc7102841ed509889b2cd5ea39c3c35f2ec70f8e",
+  "component-15": {
+    "proof_id": "component-15",
+    "receipt_kind": "runtime/stencil-studio-layout-data/receipt.json",
+    "receipt_sha256": "3b6fb5157bfa4d61e2c7020ddf611693f04429bd5f28f6f1fd5d49e8fd65a9be",
     "overall_passed": true,
+    "recorded_pass_count": null,
+    "checks": [
+      {
+        "name": "app renders without empty placeholder content",
+        "passed": true
+      },
+      {
+        "name": "real saved v2 design migrates to v3 only after its exact bytes are backed up",
+        "passed": true
+      },
+      {
+        "name": "page order controls preserve the selected page identity and undo restores order",
+        "passed": true
+      },
+      {
+        "name": "persistent guides rulers and snapping settings can be set and guide positions re-edited",
+        "passed": true
+      },
+      {
+        "name": "actual pointer movement snaps a layer to a retained guide and Alt bypasses snapping",
+        "passed": true
+      },
+      {
+        "name": "ruler click adds a guide and guide line dragging persists its new position",
+        "passed": true
+      },
+      {
+        "name": "undo during held guide and layer gestures cancels previews before pointer-up",
+        "passed": true
+      },
+      {
+        "name": "Delete during a held guide gesture cannot resurrect the deleted layer on pointer-up",
+        "passed": true
+      },
+      {
+        "name": "transparent canvas PNG retains real alpha while JPEG explicitly flattens the page colour",
+        "passed": true
+      },
+      {
+        "name": "consecutive canvas dimension edits retain both dimensions and scale guides",
+        "passed": true
+      },
+      {
+        "name": "native table grid retains editable cells columns rows and styling after reload",
+        "passed": true
+      },
+      {
+        "name": "retained chart switches bar line and pie and re-edit updates real exported SVG",
+        "passed": true
+      },
+      {
+        "name": "invalid chart data cannot replace saved values and new source data roundtrips exactly",
+        "passed": true
+      },
+      {
+        "name": "imported multiline data and literal first-heading BOM survive CSV and unrelated edits",
+        "passed": true
+      },
+      {
+        "name": "leading blank lines in retained table and chart editors remain visible and editable",
+        "passed": true
+      },
+      {
+        "name": "delayed accepted imports close old guide and data editors before replacing page identities",
+        "passed": true
+      },
+      {
+        "name": "failed migration backup keeps original v2 bytes while edits remain exportable as v3",
+        "passed": true
+      },
+      {
+        "name": "mobile layout has no document overflow",
+        "passed": true
+      },
+      {
+        "name": "no uncaught browser errors or failed requests",
+        "passed": true
+      },
+      {
+        "name": "app source remained stable during verification",
+        "passed": true
+      }
+    ],
+    "case_observations": [],
+    "native_media_summary": [],
+    "result": null,
+    "url_annotation_count": null,
+    "artifact_sha256": null,
+    "qualification": "Retained independent receipt; only the listed checks/counts and source components are exported.",
+    "qualified_feature_components": {
+      "src/ai-client.js": true,
+      "src/app.js": true,
+      "src/bulk.js": true,
+      "src/cloud-client.mjs": true,
+      "src/data-csv.js": true,
+      "src/data-elements.js": true,
+      "src/export.js": true,
+      "src/image-tools.js": true,
+      "src/library.js": true,
+      "src/migration-storage.js": true,
+      "src/model.js": true,
+      "src/video.js": true
+    },
+    "all_qualified_feature_components_match": true,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "current-component-bound-passing-receipt",
+    "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
+  },
+  "component-16": {
+    "proof_id": "component-16",
+    "receipt_kind": "runtime/stencil-studio-real-ai/receipt.json",
+    "receipt_sha256": "2c99edee7e0e71bf722538e1002a957b1c0b45db93c85639ee2f0e1d447595e2",
+    "overall_passed": true,
+    "recorded_pass_count": null,
     "checks": [
       {
         "name": "app renders without empty placeholder content",
@@ -459,24 +763,24 @@
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualification": "Retained independent receipt; only the listed checks/counts and source components are exported.",
     "qualified_feature_components": {
       "src/ai-client.js": true,
       "src/app.js": true,
       "src/model.js": true
     },
     "all_qualified_feature_components_match": true,
-    "mismatched_recorded_source_files": [
-      "src/cloud-client.mjs"
-    ],
-    "all_compared_components_match": false,
+    "mismatched_recorded_source_files": [],
+    "all_compared_components_match": true,
+    "binding_status": "current-component-bound-passing-receipt",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
-  "component-12": {
-    "proof_id": "component-12",
+  "component-17": {
+    "proof_id": "component-17",
     "receipt_kind": "runtime/stencil-studio-ui-polish/receipt.json",
-    "receipt_sha256": "f7f9d3b6ffd3eac935ac9fdc1ae64d1e0b9e655f931dda4fdfec093610dba702",
+    "receipt_sha256": "0cc43be721f712e21e0edb1672f70a41bcae695f74d417e46f47da6646a302e4",
     "overall_passed": true,
+    "recorded_pass_count": null,
     "checks": [
       {
         "name": "app renders without empty placeholder content",
@@ -524,28 +828,33 @@
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualification": "Retained independent receipt; only the listed checks/counts and source components are exported.",
     "qualified_feature_components": {
       "src/ai-client.js": true,
       "src/app.js": true,
       "src/bulk.js": true,
       "src/cloud-client.mjs": true,
+      "src/data-csv.js": true,
+      "src/data-elements.js": true,
       "src/export.js": true,
       "src/image-tools.js": true,
       "src/library.js": true,
+      "src/migration-storage.js": true,
       "src/model.js": true,
       "src/video.js": true
     },
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
+    "binding_status": "current-component-bound-passing-receipt",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   },
-  "component-13": {
-    "proof_id": "component-13",
+  "component-18": {
+    "proof_id": "component-18",
     "receipt_kind": "runtime/stencil-video-native/receipt.json",
-    "receipt_sha256": "00c951f1a9ae6737a6cec40dbebcc7d659e7ecf5dfc8773508550dee59469bc5",
+    "receipt_sha256": "26bcd6c86d4f52ea465205d7542d699d6f18ebddc204dc573f9d042f7c1f8e13",
     "overall_passed": true,
+    "recorded_pass_count": null,
     "checks": [
       {
         "name": "native audio-video encode 1",
@@ -572,7 +881,7 @@
         "video": "vp8",
         "audio": "opus",
         "frames": 22,
-        "duration": 1.45,
+        "duration": 1.455,
         "firstPixel": [
           247,
           0,
@@ -583,7 +892,7 @@
           0,
           255
         ],
-        "audioRms": 0.2440565174144836
+        "audioRms": 0.24323587397943008
       },
       {
         "name": "native audio-video encode 2",
@@ -610,7 +919,7 @@
         "video": "vp8",
         "audio": "opus",
         "frames": 22,
-        "duration": 1.455,
+        "duration": 1.474,
         "firstPixel": [
           247,
           0,
@@ -621,7 +930,7 @@
           0,
           255
         ],
-        "audioRms": 0.24323587397943008
+        "audioRms": 0.24210791647885435
       },
       {
         "name": "cancel stops audio/video resources and allows fresh native retry",
@@ -662,13 +971,14 @@
     "result": null,
     "url_annotation_count": null,
     "artifact_sha256": null,
-    "qualification": "Retained independent component receipt; proof applies only to its original scope.",
+    "qualification": "Retained independent receipt; only the listed checks/counts and source components are exported.",
     "qualified_feature_components": {
       "src/video.js": true
     },
     "all_qualified_feature_components_match": true,
     "mismatched_recorded_source_files": [],
     "all_compared_components_match": true,
+    "binding_status": "current-component-bound-passing-receipt",
     "limitation": "Only the listed feature components bind this proof to current source. Mismatching recorded files outside that set retain their earlier snapshot; current complete UI binding is browser-current. Untested criteria, provider quality and deployment are not inferred."
   }
 }

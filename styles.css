@@ -271,3 +271,53 @@
   .header-actions { gap: 0; }
   .header-actions > .quiet-button, .action-menu > summary { padding-left: 4px; padding-right: 4px; }
 }
+
+/* Precision and retained data tools stay close to the canvas. */
+.canvas-mount { position: relative; }
+.canvas-mount.transparent-page { background-color: #fff; background-image: conic-gradient(#e9ece7 25%, #fff 0 50%, #e9ece7 0 75%, #fff 0); background-size: 20px 20px; }
+.canvas-ruler { position: absolute; overflow: hidden; cursor: crosshair; user-select: none; }
+.canvas-ruler rect { fill: #f8faf6; }
+.canvas-ruler line { stroke: #9da89e; stroke-width: 1; }
+.canvas-ruler text { fill: #4e5b52; font: 10px Arial, sans-serif; }
+.canvas-ruler:focus-visible { outline: 2px solid var(--accent); }
+.ruler-horizontal { top: -22px; left: 0; }
+.ruler-vertical { top: 0; left: -22px; }
+.manual-guide { cursor: move; }
+.guide-line { stroke: #c25436; stroke-width: 1; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+.guide-hit { stroke: transparent; stroke-width: 12; vector-effect: non-scaling-stroke; pointer-events: stroke; }
+.page-order { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+.page-order > span { display: block; border: 0; padding: 0; margin: 0 0 12px; }
+.page-order-input { display: flex; align-items: center; gap: 7px; }
+.page-order-input input { min-width: 0; width: 100%; }
+.page-order-input button { min-height: 36px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; font-size: 12px; }
+#table-dialog, #guides-dialog { width: min(720px, 94vw); max-width: 720px; max-height: 92dvh; overflow: auto; box-sizing: border-box; }
+#table-dialog p, #guides-dialog p, .data-csv-panel summary { font-size: 12px; }
+.data-grid { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 5px; }
+.data-grid table { border-collapse: collapse; width: 100%; }
+.data-grid th, .data-grid td { padding: 4px; text-align: left; font-size: 12px; }
+.data-grid th { background: #f0f2ed; font-weight: 600; }
+.data-grid input, .data-grid textarea { display: block; width: 100%; min-width: 110px; min-height: 36px; padding: 7px; box-sizing: border-box; font: 12px Arial, sans-serif; color: var(--ink); background: white; border: 1px solid var(--line); border-radius: 3px; }
+.data-grid button { min-width: 32px; min-height: 36px; color: #a74a32; font-size: 20px; }
+.data-structure-controls { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 16px; }
+.data-csv-panel { padding: 12px 0; margin-bottom: 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.data-csv-panel summary { cursor: pointer; min-height: 32px; line-height: 32px; }
+.data-csv-panel .property-field { margin-top: 12px; }
+.guide-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.guide-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
+.guide-add label { flex: 1 1 140px; min-width: 0; margin-bottom: 0; }
+.guide-add button { flex: 0 0 auto; min-height: 36px; }
+#guide-list { margin-top: 20px; }
+.guide-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 12px; }
+.guide-row > span { flex: 1 1 auto; }
+.guide-row label { flex: 0 1 110px; min-width: 0; }
+.guide-row input { min-height: 36px; width: 100%; padding: 7px; border: 1px solid var(--line); border-radius: 4px; box-sizing: border-box; font-size: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (max-width: 700px), (pointer: coarse) {
+  .data-grid input, .data-grid textarea, .data-grid button, .page-order-input button, .guide-row input, .guide-add button { min-height: 44px; }
+  .data-grid button { min-width: 44px; }
+  .data-csv-panel summary { min-height: 44px; line-height: 44px; }
+  .guide-options { grid-template-columns: minmax(0, 1fr); }
+  #table-dialog, #guides-dialog { padding: 28px 18px; }
+}
+
+.data-grid textarea { resize: vertical; line-height: 1.45; }

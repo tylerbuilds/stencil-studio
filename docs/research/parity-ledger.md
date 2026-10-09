@@ -1,5 +1,7 @@
 # Canva behaviour ledger
 
+This is the preserved 0.2 behaviour baseline. See the [next-wave delta](parity-next.md) for schema v3, page reordering, persistent guides, transparent artboards and retained data elements.
+
 Reviewed **9 October 2026**. This ledger compares a bounded set of publicly documented Canva free and premium behaviours with Stencil Studio's independently written local implementation. It does not claim complete Canva parity or recovered proprietary source.
 
 Official Help Center pages were read through public web retrieval. A documented behaviour is an observation about Canva's published guidance, not a receipt that its authenticated editor was exercised. [REA provenance](rea-provenance.md) and [sanitised findings](rea-findings.json) separately record the existing anonymous help-catalogue capture and public-homepage static analysis. No private Canva project, account, credential or asset catalogue forms part of this implementation.

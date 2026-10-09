@@ -42,6 +42,7 @@ export function bulkCreate(document, pageId, csv) {
   });
   const pages = parsed.rows.map((values, index) => {
     const page = structuredClone(base), groups = new Map(); page.id = id(); page.name = replace(page.name, values);
+    page.guides.forEach(guide => { guide.id = id(); });
     if (page.name === base.name) page.name = `${base.name.slice(0, 82)} · ${index + 1}`;
     page.elements.forEach(e => { e.id = id(); if (e.groupId) { if (!groups.has(e.groupId)) groups.set(e.groupId, id()); e.groupId = groups.get(e.groupId); } if (e.type === 'text') e.text = replace(e.text, values); });
     return page;
