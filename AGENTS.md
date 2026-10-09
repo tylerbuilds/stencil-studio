@@ -1,0 +1,5 @@
+# Stencil Studio
+
+Public MIT-licensed, local-first browser app for Linux and macOS. Investigate publicly observable Canva features using REA and build independently written behaviour. Record observation, inference and gaps in docs/research; do not claim recovered proprietary source or complete feature parity. Use original layouts, copy and assets. Keep credentials, private account data and raw authenticated captures out of this public repository. No telemetry or external calls in the product.
+
+Use Node.js 22.19+ or 24.11+. Runtime dependencies should remain empty. Entry points: index.html, styles.css, src/app.js. Build and static server scripts are maintained by the coordinating agent. Do not edit them without coordinating. Persist user state locally with validated, versioned imports and helpful errors. Write meaningful state tests with node:test. Run npm test and npm run build before handoff. The coordinator owns GitHub publication, cross-platform CI, browser checks and research receipts. Preserve other work.

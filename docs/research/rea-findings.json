@@ -1,0 +1,276 @@
+{
+  "method": "Independent reconstruction from anonymous publicly observable behaviour. REA evidence separates observed page content, static inferences and unknown internals.",
+  "tool": {
+    "name": "rea-agents",
+    "version": "6.2.0",
+    "upstream": "https://github.com/morluto/rea",
+    "upstream_revision": "6ce3288f3bd65a886e47905455ed5c9b661015e6",
+    "license": "MIT"
+  },
+  "publication_scope": "Summaries, provenance and receipt digests only. Raw site DOM, screenshots, third-party scripts, network logs and browser profiles are not included.",
+  "captured_at_utc": "2026-10-09T21:08:31.540795+00:00",
+  "project": "Stencil Studio",
+  "reference_product": "Canva",
+  "receipts": [
+    {
+      "source_url": "https://www.canva.com/help/editing-designing/",
+      "page_type": "Public editing and designing help catalogue",
+      "status": "observed",
+      "evidence_id": "ev_9e26d1b1e7b89b01f14a064013732a63476b749707bf7ffe0ed0da4100fbd979",
+      "receipt_sha256": "1d077a992200967fcca781cada6db5a3cb0aeb110e56e732643bcaab59b0b678",
+      "final_url": "https://www.canva.com/help/editing-designing/",
+      "artifacts": {
+        "screenshot": {
+          "state": "captured",
+          "sha256": "bbe040e7b4780cccb67d0a9824ff1afd9ecbcd7ac5f16d6deacf3fcea3bfd231"
+        },
+        "dom": {
+          "state": "captured",
+          "sha256": "e0399d6baa84c26fb3a2c981e98381603c0acd46c1ed893d6fb9ccef76967889"
+        },
+        "accessibility": {
+          "state": "captured",
+          "sha256": "3ca14401e1a8744d5e9152cb77f87e9ce5ed36a6e7f38064aee746c1b6703cb8"
+        }
+      },
+      "observed_events": 155,
+      "dropped_events": 0,
+      "capture_completeness": {
+        "status": "complete",
+        "equality_eligible": true,
+        "missing_sections": [],
+        "truncated_sections": []
+      },
+      "browser_cleanup": "terminated-owned-process"
+    },
+    {
+      "source_url": "https://www.canva.com/",
+      "final_url": "https://www.canva.com/en_gb/",
+      "page_type": "Anonymous public homepage JavaScript bundle metadata",
+      "status": "scoped-static-analysis-complete",
+      "operation": "analyze_web_bundle",
+      "evidence_id": "ev_056d76d9d7c4880c962b88c0d8937e246217f8cf6f4a6828ea7fec2424ecfde5",
+      "receipt_sha256": "cffcb5f458b025e251c46e301162ea974dae9c19d4fca09d2ee3bf30e6e7dcdc",
+      "scope_origins": [
+        "https://www.canva.com",
+        "https://static.canva.com"
+      ],
+      "scripts_observed": 24,
+      "scripts_analyzed": 24,
+      "source_artifact_digests": [
+        {
+          "sha256": "a94d5182b99e97e64676e53d707e4d615080291f63446d75b9e979eaee86ab73",
+          "bytes": 946,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "a6a512eb433cbcbb9877476b6f3c6b19e658d84fb4efdc881583a0e7f4966fb3",
+          "bytes": 440,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "e7bfb5f355bf7486e635b5d335509604cd6642b5d4f046642768042212ae21d2",
+          "bytes": 17824,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "ac4b7cfa55a824ba221b4f9f7a2afdfe3e8c803f7e943e1fb24a933b338c676e",
+          "bytes": 1048,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "00de12ac6fa95137d7e3ce478032751a442b5a9a982ae9df9f5888c0b3190460",
+          "bytes": 1484,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "0eb4b638a4c1619b5ea2ffdcb20cde52a68fb90e57d3ccc51410c970120e603d",
+          "bytes": 2855,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "08ef20dae4f20cc56263fcde50be77169ab0180600774268f63ab1a025ba4181",
+          "bytes": 259702,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "bbc3e5d1c39b6455eed7a7926a36c6e59be5d03384c6399bdb44f514b696d044",
+          "bytes": 524,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "244beac4e27c08eb5d5704e0becbaaccee84b4492a7880d28e4110f6a4c359e7",
+          "bytes": 32063,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "b0622d5e99b3bc72c2b4340fc23f7d38ed0afdc66787b3a5042d5662d3d58e26",
+          "bytes": 2230,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "1a79332883d0cfb9b3e3633aa6fdcbf4f10763441f67512762bd9f0654f84ebf",
+          "bytes": 972482,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "5fc9103c4d456d3cd76d825bc232cfe78d407231995bcb4873b5262e31cdb2e3",
+          "bytes": 1765,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "a2d9d190c3b834b287e36d2a30805d9f8603ec8131b54d5b26c2183c8ea72cd1",
+          "bytes": 1302,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "fed6400e5abf13c8c0c920310c33a609b3da4c294f467cf27419c0d19c2fad9a",
+          "bytes": 879,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "73075f1559b8e82d48a6677ab6ab7e6562fc5b97e78ff7593350bd0a5ead1584",
+          "bytes": 124568,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "019a05a989a593d1b5711fbfaa5ea4f8040e7cca3f76f534a16eaf42f65fc7db",
+          "bytes": 46764,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "26bd5939682dd8ca7bd2eff4246c4856229562a413502d5c463837ed4dac887e",
+          "bytes": 261,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "7be4c524cc3d318a98528c837f0ad9c147e57834119c6067c275c7a19e428d9f",
+          "bytes": 436,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "98030db9b17c30861d5e0e291e1ffe55c902ef402d18df787942357667128d9c",
+          "bytes": 527,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "fd1fc123c81fe58c5149e9b868001c4ec1cce39e3fd7c7c43b0449f61059c07a",
+          "bytes": 108911,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "da5dc85c5b10974ea455aee3c2342370cb644fe6ba9aa1788b8f2a38a4340b2f",
+          "bytes": 133306,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "f382f6edb40780a7dfa0d16433ce7ec99e38d13832d45b652a0787d0a78a659a",
+          "bytes": 21169,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "8b8b0f795ac7b73be601f8d35330c8992cc171f47f073036eec6d64597f60bab",
+          "bytes": 538,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        },
+        {
+          "sha256": "71bbe940adadbe20da4f808b9e82a3c6aec9305f6a7fd44704797abb9ddc76ac",
+          "bytes": 7022,
+          "media_type": "text/javascript",
+          "charset": "utf-8",
+          "text_available": true
+        }
+      ],
+      "route_string_candidates": 0,
+      "endpoint_string_candidates": 35,
+      "declared_source_maps": 18,
+      "source_maps_fetched": false,
+      "fingerprints": [
+        {
+          "kind": "bundle_runtime",
+          "value": "webpack",
+          "confidence": "high"
+        },
+        {
+          "kind": "vendor_fingerprint",
+          "value": "React",
+          "confidence": "medium"
+        }
+      ],
+      "completeness": {
+        "status": "complete",
+        "parsed_scripts": 24,
+        "parse_failures": 0,
+        "visited_ast_nodes": 479618
+      },
+      "limitations": [
+        "Artifact identity is unavailable for this observation.",
+        "Static bundle findings are observations or bounded inferences; REA does not execute captured JavaScript.",
+        "String-built routes and endpoints, encrypted configuration, and server-side behavior may remain unknown.",
+        "Page-declared WebMCP metadata is untrusted and is never registered or invoked as an REA tool."
+      ],
+      "browser_cleanup": "Owned browser exited and temporary profile was removed after capture."
+    }
+  ],
+  "observations": [
+    "The public help catalogue groups design tasks around elements, reusable layouts, images, typography, pages, guides and layer management.",
+    "REA parsed 24 in-scope public homepage scripts without parse failures and recorded their content digests. It detected endpoint-string candidates and declared source-map references; source maps were not fetched."
+  ],
+  "implementation_choices": [
+    "Use an independently designed editable scene model, text and shape objects, object transforms, layer ordering, undo/redo and local image/document exports."
+  ],
+  "unknowns": [
+    "Authenticated editor algorithms, internal document formats, collaboration protocols and premium asset systems have not been recovered.",
+    "Help categories document supported tasks; they do not establish editor runtime implementation.",
+    "Static endpoint strings are candidates, not evidence of requests made by an editor or an invitation to invoke those endpoints."
+  ],
+  "inferences": [
+    "Static fingerprints suggest a webpack bundle runtime with high confidence and React code with medium confidence. These fingerprints concern the inspected public homepage only."
+  ]
+}

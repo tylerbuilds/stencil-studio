@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#232a27">
+  <meta name="description" content="An independent local-first graphic design studio. Make posters, social graphics and cards in your browser.">
+  <title>Stencil Studio · Make something yours</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 40 40%27%3E%3Crect width=%2740%27 height=%2740%27 rx=%279%27 fill=%27%23232a27%27/%3E%3Ctext x=%2720%27 y=%2730%27 fill=%27%23f6f1e7%27 font-size=%2733%27 font-family=%27Georgia%27 text-anchor=%27middle%27%3Es%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Stencil Studio home"><span class="brand-mark" aria-hidden="true">s<span>.</span></span><span>stencil<span class="brand-studio">studio</span></span></a>
+    <div class="document-heading"><input id="document-title" aria-label="Design title" maxlength="150" value="Make some noise"><span id="save-status" class="save-status">Saved on this device</span></div>
+    <div class="header-actions"><button id="undo" class="icon-button" aria-label="Undo" title="Undo (Ctrl / Cmd + Z)">↶</button><button id="redo" class="icon-button" aria-label="Redo" title="Redo (Ctrl / Cmd + Shift + Z)">↷</button><span class="divider"></span><button id="import-document" class="quiet-button">Open JSON</button><button id="save-document" class="quiet-button">Save JSON</button><div class="export-actions"><button id="export-svg" class="quiet-button">SVG ↓</button><button id="export-png" class="primary-button">Download PNG <span aria-hidden="true">↗</span></button></div></div>
+  </header>
+  <main class="studio">
+    <aside class="library" aria-label="Design library">
+      <div class="section-heading"><span class="eyebrow">YOUR CREATIVE TOOLBOX</span><span class="pill">LOCAL</span></div>
+      <h1>Make something<br><span>yours.</span></h1><p class="intro">A blank canvas, a good idea,<br>and a little room to play.</p>
+      <div class="sidebar-tabs" role="tablist" aria-label="Library"><button id="templates-tab" role="tab" aria-selected="true" aria-controls="templates-panel">Templates</button><button id="elements-tab" role="tab" aria-selected="false" aria-controls="elements-panel">Elements</button></div>
+      <section id="templates-panel" role="tabpanel" aria-labelledby="templates-tab"><div id="templates" class="templates"></div><button id="blank-design" class="blank-design">＋ Start with a blank canvas</button><p class="sidebar-note">Original designs. Fully editable.<br>Templates open as a new design.</p></section>
+      <section id="elements-panel" role="tabpanel" aria-labelledby="elements-tab" hidden><p class="panel-hint">Build it, one piece at a time.</p><div class="element-buttons"><button id="add-text"><span class="tool-glyph text-glyph">Aa</span><strong>Text</strong><small>Say something</small></button><button id="add-rectangle"><span class="tool-glyph rectangle-glyph"></span><strong>Rectangle</strong><small>Give it structure</small></button><button id="add-circle"><span class="tool-glyph circle-glyph"></span><strong>Circle</strong><small>Round things off</small></button><button id="upload-image"><span class="tool-glyph">↥</span><strong>Image</strong><small>From your device</small></button></div><p class="sidebar-note">PNG, JPEG, WebP or GIF · up to 6 MB.<br>Your images stay in your browser.</p></section>
+      <div class="library-footer"><span class="local-dot"></span><div><strong>Your space. Your work.</strong><span>No account. No tracking.</span></div><button id="shortcuts" aria-label="Show keyboard shortcuts">?</button></div>
+    </aside>
+    <section class="workspace" aria-label="Design workspace">
+      <div class="workspace-top"><div><span class="canvas-dot"></span><strong id="page-name-display">The poster</strong><span id="canvas-size" class="muted"></span></div><span class="workspace-hint">Select • move • make it yours</span></div>
+      <div id="canvas-area" class="canvas-area"><div id="canvas-mount" class="canvas-mount"></div></div>
+      <div class="workspace-bottom"><div id="pages" class="pages" aria-label="Design pages"></div><button id="add-page" class="add-page" aria-label="Add blank page" title="Add blank page">＋</button><div class="zoom-tools"><button id="fit-canvas" title="Fit to workspace">Fit</button><button id="zoom-out" aria-label="Zoom out">−</button><span id="zoom-value">50%</span><button id="zoom-in" aria-label="Zoom in">＋</button></div></div>
+    </section>
+    <aside class="inspector" aria-label="Properties and layers">
+      <div class="inspector-heading"><span class="eyebrow">THE FINISHING TOUCHES</span><h2 id="inspector-heading">Artboard</h2></div>
+      <div id="properties"></div>
+      <section class="layers-section"><div class="layers-heading"><h3>Layers</h3><span id="layer-count" class="muted"></span></div><p class="panel-hint">Top of the list = front of the design.</p><div id="layers" class="layers"></div></section>
+      <section class="page-actions"><button id="duplicate-page" class="quiet-button">Duplicate page</button><button id="delete-page" class="quiet-button danger">Delete page</button></section>
+    </aside>
+  </main>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="shortcuts-dialog"><button id="close-shortcuts" class="dialog-close" aria-label="Close shortcuts">×</button><span class="eyebrow">A LITTLE FASTER</span><h2>Keyboard shortcuts</h2><dl><dt>Move selection</dt><dd>Arrow keys</dd><dt>Move by 10 pixels</dt><dd>Shift + arrows</dd><dt>Delete selection</dt><dd>Delete / Backspace</dd><dt>Undo</dt><dd>Ctrl / Cmd + Z</dd><dt>Redo</dt><dd>Ctrl / Cmd + Shift + Z</dd><dt>Deselect</dt><dd>Escape</dd></dl><p>Drag the corner handles to resize. Use the inspector for precise dimensions and rotation.</p></dialog>
+  <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+  <input type="file" id="document-input" accept=".json,application/json" hidden>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

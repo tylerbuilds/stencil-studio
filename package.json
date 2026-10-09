@@ -1,0 +1,22 @@
+{
+  "name": "stencil-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An original local-first graphic design studio",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs --port 4202",
+    "start": "node scripts/serve.mjs --port 4202",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs --dir dist --port 4202",
+    "test": "node --test",
+    "test:browser": "node scripts/browser-smoke.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}
