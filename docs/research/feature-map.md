@@ -1,16 +1,16 @@
 # Initial Canva feature study (v0.1.0)
 
-This document preserves the first release scope. The expanded free and premium workflow study is maintained in the [current parity ledger](parity-ledger.md), with its own source, implementation and verification distinctions. The initial gaps below are historical rather than a list of every capability currently delivered.
+This is the first release’s feature study. The [expanded behaviour ledger](parity-ledger.md) covers the later free and premium study. The gaps below describe the first release, not everything missing from the current app.
 
-Research date: **9 October 2026**. Source: publicly accessible official Canva Help Center pages. This is a bounded behavioural feature study; it does not inspect private account data, bypass access controls, reproduce proprietary assets or recover Canva source code.
+Research date: **9 October 2026**. Source: publicly accessible official Canva Help Center pages. This study covers public behaviour only. It does not inspect private accounts, bypass access controls, copy proprietary assets or recover Canva source code.
 
 ## Distinguish observations from implementation choices
 
-An **observation** below means a capability described in public documentation. It does not prove that the authenticated product was exercised. The **initial scope** column records Stencil Studio's independent implementation contract; runtime checks and platform receipts are recorded separately. **Gaps** describe work outside this release. Proposed behaviour is an implementation choice, not evidence of Canva's internal architecture.
+An **observation** is a feature described in public documentation, not proof that it was tested in Canva’s signed-in editor. **Initial scope** says what Stencil planned to build; browser and platform results are separate. **Gaps** are features outside that release. Stencil’s design choices do not reveal Canva’s internal architecture.
 
-Canva's [editing and designing help index](https://www.canva.com/help/editing-designing/) groups templates, elements, images, text, page settings and layers. That public organisation informed this small editor's feature study; its interface, template artwork and state format are original.
+Canva’s [editing and designing help index](https://www.canva.com/help/editing-designing/) groups templates, elements, images, text, page settings and layers. Those public categories informed the study. Stencil’s interface, templates and file format are original.
 
-The companion toolkit is [REA](https://github.com/morluto/rea), with the coordinating investigation pinned to `6ce3288`. REA supports evidence-oriented inspection of application and website behaviour. This map itself records public documentation research; [REA investigation provenance](rea-provenance.md) records the tool-specific scope. Any REA execution, browser observations, failures and limitations require their own verification receipts.
+The companion toolkit is [REA](https://github.com/morluto/rea), with the coordinating investigation pinned to `6ce3288`. REA can inspect app and website behaviour. This map records public documentation; [REA research notes](rea-provenance.md) explain how the tool was used. REA runs, browser observations, failures and limits need their own recorded checks.
 
 | Feature | Public observation and source | Stencil Studio initial scope | Gaps |
 | --- | --- | --- | --- |
@@ -27,14 +27,14 @@ The companion toolkit is [REA](https://github.com/morluto/rea), with the coordin
 
 ## Record the inferences and boundaries
 
-The implementation uses a document containing pages, each with an artboard and an ordered collection of elements. The browser renders and edits this state locally. This is a design decision for Stencil Studio; the research makes no claim about Canva's document model, renderer, APIs, persistence implementation or source code.
+Stencil stores a design as pages, each with a canvas and ordered layers. The browser draws and edits them locally. That is Stencil’s own design choice; it does not describe Canva’s document model, renderer, APIs, storage or source code.
 
-Keeping fonts local avoids an external dependency but can change text appearance across Linux and macOS. Local browser persistence avoids a service dependency but requires JSON export for transfer or backup. Exporting an imported image as part of an SVG does not turn that raster image into a vector image. Large artboards and images remain subject to browser memory and storage limits.
+System fonts can look different on Linux and macOS. Designs save in the browser; download JSON to back them up or move them elsewhere. An image inside an SVG is still an image, not converted vector artwork. Large canvases and images can exceed the browser’s memory or storage.
 
-The initial product deliberately keeps the work local: no backend, tracking, accounts, network asset fetches or proprietary catalogue content. Research documents belong in this public repository only when they are safe to publish. Raw authenticated captures, credentials and private designs do not.
+The first release kept work local, with no backend, tracking, accounts, remote assets or proprietary catalogue. Public research belongs in this repository; private account captures, credentials and designs do not.
 
 ## Verify independently written behaviour
 
-Before claiming a feature works, record a reproducible check of that feature in Stencil Studio. The minimum functional path is: choose a template, add/edit each element type, drag and nudge an element, change the artboard, reorder/delete layers, add/duplicate/switch/delete pages, undo/redo, reload a saved design, reject invalid JSON without losing the current document, round-trip valid JSON, and open SVG/PNG exports of the current page.
+Before describing a feature as working, record how it was checked. Cover templates, each element type, dragging and keyboard movement, canvas changes, layer and page order, deletion, Undo/Redo, saving and reloading, invalid JSON rejection, valid JSON export/import and opening SVG/PNG downloads.
 
-Run `npm test` for state behaviour and `npm run build` for the static package. Browser execution and OS-specific CI are separate evidence. This feature map is a source and scope record, not a substitute for those receipts. Native Linux/macOS desktop packaging and complete Canva parity are outside the initial release.
+Run `npm test` for state behaviour and `npm run build` for the static package. Browser runs and platform CI need separate results. This feature map records sources and scope; it does not replace those checks. Native desktop packages and full Canva parity were outside the first release.

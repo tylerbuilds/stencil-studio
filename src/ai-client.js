@@ -12,7 +12,7 @@ export async function generateWriting(request, {signal}={}) {
     method:'POST',headers:{'Content-Type':'application/json','X-Local-Workspace':'1'},body:JSON.stringify(request),signal:signal ? AbortSignal.any([signal,AbortSignal.timeout(100000)]) : AbortSignal.timeout(100000)
   });
   let result;
-  try { result=await response.json(); } catch { throw new Error('AI is available through a configured local server. Your text has not changed.'); }
-  if(!response.ok || typeof result.text!=='string') throw new Error(result.error || 'Generation did not return usable text.');
+  try { result=await response.json(); } catch { throw new Error("The AI service returned an unreadable response. Your text has not changed."); }
+  if(!response.ok || typeof result.text!=='string') throw new Error(result.error || "The AI service did not return usable text.");
   return {text:result.text,model:result.model};
 }

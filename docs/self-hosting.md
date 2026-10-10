@@ -1,18 +1,18 @@
-# Optional AI and shared designs
+# Set up sharing and AI writing
 
-Run `npm ci`, then `npm start`. Local design editing, colour-key image editing, PDF/image exports and browser-supported scene video exports work without an external provider. The GitHub Pages demo does not provide an AI or collaboration server.
+Run `npm ci`, then `npm start` to use Stencil on your computer. Design tools, image adjustments and downloads work without another service. Sharing and AI writing need the server settings below; they are unavailable on the GitHub Pages demo.
 
-Enable the persistent shared workspace service with a private directory outside the repository and static build:
+To enable sharing, choose a private folder outside the project:
 
 ```sh
 npm start -- --data-dir /absolute/private/stencil-data
 ```
 
-Create uploads the current design. Owner, editor and viewer links use separate access tokens in URL fragments. Revocation invalidates old links; re-enabling creates new links. Comments, revisions and permission changes persist to disk. Watch polls real server state. Conflicts retain local edits for explicit recovery. Browser save files and downloaded design JSON do not contain collaboration tokens.
+Create a shared design to upload the current design. Owner, editor and viewer links have separate access tokens in the part of the URL after `#`. Revoking access stops old links working; enabling it again creates new links. Designs, comments, saved versions and permissions are stored on disk. The editor checks for updates; if someone saves before you, it keeps your edits and asks you to refresh. Access tokens are not included in browser save files or downloaded JSON.
 
-The server binds to `127.0.0.1` by default. A deliberate remote deployment requires an HTTPS reverse proxy, an explicit `--public-origin https://your-app.example` and an operator-managed access layer. This service provides capability-link permissions; it does not provide OAuth identities, enterprise SSO, team billing or a managed cloud account. Back up the private directory independently. A single-writer lock prevents competing servers. After a crash, confirm the recorded process is dead before removing its lock.
+The server uses `127.0.0.1` by default, so it is available only on your computer. To share it remotely, use an HTTPS reverse proxy, set `--public-origin https://your-app.example` and add an access layer you control. Anyone with a link can use its permission. There are no OAuth accounts, enterprise SSO or team billing. Back up the private directory separately. A lock stops two servers writing at once; after a crash, check that the recorded process has stopped before removing its lock.
 
-For real writing assistance, configure an OpenAI-compatible chat-completions provider using a native environment or private file outside the repository:
+To enable AI writing, configure an OpenAI-compatible chat-completions service through your environment or a private file outside the repository:
 
 ```sh
 npm start -- --ai-env-file /absolute/private/ai.env \
@@ -20,6 +20,6 @@ npm start -- --ai-env-file /absolute/private/ai.env \
   --data-dir /absolute/private/stencil-data
 ```
 
-Supported keys are `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` and existing native `FEDORA_VLLM_API_KEY`/`VLLM_API_KEY`. Remote providers require HTTPS. Only the source/context visible in the AI dialog is sent when Generate is clicked. Review the returned copy before Apply; Undo remains available. Design plans are written advice. No AI image/video generation or semantic segmentation provider is included.
+Supported keys are `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` and the existing `FEDORA_VLLM_API_KEY`/`VLLM_API_KEY`. Remote services require HTTPS. Choosing Write a draft sends only the text and direction shown in the AI window. Read or edit the result before applying it; Undo brings the earlier text back. Design ideas are suggestions, not finished layouts. This setup does not provide AI images, video generation or subject-aware background removal.
 
-Colour-key removal edits real pixels connected to an image edge (or all matching pixels when selected), using your chosen colour and tolerance. It preserves enclosed matching subject pixels in edge mode and supports up to four million decoded pixels. It does not identify a subject with an AI model. Video export records real local canvas frames and optional uploaded audio, subject to browser codec support; see [video.md](video.md).
+Remove a background colour uses the chosen colour and tolerance, starting at the image edges. Matching areas enclosed inside the subject stay intact in edge mode. The tool supports up to four million decoded pixels and does not detect the subject with AI. Video export records the canvas with optional local audio, using the formats your browser supports. See [making a video](video.md).

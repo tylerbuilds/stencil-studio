@@ -244,10 +244,11 @@
   .topbar .brand { font-size: 23px; min-width: 0; gap: 9px; }
   .document-heading input { font-size: 12px; }
   .save-status { font-size: 10px; }
-  .header-actions { justify-content: space-between; gap: 3px; }
+  .header-actions { justify-content: space-between; gap: 3px; position: relative; }
   .header-actions > .quiet-button, .action-menu > summary { min-width: 44px; padding: 0 8px; }
   .action-menu > summary > span { display: none; }
-  .action-menu:not(.download-menu) .action-menu-panel { left: 50%; right: auto; transform: translateX(-50%); }
+  .action-menu { position: static; }
+  .action-menu .action-menu-panel { left: 0; right: auto; transform: none; }
   .studio { height: auto; }
   .editing-toolbar { padding: 7px 10px; gap: 6px; }
   .editing-toolbar span { display: none; }

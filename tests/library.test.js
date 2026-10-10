@@ -88,7 +88,7 @@ test('invalid formats, dates, identifiers and duplicate IDs cannot change the li
     JSON.stringify(backup([record, record]))
   ]) assert.throws(() => importLibrary(payload, {}, storage), LibraryError);
   assert.equal(exportLibrary(storage), before);
-  assert.throws(() => importLibrary(backup([]), { mode: 'overwrite' }, storage), /Import mode/);
+  assert.throws(() => importLibrary(backup([]), { mode: 'overwrite' }, storage), /Choose whether to add this backup to your saved designs or replace them\./);
 });
 
 test('prototype, accessor, hidden and cyclic object payloads are rejected without executing code', () => {

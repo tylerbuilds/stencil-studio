@@ -4,20 +4,20 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
 export class CloudError extends Error {
   constructor(status, payload) {
-    super(payload?.error?.message || 'The shared workspace request failed.');
+    super(payload?.error?.message || "Sharing did not work. Try again.");
     this.name = 'CloudError'; this.status = status; this.code = payload?.error?.code || 'request_failed';
     this.revision = payload?.revision; this.current = payload?.workspace;
   }
 }
 
 function connection(id, token) {
-  if (!ID.test(id) || !TOKEN.test(token)) throw new TypeError('A valid shared workspace ID and token are required.');
+  if (!ID.test(id) || !TOKEN.test(token)) throw new TypeError("This shared design link needs a valid workspace ID and access token.");
 }
 
 export function shareLink({ id, token, baseURL = globalThis.location?.href }) {
   connection(id, token);
   const url = new URL(baseURL);
-  if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError('Share links need an HTTP(S) application URL.');
+  if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError("Use an http:// or https:// app address to share this design.");
   url.hash = new URLSearchParams({ workspace: id, token }).toString();
   return url.href;
 }
@@ -34,10 +34,10 @@ export function readShareLink(url = globalThis.location?.href) {
 }
 
 export function createCloudClient({ baseURL = '/api/workspaces', fetchImpl = globalThis.fetch } = {}) {
-  if (typeof fetchImpl !== 'function') throw new TypeError('Fetch is required.');
-  if (typeof baseURL !== 'string' || !baseURL.startsWith('/') || baseURL.startsWith('//') || /[\u0000-\u0020\u007f?#\\]/.test(baseURL)) throw new TypeError('The workspace API must use a same-origin absolute path.');
+  if (typeof fetchImpl !== 'function') throw new TypeError("This browser cannot connect to shared designs.");
+  if (typeof baseURL !== 'string' || !baseURL.startsWith('/') || baseURL.startsWith('//') || /[\u0000-\u0020\u007f?#\\]/.test(baseURL)) throw new TypeError("The workspace service must use a path starting with / on this site.");
   const normalized = new URL(baseURL, 'http://workspace-client.invalid');
-  if (normalized.origin !== 'http://workspace-client.invalid' || normalized.pathname !== baseURL) throw new TypeError('The workspace API must use a same-origin absolute path.');
+  if (normalized.origin !== 'http://workspace-client.invalid' || normalized.pathname !== baseURL) throw new TypeError("The workspace service must use a path starting with / on this site.");
   const base = baseURL.replace(/\/$/, '');
   const request = async (route, { method = 'GET', token, body, signal } = {}) => {
     const headers = { Accept: 'application/json' };
@@ -47,7 +47,7 @@ export function createCloudClient({ baseURL = '/api/workspaces', fetchImpl = glo
       cache: 'no-store', credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal });
     let payload;
     try { payload = await response.json(); }
-    catch { throw new CloudError(response.status, { error: { code: 'invalid_response', message: 'The workspace service returned an invalid response.' } }); }
+    catch { throw new CloudError(response.status, { error: { code: 'invalid_response', message: "The shared design service returned an unreadable response." } }); }
     if (!response.ok) throw new CloudError(response.status, payload);
     return payload;
   };

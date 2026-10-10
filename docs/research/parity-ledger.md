@@ -1,19 +1,19 @@
 # Canva behaviour ledger
 
-This is the preserved 0.2 behaviour baseline. See the [next-wave delta](parity-next.md) for schema v3, page reordering, persistent guides, transparent artboards and retained data elements.
+This ledger keeps the 0.2 baseline. The [0.3 changes](parity-next.md) add schema v3, page order, saved guides, transparent backgrounds and editable data elements.
 
-Reviewed **9 October 2026**. This ledger compares a bounded set of publicly documented Canva free and premium behaviours with Stencil Studio's independently written local implementation. It does not claim complete Canva parity or recovered proprietary source.
+Reviewed **9 October 2026**. This ledger compares selected features from Canva’s public free and premium documentation with Stencil’s independently written local tools. It does not claim full Canva parity or recovered proprietary code.
 
-Official Help Center pages were read through public web retrieval. A documented behaviour is an observation about Canva's published guidance, not a receipt that its authenticated editor was exercised. [REA provenance](rea-provenance.md) and [sanitised findings](rea-findings.json) separately record the existing anonymous help-catalogue capture and public-homepage static analysis. No private Canva project, account, credential or asset catalogue forms part of this implementation.
+The sources are public Help Center pages. A documented feature is not proof that it was tested in Canva’s signed-in editor. [REA research notes](rea-provenance.md) and [sanitised findings](rea-findings.json) record the public help capture and homepage code analysis. No private Canva projects, accounts, credentials or assets were used.
 
 ## Read the status accurately
 
-- **Delivered** means the listed Stencil Studio capability exists in the source. The evidence column identifies the relevant implementation and automated checks; browser and platform verification remain separate.
-- **Partial** means a usable local subset exists and the same row names remaining behaviours.
-- **Remaining** means the capability has not been delivered.
-- **Unknown** means the investigation has insufficient evidence to establish Canva's implementation or behavioural equivalence.
+- **Delivered** means the feature exists in Stencil’s source. The evidence column links its code and automated checks; browser and platform checks are separate.
+- **Partial** means a useful local part exists; the same row lists what is still missing.
+- **Remaining** means the feature has not been built.
+- **Unknown** means the study cannot establish how Canva implements the feature or whether Stencil behaves the same way.
 
-The initial three-template release is described in [the original feature map](feature-map.md). This ledger covers the expanded editor and must be read with [verification receipts](../verification.md); neither document establishes pixel equality with Canva.
+The initial three-template release is described in [the original feature map](feature-map.md). Read this ledger alongside the [release checks](../verification.md). Neither establishes an exact visual match with Canva.
 
 ## Delivered and remaining scope
 
@@ -41,9 +41,9 @@ The initial three-template release is described in [the original feature map](fe
 
 ## Explicit unknowns
 
-The authenticated editor's internal document schema, renderer, save protocols, collaboration algorithms and private APIs remain unknown. REA's public-homepage fingerprints do not establish how those systems work. Static endpoint strings are candidates, not verified live requests or authorisation to invoke them.
+The signed-in editor’s document format, renderer, saving, collaboration algorithms and private APIs are unknown. Homepage code does not show how those systems work. Endpoint strings found in code are possible leads, not checked requests or permission to call them.
 
-No total-parity percentage is reported: this investigation is neither a complete enumeration of Canva's current product nor a controlled comparison across all plans, platforms, regions and account roles. Model correctness, a successful static build, browser checks, Linux/macOS CI and a published demo are distinct receipts. A source change must not be presented as an OS or live-deployment verification.
+There is no overall parity percentage. The study does not cover every Canva feature, plan, platform, region or account role. Model tests, builds, browser checks, platform CI and a live demo each need their own results. Changing the source alone does not establish a platform run or deployment.
 
 ## Local library contract
 

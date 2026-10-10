@@ -1,90 +1,70 @@
 # Stencil Studio
 
-An original, open-source design studio for posters, social graphics, cards and presentations. Edit on your own device, save named designs, turn CSV data into layouts and export real SVG, PNG, JPEG or multi-page PDF.
+[**Try Stencil Studio**](https://tylerbuilds.github.io/stencil-studio/) · [Linux/macOS checks](https://github.com/tylerbuilds/stencil-studio/actions/workflows/verify.yml)
 
-![Original Stencil canvas with editable shapes, freehand drawing and layers](docs/screenshots/design-tools-0.5.png)
+Make a poster, card, presentation or social graphic in your browser. Start with a blank canvas, make a template your own, or draw something from scratch.
 
-## Start on Linux or macOS
+![A design made in Stencil Studio](docs/screenshots/design-tools-0.5.1.png)
 
-Install Node.js **22.19+** or **24.11+**, clone this repository and run:
+[On a phone](docs/screenshots/design-tools-mobile-0.5.1.png)
+
+## Create your first design
+
+1. Choose **New design**, give it a name and pick a size. Choose **Create design** to open your canvas.
+2. Add text, shapes or images from **Elements**. Choose **Draw** to sketch with a brush.
+3. Select something on the canvas to change its colour, size or position. Drag the corner handles to resize it.
+4. Choose **Download** when it is ready, or **File → Save design** to keep it in **My designs**.
+
+Prefer a starting point? **Templates** has eight original designs, including a poster, card, presentation, story and menu. Starting another design keeps your current work in **My designs** first. If its backup cannot be saved, your current design stays open. Download JSON to keep a copy; starting another design stays blocked until the backup can be saved.
+
+## Add, draw and arrange
+
+Add rectangles, circles, triangles, diamonds, stars, lines and arrows. Resize a circle to make an oval. Select a shape to change its fill and outline. **Draw** uses a round brush; choose a colour and width, then drag on the canvas. Every stroke becomes a layer you can move, resize, recolour or undo. Press **Escape** or choose **Select** when you have finished drawing.
+
+**Layers** shows the frontmost layer at the top. Drag a row or use its arrows to change the order. Lock a layer to keep it in place, or hide it to leave it out of downloads. Shift-click to select several layers, then group them to move or copy them together. Use **Guides & rulers** to line things up; hold **Alt** while dragging to ignore snapping.
+
+Add a table or bar, line or pie chart from **Elements**. Fill in the grid, then reopen **Edit data** whenever you need to change the values. You can also create personalised pages from CSV, such as a set of cards with different names.
+
+The [design guide](docs/consumer-design.md) covers drawing, layers, tables, pages, guides and backups.
+
+## Bring in your own images and text
+
+Choose **Image** or **File → Insert files**, or drop files onto the canvas. Stencil accepts PNG, JPEG, WebP, GIF and plain-text files. You can add up to 20 files in one go and undo the whole insertion at once. Images can be up to 6 MiB each, with an 8 MiB limit for the batch.
+
+Copy and paste layers between Stencil tabs with **Cmd/Ctrl-C** and **Cmd/Ctrl-V**. Click the canvas before pasting text or an image from another app. Text fields keep their usual shortcuts. **Tools** also has Copy, Paste and **Copy page as PNG**; if your browser cannot copy the image, Stencil downloads it instead.
+
+Select an image to crop it or adjust brightness, contrast, colour and blur. **Remove a background colour** makes a solid background transparent. It removes matching colours from the edges, so it works best with a plain background.
+
+See [file and clipboard limits](docs/research/core-workflows.md) for the full list. Canva projects, SVG, PDF and office files cannot be opened as designs.
+
+## Save and download
+
+Your open design saves in this browser. **File → Save design** keeps a named version in **My designs**; **Save a new copy** keeps another version. **File → Save JSON** downloads all pages so you can reopen and edit them in Stencil. Back up the whole library from **My designs** to move it to another browser.
+
+Download the current page as **PNG**, **JPG** or **SVG**, or all pages as **PDF**. Select the empty canvas and turn on **Transparent background** for transparent PNG or SVG output. JPG and PDF use your background colour. The PDF download keeps the layout as images; its text is not selectable. **Print / Save PDF** opens your browser's print dialog instead. Check the result before sharing, since fonts can vary between devices.
+
+**Present** shows your pages as slides. **Video** turns them into a slideshow with cuts or fades and optional audio. Export takes about as long as the video, so keep the tab open. See [making a video](docs/video.md) for steps and limits.
+
+## Keep your work safe
+
+Designs and images stay in this browser unless you download them or use an optional sharing service. There are no accounts or tracking. Clearing browser data can remove saved designs, so keep a JSON backup somewhere safe. Undo works while the tab is open; it is not a saved history. If the browser cannot save, keep the design open and download it.
+
+**Share** and **AI writing** need a configured server and are unavailable on the online demo. Sharing sends the active design to that server and uses separate owner, editor and viewer links. Anyone with a link can use its access level, so keep the owner link private. AI writing sends only the text and direction shown in its window when you ask for a draft. You decide whether to use the result. See [server setup and data handling](docs/self-hosting.md).
+
+## Run on Linux or macOS
+
+Install Node.js **22.19+ or 24.11+**, then run:
 
 ```sh
-npm install
+git clone https://github.com/tylerbuilds/stencil-studio.git
+cd stencil-studio
+npm ci
 npm start
 ```
 
-Open [Stencil Studio on localhost](http://127.0.0.1:4202). The server binds to your machine by default. `npm run dev` starts the same server. The static [public demo](https://tylerbuilds.github.io/stencil-studio/) runs the local design tools; optional AI writing requires a configured local server.
+Open **http://localhost:4202** in a recent browser. Stop the server with **Ctrl-C**. This is a browser app, with no desktop installer.
 
-The editor runs in a modern browser. There is no native desktop installer. See [verification receipts](docs/verification.md) for actual browser, Linux/macOS CI and deployment checks; support and verified execution are separate claims.
-
-## Build your own design
-
-[New blank design](docs/screenshots/new-design-0.5.png) · [Phone canvas](docs/screenshots/design-tools-mobile-0.5.png) · [Phone layers](docs/screenshots/layers-mobile-0.5.png)
-
-A fresh app opens a blank white canvas with **zero layers** and the Elements toolbox visible. Click **New design** in the header, name your work, choose a size preset or enter custom width/height in pixels, then **Create blank design**. Supported canvas sizes are 64–4,096 pixels per side. Your complete current design is saved as a separate named **Recovery** entry in **My designs** before switching; an untouched initial blank needs no recovery copy. Existing named saves are not overwritten. If that recovery cannot be saved because storage or the twenty-design library is full, the current design stays open and the dialog offers **Save current JSON**. Free library space to retry. Undo can also return to the previous design in the current session.
-
-Templates are optional: eight original poster, square social graphic, card, presentation, banner, story, résumé and menu designs are in the Templates tab. Template opening uses the same recovery safeguard. When resizing a page, **Scale the layout** proportionally resizes unlocked elements; this is a local scaling tool, not AI reflow.
-
-Add plain text, rectangles, circles, triangles, diamonds, stars, lines and arrows, or your own PNG/JPEG/WebP/GIF images. **Image** opens a multiple-image chooser; **File → Insert files** or **Elements → Insert files** also accepts UTF-8 text files. Drop files onto the canvas to place them near the drop point. Up to twenty files and 8 MiB combined input form one ordered insertion and one Undo step; each image is limited to 6 MiB, 16,384 pixels per side and 40 megapixels. The entire batch must validate and decode before any layer is inserted. Dropping or inserting one Stencil JSON design asks before replacing the current design and cannot be mixed with other files. File → Open JSON is an explicit open action and keeps its direct-open behaviour. Pending intake cancels if the page, design or editing draft changes, or when you choose another batch or Cancel insertion. Edit dimensions, position, rotation, opacity, outlines, text spacing and fonts. Inspector fields apply when you finish editing a field. The document carries a palette of up to eight colours and a default font; swatches apply to the selection or artboard.
-
-Shift-click layers or objects to select several. Drag empty space for a marquee selection. Group and ungroup layers, then move, duplicate, copy or paste them together. **Alt-click** edits one object inside a group. Align a selection to its combined bounds or the page; distribute independent objects or groups evenly. Drag snapping uses page and neighbouring object edges and centres; hold **Alt** while dragging to bypass it. Lock protects a layer and its group; hiding removes a layer from presentation and exports.
-
-Click **Draw** (or press **B** outside a text field), choose a brush colour and a width of 1–80 canvas pixels, then drag on the canvas. Each pointer gesture becomes one independently editable **Brush stroke** layer and one Undo step. A click makes a round dot. **Select** (or **V** / Escape) exits drawing; select a stroke to recolour it, change its width, move, resize, rotate, duplicate or group it. Strokes retain normalised points in JSON, named saves and native clipboard transfers. Each stroke has up to 2,000 points; long gestures progressively simplify the samples while keeping their endpoints. Cancelled gestures never enter the saved design. Page/design switches, accepted edits and Undo invalidate a pending preview. This brush does not provide partial erasing, pressure-sensitive pens or shape recognition.
-
-**Layers** shows the frontmost layer first. Click a row to select it; drag a row above or below another row to place it, or use its ↑ / ↓ buttons. Selected-layer **Position in layers** offers **Bring to front** and **Send to back** (Cmd/Ctrl + ] / [). Groups move together and retain their internal order. A locked group member prevents moving, resizing, editing, deleting or reordering that group; locked layers remain visible and can be unlocked. Hide/show retains the layer data while omitting hidden artwork from exports. The same array order drives canvas hit testing and SVG, raster, PDF and video rendering.
-
-Image crops use percentages of the source image. Change crop width/height before moving the crop's left/top edge so it stays inside the image. Brightness, contrast, saturation, grayscale and blur are reversible SVG filters, saved in JSON and rendered through the same exporter as the preview. **Remove a background colour** produces a real transparent PNG using edge-connected colour matching. It works on solid backgrounds and does not perform AI subject segmentation.
-
-Add a **table** or **chart** from **Elements**. The data editor keeps the source values in the design: edit cells, add or remove rows, and reopen **Edit data** from the inspector. Tables support up to eight columns and fifty data rows, with editable header, text, fill and border styles. Charts support bar, line and pie views of one dataset with up to thirty labels and non-negative values. Switching chart type keeps the values; pie charts require a positive total. Paste quoted CSV in the expandable CSV panel, load it into the grid, then save. Older table/chart groups remain ordinary editable layers; migration does not guess their lost source data.
-
-Use **Page order** in the inspector to move the current page earlier, later or to an exact numbered position. The active page, layer IDs and content stay together; Undo restores its previous position. **Guides & rulers** controls persistent horizontal/vertical guides, ruler visibility, snapping sources and a 1–30 screen-pixel snap distance. Add a fractional canvas-pixel coordinate in the dialog, click a ruler or drag a guide. Guide coordinates scale with **Scale the layout** when resizing; otherwise they clamp to the new page bounds. Guides and rulers never appear in exports. Hold Alt while dragging layers to temporarily bypass snapping.
-
-## Save, create in bulk and present
-
-The header keeps document actions in **File**, presentation/video/AI actions in **Tools**, and output formats in **Download**. The menus work with keyboard focus, Enter and Escape.
-
-**File → Save design** adds or updates a named entry in **My designs**. Open, duplicate or delete saved entries, save a new copy, and back up the whole library as JSON. Library imports validate every record before a single write; an exact duplicate is skipped and conflicting IDs cannot silently overwrite a saved design. The library supports up to twenty designs; actual browser storage can fill sooner than the validated file limit.
-
-For bulk creation, put `{{column}}` placeholders in text or a page name, then open **CSV bulk create** and supply matching headers. A CSV with `name,message` can fill `Hello {{name}}` and `{{message}}`. Up to thirty data rows create thirty independent pages from the current page. Quoted commas, quotes and line breaks are supported. CSV cells are literal text, not executable formulas, URLs or markup.
-
-**Present** displays design pages in a slideshow with arrow navigation and optional full screen. **PNG**, **JPG** and **SVG** download the current page. With no layer selected, enable **Transparent background** in Artboard properties for a genuinely transparent PNG or SVG. The checkerboard is an editor preview and is never exported. JPEG and raster PDF flatten transparent areas to the retained Background colour; printed pages use the paper background. **PDF** downloads every page as raster artwork at 96 pixels per inch; text in that PDF is not selectable and it is not a CMYK/bleed/print-production export. **Print / Save PDF** separately opens the browser's all-page print workflow. Fonts depend on your system and SVG word wrapping is approximate, so inspect the result before sharing it.
-
-**Save JSON** exports all pages as an editable Stencil Studio document. Imports accept strictly validated v1, v2, v3 and v4 documents. Earlier designs migrate to v4 while preserving their existing fields, IDs, page order and artwork. Migrating v3 changes only the version: existing guides, transparency, groups, crops, filters and editable chart/table data stay intact. New saves use v4 and cannot be read by the older v3 app; keep the exact migration backup or a pre-upgrade JSON file for rollback. Before replacing an older active save or library, the app keeps its exact original JSON bytes under a separate local migration-backup key. If that backup cannot be written and verified, replacement is blocked and the original remains intact. Use **Recovery data** from File when offered, and export the current JSON for your new work. Canva projects cannot be imported. Document files are limited to 12 MiB of UTF-8 JSON, CSV to 1 MiB, images to 6 MiB before encoding and library backups to 18 MiB. Designs support thirty pages, three hundred elements per page and one thousand elements overall; artboard dimensions are 64–4,096 pixels.
-
-The open document and library live in browser local storage. Clearing browser data, changing ports or moving browsers does not carry them across. Export JSON for a portable backup. Storage errors keep the current design open and report that a backup is needed. Undo/redo covers the current session; it is not durable version history.
-
-## Local video and optional shared workspaces
-
-**Video** turns the design's pages into a real scene timeline. Set 0.25–30 seconds per page, choose cuts or crossfades, prepare a visual preview and play, pause or seek it. Export records the canvas in real time; keep the tab active. An optional local audio file is included in the rendered output. Supported containers are detected from the browser: WebM is preferred and MP4 is offered only when the browser can actually record it. The result downloads and can be played in the dialog. Cancel releases the render resources. The full limits and verification procedure are in [video documentation](docs/video.md). This is a page-scene renderer, not a footage-trimming or multi-track animation editor. Timing, transitions and audio belong to the export session and are not saved in design JSON.
-
-**Share** checks for an explicitly configured self-hosted workspace server. When enabled, create a shared design with distinct owner, editor and viewer access links. Save edits to the server, receive remote revision updates, add comments, restore a stored revision, and enable or revoke editor/viewer capabilities. Concurrent stale writes report a revision conflict and retain local edits until you deliberately refresh. View-only sessions block mutations; disconnect to keep an independently editable local copy. Access tokens live in URL fragments and are bearer capabilities: keep owner links private. Shared documents, revisions and comments are durable server data; the static demo has no collaboration backend. This is versioned shared editing with polling and conflict detection, not a claim of Canva's collaboration algorithm or team administration.
-
-## Optional real AI writing
-
-**AI writing** checks for a configured same-origin local AI bridge. When available, it can rewrite selected copy, translate text or respond to a design brief using a real model. Only the text and direction shown in the dialog are submitted when **Generate** is clicked. Review or edit the candidate, then explicitly apply it to the selected text; Undo restores the earlier version. Cancel stops the request. Design plans remain advice rather than automatically generated layouts.
-
-Static hosting has no inference backend and reports AI unavailable. No browser credentials, simulated model responses or automatic generation are used. Native server credentials remain operator-managed. The core design tools, pixel tools and exports work without AI configuration.
-
-## Keyboard shortcuts
-
-| Action | Shortcut |
-| --- | --- |
-| Move selection / move ten pixels | Arrow keys / Shift + arrows |
-| Delete selection | Delete / Backspace |
-| Undo / redo | Cmd/Ctrl-Z / Shift-Cmd/Ctrl-Z or Ctrl-Y |
-| Copy / paste layers between Stencil tabs; paste external text/images | Cmd/Ctrl-C / Cmd/Ctrl-V |
-| Duplicate | Cmd/Ctrl-D |
-| Select unlocked visible objects | Cmd/Ctrl-A |
-| Group / ungroup | Cmd/Ctrl-G / Shift-Cmd/Ctrl-G |
-| Draw / Select | B / V |
-| Bring to front / send to back | Cmd/Ctrl + ] / [ |
-| Cancel drawing / deselect | Escape |
-
-Text fields and open dialog forms retain their normal editing shortcuts. Click the canvas before pasting external text or images. Selected layers use the real system clipboard: their validated Stencil data, relative positions, groups, crops, native shapes, brush points and editable chart/table values survive a paste into another Stencil tab. Other applications receive the portable JSON text rather than editable Stencil objects. External URLs and markup in plain text remain literal text; HTML-only content, SVG files, PDFs and office documents are not imported.
-
-**Tools → Copy layers** and **Paste** provide explicit clipboard buttons on supported secure pages with browser permission. If reading is unavailable or denied, use the keyboard shortcuts; no automatic clipboard reads occur. **Copy page as PNG** copies the current page as an image for another application when supported, and otherwise downloads a real PNG. Clipboard capabilities and permissions vary by browser; the [clipboard and file-intake notes](docs/research/core-workflows.md) separate this implementation from native runtime qualification.
-
-## Build and verify
+## Develop and contribute
 
 ```sh
 npm test
@@ -93,16 +73,8 @@ npm run preview
 npm run test:browser
 ```
 
-The static build writes `dist/`. Runtime dependencies remain empty; Playwright is a development-only browser check. Browser checks require its browser installation or a configured system executable. Stop servers with `Ctrl+C`; use `node scripts/serve.mjs --port 4302` for another port.
+The build goes into `dist/`. Browser checks need Playwright's Chromium installation or a system browser set through `BROWSER_EXECUTABLE`. Linux runners may need `npx playwright install --with-deps chromium`. See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [release checks](docs/verification.md).
 
-## Scope and research
+Stencil uses independently written code and original designs. It is not affiliated with Canva and does not claim its full feature set. Cloud asset libraries, uploaded fonts, pressure-sensitive brushes, footage editing, team administration and print-production tools are not included. The [feature comparison](docs/research/feature-comparison.md) remains the dated 0.3 audit; [research and REA sources](docs/research/rea-provenance.md) explain its scope.
 
-The [next-wave scope and migration notes](docs/research/parity-next.md) describe page order, precise guides, transparent exports and retained data elements. The [source-linked parity ledger](docs/research/parity-ledger.md) and [all-tier source comparison](docs/research/feature-comparison.md) record delivered, partial, remaining and unknown behaviours across Canva's free and premium workflows. The [original feature map](docs/research/feature-map.md) preserves the first release's observations. [REA](https://github.com/morluto/rea), pinned to `6ce3288`, supplied bounded public investigation; [provenance](docs/research/rea-provenance.md) distinguishes captured public evidence from official documentation and unknown authenticated internals.
-
-The all-tier source comparison retains the dated 0.3 audit. Blank creation, native drawing and layers are described above for 0.5. Clipboard and file insertion are described in the [0.4 workflow guide](docs/research/core-workflows.md); that guide does not relabel the full inventory as parity.
-
-This release is not full Canva parity. Canva-scale collaboration, account/team administration, shared brand management, stock asset catalogues, uploaded fonts, rich text effects, semantic background removal, generative photo editing, footage/multi-track animation editing, GIF export, social scheduling, CMYK/bleed/crop marks, PPTX/DOCX and SSO/SCIM remain separate work. MP4 output depends on actual browser recording support. Optional shared workspaces require a configured server and capability links; they are not available on static hosting. Real model-backed writing is conditional on the local bridge; it is not a claim of equivalent Canva AI systems.
-
-Stencil Studio contains independently written code, original layouts and copy. It is not affiliated with Canva and contains no recovered proprietary source. There are no accounts or tracking; model and shared-workspace calls occur only through explicitly configured optional services and deliberate generation/sharing actions. Contributions should preserve these boundaries and validated state. See [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Licensed under [MIT](LICENSE).
+[MIT licence](LICENSE).

@@ -45,7 +45,7 @@ export function defaultsForDataElement(type) {
     data: { kind: 'bar', labels: ['First', 'Second', 'Third'], values: [10, 20, 30] },
     fontFamily: 'Arial', fontSize: 20, textFill: '#232a27', showLabels: true, showValues: true, palette: ['#e76543', '#6852a1', '#2b6b5b']
   };
-  fail('Choose a chart or table data element.');
+  fail("Choose a chart or table.");
 }
 
 /** Checks complete type-specific fields; the document model checks common geometry. */
@@ -53,9 +53,9 @@ export function validateDataElementFields(element) {
   // Inspect descriptors before reading type or any nested value: accessors never run.
   plain(element, 'Data element', [...COMMON_FIELDS, ...TABLE_FIELDS, ...CHART_FIELDS], ['type']);
   const fields = element.type === 'table' ? TABLE_FIELDS : element.type === 'chart' ? CHART_FIELDS : null;
-  if (!fields) fail('Choose a chart or table data element.');
+  if (!fields) fail("Choose a chart or table.");
   plain(element, 'Data element', [...COMMON_FIELDS, ...fields], ['type', ...fields]);
-  if (!FONTS.includes(element.fontFamily)) fail('Choose a supported data font family.');
+  if (!FONTS.includes(element.fontFamily)) fail("Choose a font available in Stencil Studio.");
   numeric(element.fontSize, 'Data font size', 4, 100);
   colour(element.textFill, 'Data text colour');
   if (element.type === 'table') {
@@ -77,7 +77,7 @@ export function validateDataElementFields(element) {
     element.data.labels.forEach(value => text(value, 'Chart label', 100, true));
     list(element.data.values, 'Chart values', element.data.labels.length, element.data.labels.length);
     element.data.values.forEach(value => numeric(value, 'Chart value', 0, 1_000_000_000));
-    if (element.data.kind === 'pie' && element.data.values.reduce((sum, value) => sum + value, 0) <= 0) fail('Pie charts need a positive total value.');
+    if (element.data.kind === 'pie' && element.data.values.reduce((sum, value) => sum + value, 0) <= 0) fail("A pie chart needs at least one value above zero.");
     boolean(element.showLabels, 'Chart labels'); boolean(element.showValues, 'Chart values');
     list(element.palette, 'Chart palette', 1, 8);
     element.palette.forEach(value => colour(value, 'Chart palette colour'));
@@ -87,7 +87,7 @@ export function validateDataElementFields(element) {
 
 const xml = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
 const number = value => {
-  if (!Number.isFinite(value)) fail('Chart geometry must be finite.');
+  if (!Number.isFinite(value)) fail("The chart has an invalid size or position.");
   return String(Math.abs(value) < 1e-10 ? 0 : Number(value.toFixed(6)));
 };
 
@@ -95,7 +95,7 @@ const number = value => {
 export function renderDataElement(element, escapeXML = xml) {
   validateDataElementFields(element);
   if (typeof escapeXML !== 'function') fail('An XML escaping function is required.');
-  if (typeof element.id !== 'string' || !/^[\w-]{1,100}$/.test(element.id)) fail('Data artwork needs a valid element ID.');
+  if (typeof element.id !== 'string' || !/^[\w-]{1,100}$/.test(element.id)) fail("This chart or table needs a valid layer ID.");
   numeric(element.width, 'Data artwork width', 1, 8192); numeric(element.height, 'Data artwork height', 1, 8192);
   colour(element.fill, 'Data element colour');
   const { width, height, fontFamily, fontSize, textFill } = element;

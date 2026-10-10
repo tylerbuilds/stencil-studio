@@ -1,23 +1,63 @@
-# Blank design, drawing and layers
+# Make a design from scratch
 
-Stencil Studio 0.5 starts with an empty white canvas. **New design** is available in the header. Custom sizes are 64–4,096 canvas pixels per side; presets are conveniences, not templates. A new design contains one blank page and no seeded elements.
+Choose **New design** in the header, give your design a name and pick a canvas size. You can use a preset or enter a custom width and height. Choose **Create design** to start with an empty canvas.
 
-Before New design or a template replaces current work, the full current document is copied into the local library under a distinct Recovery name. This never updates an existing saved entry. An untouched initial blank can be replaced directly. A failed recovery leaves the current design and library intact; Save current JSON downloads a portable backup. Library capacity is twenty entries and 18 MiB; browser quota may be smaller. Recovery does not guarantee protection from clearing browser data. Undo is session-only.
+Your current design is kept in **My designs** before you switch. If the browser cannot keep that copy, your current canvas stays open. Choose **Download current design** to keep a JSON copy. This does not unlock New design: make room in **My designs** or restore browser saving, then try again. You can also start from an original design in **Templates**.
 
-## Native elements and gestures
+## Add shapes and text
 
-Rectangles, circles, triangles, diamonds, stars, lines and arrows have validated numeric geometry. Filled shapes have fill and outline controls; lines use Line colour and outline width. Native freehand strokes use a brush colour and 1–80 pixel width, 1–2,000 ordinary normalised points, and the same x/y/width/height/rotation/opacity and hide/lock fields as other elements. The document still permits at most 300 elements per page, 1,000 total and 12 MiB formatted UTF-8 JSON. There is no arbitrary path string, external SVG, script or remote image field.
+Open **Elements** to add text, a rectangle, circle, triangle, diamond, star, line or arrow. Select it on the canvas to change its size, position, rotation and colour. Filled shapes have separate fill and outline colours. A line has a line colour and width. Resize a circle to make an oval.
 
-Brush mode starts with Draw or B. Pointer movement renders a temporary preview; pointer release adds exactly one element in one history commit. A click is a dot. Long gestures progressively simplify samples within the point limit, retaining the first and most recent endpoints. A cancelled pointer, Escape, window blur, an accepted edit, Undo, a page switch or a design replacement cancels the pending preview. A stale asynchronous file operation cannot overwrite a committed drawing. Exporters receive only committed, validated elements.
+For text, choose a font, size and alignment in the inspector. Changes apply when you finish editing a field. Drag a selected object to move it, or use the arrow keys for small adjustments. Hold **Shift** with the arrow keys to move ten pixels at a time.
 
-Select or V exits drawing. Strokes can be moved, resized, rotated, recoloured, copied between Stencil tabs, duplicated, grouped and exported without flattening their stored points. SVG is vector artwork; PNG/JPEG and the existing raster PDF/video routes render the same safe SVG. This is one solid round brush, without pressure sensitivity, an eraser, markers, ShapeAssist or commercial-editor parity.
+## Draw with a brush
 
-## Layer authority
+Choose **Draw** or press **B**, pick a colour and brush width, then drag on the canvas. A click makes a dot. Each stroke becomes its own **Brush stroke** layer, and **Undo** removes the last stroke.
 
-The last element in the page array is frontmost. Layers displays that order in reverse. Drag a row above/below a target group, use arrow buttons, or select layers and choose Bring to front / Send to back. Groups move atomically and keep internal order. A locked member protects all members from geometry/style edits, removal and ordering; hide/show and unlocking remain available. Hidden content remains in JSON and clipboard payloads but is absent from canvas and exports. Locked content remains visible.
+Choose **Select**, press **V** or press **Escape** to stop drawing. Select a stroke to move, resize, rotate or recolour it. You can also copy, duplicate or group it with other layers. Switching pages or cancelling a stroke leaves it out of the saved design.
 
-## Schema and rollback
+The brush is round, with widths from 1 to 80 pixels. It has no pressure sensitivity or partial eraser. Long strokes are simplified to keep files manageable, with up to 2,000 stored points. Their first and last points are kept.
 
-Document schema is v4. Import validates the original v1/v2/v3 allowlist before migrating. v3 migration changes only version; existing data, guides, transparency, page order, groups and image settings are unchanged. Exact old active and library JSON is durably retained before overwrite; backup failure blocks that write. Recovery data can be downloaded when offered. Older v3 applications reject new v4 saves, so use the preserved original for rollback. Clipboard envelope version 1 remains stable, but older applications reject unsupported new native element types rather than flattening or executing them.
+## Put layers in order
 
-Node tests and actual browser receipts are separate qualification layers. The coordinator records browser workflows, screenshot review and Linux/macOS CI; this document describes the implementation contract and does not substitute for those receipts.
+The top row in **Layers** sits in front of the others. Drag a row above or below another, use its arrows, or select a layer and choose **Bring to front** or **Send to back**. **Cmd/Ctrl + ]** and **Cmd/Ctrl + [** do the same.
+
+Shift-click to select several layers, then choose **Group** to keep them together. Groups move and change order as a whole. **Alt-click** selects one object inside a group.
+
+Lock a layer to stop it moving or changing. A locked layer also protects the rest of its group; unlock it before editing that group. Hidden layers stay in the design but do not appear on the canvas or in downloads. Locked layers still appear.
+
+## Change pages and line things up
+
+Use **＋** beside the page tabs to add a blank page. **Duplicate page** makes a copy. **Page order** moves the current page earlier, later or to a numbered position. Undo brings it back.
+
+Open **Guides & rulers** to show rulers and add guides. Click a ruler, drag a guide into place or enter an exact position. Choose what layers snap to and how close they need to be. Hold **Alt** while dragging to ignore snapping. Guides do not appear in downloads.
+
+With nothing selected, the inspector shows the canvas size and background. **Scale the layout when resizing** resizes unlocked layers along with the page. Guides scale too; without that option, they stay at their current position where possible.
+
+## Add a table or chart
+
+Choose **Table** or **Chart** in **Elements**, fill in the grid and save. Select it later and choose **Edit data** to change its values without starting again.
+
+Tables have up to 8 columns and 50 rows. You can change their header, text, fill and borders in the inspector. Charts have up to 30 labels, with values of zero or more. Bar, line and pie charts use the same values; a pie chart needs at least one positive value.
+
+To paste CSV, open **Paste or copy CSV**, paste your data and choose **Load CSV into the grid**. Quoted commas, quotes and line breaks are kept. Cells are text, not spreadsheet formulas. Tables and charts from older designs may be groups of ordinary layers; those do not have a data grid to reopen.
+
+## Make several versions from CSV
+
+Put a placeholder such as `{{name}}` in a text layer or page name. Open **Create pages from CSV** and add a matching `name` column. Each row makes a separate copy of the current page, up to 30 rows. For example, `Hello {{name}}` can become a different greeting on every card.
+
+## Save a copy and download
+
+**File → Save design** keeps a named copy in **My designs**. Open, duplicate or delete it there. **Save a new copy** keeps a separate version; **Back up library** downloads them all.
+
+**File → Save JSON** downloads every page as an editable Stencil file. Use **Open JSON** to continue it later. A JSON file dropped onto the canvas asks before replacing your current design. Undo brings the previous design back while the tab remains open.
+
+Choose **Download** for PNG, JPG, SVG or an all-page PDF. For a transparent PNG or SVG, click empty canvas space and enable **Transparent background**. JPG and PDF use the chosen background colour. The PDF download keeps the layout as images, so its text is not selectable. **Print / Save PDF** uses your browser's print dialog.
+
+## File limits and older designs
+
+A design can have 30 pages, 300 layers per page and 1,000 layers in total. Canvas sizes run from 64 to 4,096 pixels per side. JSON files can be up to 12 MiB, and the library holds up to 20 designs within an 18 MiB limit. Your browser can run out of storage sooner.
+
+Stencil updates older designs when you open them and keeps their original JSON before overwriting a saved copy. If that backup cannot be saved, autosave and New design pause to keep the original. **Recovery data** in File downloads the original when available; **Save JSON** downloads your new work. Downloading alone does not resume saving or unlock New design. Once browser saving works again, download your new work and the original file (if offered) before reloading to retry the original backup. Then open your new JSON file to continue. Clearing browser data removes local copies, so keep the downloads somewhere safe.
+
+New files use version 4 and cannot be opened in the older version 3 app. Use the original backup if you need to go back. Existing data, pages, guides, crops, groups and image settings are kept when updating an older design. [File and clipboard details](research/core-workflows.md) and [release checks](verification.md) cover the technical limits and checks.

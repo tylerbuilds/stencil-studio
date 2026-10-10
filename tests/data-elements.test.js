@@ -140,7 +140,7 @@ test('all native data artworks clip locally and escape user content without muta
     if (drawing.type === 'chart') assert.match(svg, /&lt;path onload=&quot;evil\(\)&quot;&gt;/);
     assert.equal(JSON.stringify(drawing), before);
   }
-  assert.throws(() => renderDataElement(element('chart', { id: 'unsafe"><script>' })), /valid element ID/);
+  assert.throws(() => renderDataElement(element('chart', { id: 'unsafe"><script>' })), /valid layer ID/);
   assert.throws(() => renderDataElement(element('chart', { width: Infinity })), /between/);
   assert.throws(() => renderDataElement(element('table', { fill: 'url(https://example.com)' })), /hex/);
 });

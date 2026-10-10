@@ -1,12 +1,12 @@
-# REA investigation provenance
+# How REA was used
 
-This initial implementation was investigated with [REA (Reverse Engineer Anything)](https://github.com/morluto/rea), the repository starred by tylerbuilds. REA is MIT licensed. The cloned source revision was `6ce3288f3bd65a886e47905455ed5c9b661015e6`; the local CLI package was `rea-agents@6.2.0`, executed with Node.js 24.14.0 and system Chromium on Linux. No global agent or MCP configuration was changed.
+The first release was studied with [REA (Reverse Engineer Anything)](https://github.com/morluto/rea), the repository starred by tylerbuilds. REA is MIT licensed. The cloned source revision was `6ce3288f3bd65a886e47905455ed5c9b661015e6`; the local CLI package was `rea-agents@6.2.0`, executed with Node.js 24.14.0 and system Chromium on Linux. No global agent or MCP configuration was changed.
 
 ## Scope
 
-The investigation used anonymous public browser capture of [Canva](https://www.canva.com/help/editing-designing/). REA recorded the rendered DOM, accessibility representation, browser viewport, URL and browser events. Raw target captures are retained separately and are not distributed in this repository. The code, layouts and assets in this project were written independently.
+The study captured public pages without an account at [Canva](https://www.canva.com/help/editing-designing/). REA recorded the page DOM, accessibility tree, viewport, URL and browser events. Raw captures are kept separately and are not included here. Stencil’s code, layouts and assets were written independently.
 
-Public product descriptions and browser observations support the feature map. They do not establish the private implementation, authenticated application behaviour, proprietary algorithms or complete feature parity. See [feature-map.md](feature-map.md) for implemented behaviour and known gaps.
+Public descriptions and browser observations informed the feature map. They do not establish the private code, signed-in behaviour, proprietary algorithms or full feature parity. See [feature-map.md](feature-map.md) for implemented behaviour and known gaps.
 
 ## Reproduce a public observation
 
@@ -17,4 +17,4 @@ Use a supported REA runtime (Node.js 22.19, 24.11 or a version accepted by the p
 - [Public editing and designing help catalogue](https://www.canva.com/help/editing-designing/): `observed`; REA evidence `ev_9e26d1b1e7b89b01f14a064013732a63476b749707bf7ffe0ed0da4100fbd979`.
 - [Anonymous public homepage JavaScript bundle metadata](https://www.canva.com/): `scoped-static-analysis-complete`; REA evidence `ev_056d76d9d7c4880c962b88c0d8937e246217f8cf6f4a6828ea7fec2424ecfde5`.
 
-See [rea-findings.json](rea-findings.json) for sanitised tool versions, receipt digests, public observations, static inferences and explicit unknowns. Raw third-party content is excluded.
+[rea-findings.json](rea-findings.json) records tool versions, receipt hashes, public observations, code-analysis inferences and unknowns. It excludes raw third-party content.

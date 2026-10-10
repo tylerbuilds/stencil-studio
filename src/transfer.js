@@ -38,17 +38,17 @@ function finite(value, name, minimum = -Infinity, maximum = Infinity) {
 }
 
 function payloadBytes(payload) {
-  if (typeof payload !== 'string') fail('Clipboard payload must be JSON text.');
-  if (new TextEncoder().encode(payload).byteLength > MAX_TRANSFER_BYTES) fail('Clipboard payload exceeds the 12 MiB limit.');
+  if (typeof payload !== 'string') fail('Copied content must be JSON text.');
+  if (new TextEncoder().encode(payload).byteLength > MAX_TRANSFER_BYTES) fail('Copied content is over the 12 MiB limit. Copy fewer layers.');
 }
 
 function validateElements(elements, sourcePage) {
-  list(elements, 'Clipboard elements');
+  list(elements, 'Copied layers');
   // Check descriptors before reading IDs. The synthetic page must never collide
   // with an otherwise valid arbitrary layer or group identifier.
   const used = new Set();
   for (const element of elements) {
-    record(element, 'Clipboard element', undefined, undefined);
+    record(element, 'Copied layer', undefined, undefined);
     if (typeof element.id === 'string') used.add(element.id);
     if (typeof element.groupId === 'string') used.add(element.groupId);
   }
@@ -82,10 +82,10 @@ export function decodeSelection(payloadString) {
   payloadBytes(payloadString);
   let payload;
   try { payload = JSON.parse(payloadString); }
-  catch { fail('Clipboard payload must contain valid JSON.'); }
-  record(payload, 'Clipboard payload', ['schema', 'version', 'sourcePage', 'elements']);
-  if (payload.schema !== 'stencil-studio.clipboard' || payload.version !== 1) fail('Unsupported clipboard schema or version.');
-  record(payload.sourcePage, 'Clipboard source page', ['width', 'height']);
+  catch { fail('Copied content must contain valid JSON.'); }
+  record(payload, 'Copied content', ['schema', 'version', 'sourcePage', 'elements']);
+  if (payload.schema !== 'stencil-studio.clipboard' || payload.version !== 1) fail('This copied content uses an unsupported Stencil format or version.');
+  record(payload.sourcePage, 'Copied page', ['width', 'height']);
   finite(payload.sourcePage.width, 'Source page width', 64, 4096);
   finite(payload.sourcePage.height, 'Source page height', 64, 4096);
   const sourcePage = { width: payload.sourcePage.width, height: payload.sourcePage.height };

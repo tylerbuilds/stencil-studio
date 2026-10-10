@@ -1,8 +1,8 @@
 # Stencil Studio 0.3.0: all-tier feature comparison
 
-Next-wave source comparison. Coordinator final source/QA freeze recorded.
+Dated 0.3 comparison. The final source and browser checks were recorded for that release.
 
-This comparison maps 88 documented Canva workflows across free and premium tiers to an independent implementation. It records delivered behaviour and specific gaps; it does not claim full parity, original algorithms or a complete content catalogue.
+This comparison covers 88 workflows from Canva’s public free and premium documentation. It shows what Stencil provided in 0.3 and what was missing. It does not claim the same algorithms, complete content catalogue or full feature parity.
 
 | Classification | Rows |
 |---|---:|
@@ -10,9 +10,9 @@ This comparison maps 88 documented Canva workflows across free and premium tiers
 | missing | 41 |
 | partial | 30 |
 
-The recorded source snapshot is identified by file hashes in [the comparison JSON](feature-comparison.json). Retained next-wave core browser checks: 20; overall passed=True, source matches=True. Individual/component observations remain narrower than a final release gate. Optional provider/backend and native rendering proofs retain their own component qualifications in [proof metadata](proof-metadata.json). Platform CI, macOS browser behaviour and deployment are separate evidence.
+[The comparison JSON](feature-comparison.json) identifies the checked source by file hashes. All 20 core browser checks passed and matched that source. Checks of individual modules cover only their stated scope; optional AI, sharing and rendering have separate results in [proof metadata](proof-metadata.json). Platform CI, macOS browser behaviour and deployment need their own checks.
 
-All original authenticated workflows remain unexercised. Public documentation is the source for the workflow inventory, while REA observations cover only anonymous public pages and metadata.
+Canva’s signed-in editor was not tested. The inventory uses public documentation; REA observations cover only public pages and metadata without an account.
 
 ## Feature mapping
 
@@ -107,4 +107,4 @@ All original authenticated workflows remain unexercised. Public documentation is
 | marketing-ads — Business includes broader ad-account and analysis workflows | missing |  | No connected ad accounts, dated metrics, campaign generation or authorised publication. |  | [Source 1](https://www.canva.com/canva-business/) |
 | interactive-data — Business and Enterprise | missing |  | No Flourish-like interactive chart/map engine or integration. |  | [Source 1](https://www.canva.com/canva-business/); [Source 2](https://www.canva.com/enterprise/) |
 
-The [official inventory](official-feature-inventory.json) preserves the source dates, tier notes, independently designed acceptance criteria, prerequisites and blockers. A listed test definition is distinct from a passed runtime test.
+The [official inventory](official-feature-inventory.json) keeps source dates, plan notes, proposed checks, requirements and blockers. A listed check does not mean it has been run or passed.

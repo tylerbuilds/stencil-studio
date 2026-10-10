@@ -40,28 +40,28 @@ export function identifyRaster(bytes) {
       offset += length;
     }
   }
-  fail('This file is not a supported PNG, JPEG, WebP or GIF image. SVG files must be exported as a raster image first.');
+  fail("Choose a PNG, JPEG, WebP or GIF image. Save SVG artwork as one of these image types first.");
 }
 
 export function checkImageDimensions(width, height) {
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > 16384 || height > 16384 || width * height > 40000000) fail('This image has unsupported dimensions. Use an image up to 16,384 pixels per side and 40 megapixels.');
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > 16384 || height > 16384 || width * height > 40000000) fail("Use an image up to 16,384 pixels on each side and 40 megapixels in total.");
 }
 export function validatePlainText(text) {
-  if (typeof text !== 'string' || !text.length || text.length > MAX_TEXT_LENGTH || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text)) fail('Use plain text with 1–10,000 characters and no binary control characters.');
+  if (typeof text !== 'string' || !text.length || text.length > MAX_TEXT_LENGTH || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text)) fail("Use 1 to 10,000 characters of plain text, without hidden control characters.");
   return text;
 }
 export function classifyFiles(files) {
   if (!Array.isArray(files) || !files.length || files.length > MAX_FILES) fail(`Choose between 1 and ${MAX_FILES} files.`);
   const kinds = files.map(file => {
-    if (!file || !Number.isInteger(file.size) || file.size < 1) fail('Empty or unreadable files cannot be inserted.');
+    if (!file || !Number.isInteger(file.size) || file.size < 1) fail("This file is empty or cannot be read. Choose another file.");
     const type = String(file.type || '').toLowerCase(), name = String(file.name || '');
-    if (type === 'application/json' || /\.json$/i.test(name)) { if (file.size > 12 * 1024 * 1024) fail('The design is too large (12 MiB maximum).'); return 'document'; }
+    if (type === 'application/json' || /\.json$/i.test(name)) { if (file.size > 12 * 1024 * 1024) fail("This design is too large. Use a file up to 12 MiB."); return 'document'; }
     if (type === 'text/plain' || /\.txt$/i.test(name)) { if (file.size > MAX_TEXT_LENGTH * 4 + 4) fail('This text file is too large. Use up to 10,000 characters.'); return 'text'; }
-    if (IMAGE_TYPES.includes(type) || !type && /\.(png|jpe?g|webp|gif)$/i.test(name)) { if (file.size > MAX_IMAGE_BYTES) fail('Each image must be no larger than 6 MiB.'); return 'image'; }
+    if (IMAGE_TYPES.includes(type) || !type && /\.(png|jpe?g|webp|gif)$/i.test(name)) { if (file.size > MAX_IMAGE_BYTES) fail("Use images up to 6 MiB each."); return 'image'; }
     fail('Choose PNG, JPEG, WebP, GIF, UTF-8 .txt or a Stencil .json design. HTML, SVG, PDF and other files are not supported.');
   });
-  if (kinds.includes('document') && files.length !== 1) fail('Open one Stencil JSON design at a time, separately from images and text files.');
-  if (!kinds.includes('document') && files.reduce((total, file) => total + file.size, 0) > MAX_BATCH_BYTES) fail('This file batch is too large (8 MiB maximum). Insert fewer files at a time.');
+  if (kinds.includes('document') && files.length !== 1) fail("Open one Stencil JSON design at a time. Add images and text files separately.");
+  if (!kinds.includes('document') && files.reduce((total, file) => total + file.size, 0) > MAX_BATCH_BYTES) fail("These files are over the 8 MiB total limit. Add fewer files at a time.");
   return kinds;
 }
 export function placement(page, width, height, point, index = 0) {
@@ -89,9 +89,9 @@ function decodeImage(blob, signal) {
     const image = new Image(), url = URL.createObjectURL(blob);
     const finish = () => { clearTimeout(timer); signal?.removeEventListener('abort', cancel); URL.revokeObjectURL(url); image.onload = null; image.onerror = null; };
     const cancel = () => { finish(); image.removeAttribute('src'); reject(new DOMException('Insertion cancelled.', 'AbortError')); };
-    const timer = setTimeout(() => { finish(); reject(new Error('The image took too long to decode. Try a smaller image.')); }, 20000);
+    const timer = setTimeout(() => { finish(); reject(new Error("This image took too long to open. Try a smaller image.")); }, 20000);
     image.onload = () => { const result = { width: image.naturalWidth, height: image.naturalHeight }; finish(); resolve(result); };
-    image.onerror = () => { finish(); reject(new Error('This image is damaged or cannot be decoded by your browser.')); };
+    image.onerror = () => { finish(); reject(new Error("This image is damaged or cannot be opened in your browser.")); };
     signal?.addEventListener('abort', cancel, { once: true }); image.src = url;
   });
 }
@@ -99,14 +99,14 @@ export async function prepareFiles(files, { page, brand, point, signal } = {}) {
   const kinds = classifyFiles(files), elements = [];
   for (let index = 0; index < files.length; index++) {
     abort(signal); const file = files[index], bytes = new Uint8Array(await file.arrayBuffer()); abort(signal);
-    if (bytes.length !== file.size) fail('A file changed while it was being read. Choose it again.');
+    if (bytes.length !== file.size) fail("This file changed while it was being read. Choose it again.");
     if (kinds[index] !== 'image') {
       let text; try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { fail('Text and design files must use valid UTF-8.'); }
       if (kinds[index] === 'document') return { kind: 'document', document: parseDocument(text) };
       elements.push(textElement(text, page, brand, point, index)); continue;
     }
     const raster = identifyRaster(bytes); checkImageDimensions(raster.width, raster.height);
-    if (file.type && file.type !== raster.type) fail('The image contents do not match its declared file type.');
+    if (file.type && file.type !== raster.type) fail("This image does not match its file type. Save it again as PNG, JPEG, WebP or GIF.");
     const blob = new Blob([bytes], { type: raster.type }), dimensions = await decodeImage(blob, signal); abort(signal);
     checkImageDimensions(dimensions.width, dimensions.height);
     const src = await readDataURL(blob, signal); abort(signal);

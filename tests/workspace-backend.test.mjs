@@ -242,10 +242,10 @@ test('browser client sends token headers only, enforces same-origin APIs and rep
     assert.equal(url.includes(created.tokens.owner), false);
     assert.equal(options.referrerPolicy, 'no-referrer'); assert.equal(options.redirect, 'error'); assert.equal(options.credentials, 'omit');
   }
-  assert.throws(() => createCloudClient({ baseURL: 'https://another.example/api/workspaces' }), /same-origin/);
-  assert.throws(() => createCloudClient({ baseURL: '//another.example/api/workspaces' }), /same-origin/);
-  assert.throws(() => createCloudClient({ baseURL: '/\n/another.example/api/workspaces' }), /same-origin/);
-  assert.throws(() => createCloudClient({ baseURL: '/api/../workspaces' }), /same-origin/);
+  assert.throws(() => createCloudClient({ baseURL: 'https://another.example/api/workspaces' }), { name: 'TypeError', message: 'The workspace service must use a path starting with / on this site.' });
+  assert.throws(() => createCloudClient({ baseURL: '//another.example/api/workspaces' }), { name: 'TypeError', message: 'The workspace service must use a path starting with / on this site.' });
+  assert.throws(() => createCloudClient({ baseURL: '/\n/another.example/api/workspaces' }), { name: 'TypeError', message: 'The workspace service must use a path starting with / on this site.' });
+  assert.throws(() => createCloudClient({ baseURL: '/api/../workspaces' }), { name: 'TypeError', message: 'The workspace service must use a path starting with / on this site.' });
   const link = shareLink({ id: credentials.id, token: created.tokens.view, baseURL: 'https://example.org/stencil-studio/?template=1' });
   assert.equal(new URL(link).search.includes(created.tokens.view), false);
   assert.deepEqual(readShareLink(link), { id: credentials.id, token: created.tokens.view });

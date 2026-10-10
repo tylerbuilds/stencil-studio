@@ -192,10 +192,10 @@ test('SVG exports omit hidden content, preserve flip and typography, and contain
 });
 test('group identifiers cannot collide with element or page IDs or span pages', () => {
   const a = createElement('rect'), b = createElement('circle'), doc = fixture([a, b]), pageId = doc.pages[0].id;
-  assert.throws(() => updateElement(doc, pageId, a.id, { groupId: b.id }), /reuse/);
+  assert.throws(() => updateElement(doc, pageId, a.id, { groupId: b.id }), /separate from pages and layers/);
   const grouped = groupElements(doc, pageId, [a.id, b.id]);
   const another = createDocument().pages[0]; another.elements = [createElement('text', { groupId: grouped.pages[0].elements[0].groupId })];
-  assert.throws(() => validateDocument({ ...grouped, pages: [...grouped.pages, another] }), /span/);
+  assert.throws(() => validateDocument({ ...grouped, pages: [...grouped.pages, another] }), /one page/);
 });
 test('history stores atomic edits, undo and redo, and drops redo after a new change', () => {
   const first = templateDocument('poster'), history = new History(first);

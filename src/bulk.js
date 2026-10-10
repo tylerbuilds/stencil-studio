@@ -6,38 +6,38 @@ export function parseCSV(value) {
   const csv = value.replace(/^\uFEFF/, '');
   const rows = [];
   let row = [], field = '', quoted = false, endedQuote = false;
-  const pushField = () => { if (field.length > 10000) fail('CSV cells must be under 10,000 characters.'); row.push(field); field = ''; endedQuote = false; };
-  const pushRow = () => { pushField(); if (row.some(cell => cell !== '')) rows.push(row); row = []; if (rows.length > 31) fail('Bulk creation supports up to 30 rows.'); };
+  const pushField = () => { if (field.length > 10000) fail("Keep each cell to 10,000 characters or fewer."); row.push(field); field = ''; endedQuote = false; };
+  const pushRow = () => { pushField(); if (row.some(cell => cell !== '')) rows.push(row); row = []; if (rows.length > 31) fail("Create copies from up to 30 data rows at a time."); };
   for (let i = 0; i < csv.length; i++) {
     const ch = csv[i];
     if (quoted) {
       if (ch === '"') { if (csv[i + 1] === '"') { field += '"'; i++; } else { quoted = false; endedQuote = true; } }
       else field += ch;
-    } else if (ch === '"') { if (field || endedQuote) fail('CSV has a misplaced quote.'); quoted = true; }
+    } else if (ch === '"') { if (field || endedQuote) fail("A quote is in the wrong place in this CSV file."); quoted = true; }
     else if (ch === ',') pushField();
     else if (ch === '\r' || ch === '\n') { if (ch === '\r' && csv[i + 1] === '\n') i++; pushRow(); }
-    else { if (endedQuote) fail('A quoted CSV cell must be followed by a comma or a new line.'); field += ch; }
+    else { if (endedQuote) fail("Put a comma or new line after a quoted cell."); field += ch; }
   }
-  if (quoted) fail('CSV has an unclosed quoted cell.');
+  if (quoted) fail("A quoted cell is missing its closing quote.");
   if (field || row.length || endedQuote) pushRow();
-  if (rows.length < 2) fail('CSV needs a header and at least one data row.');
+  if (rows.length < 2) fail("Add column names and at least one data row to the CSV file.");
   const headers = rows.shift().map(header => header.trim());
-  if (headers.length > 30 || headers.some(header => !header || header.length > 100) || new Set(headers).size !== headers.length) fail('CSV needs up to 30 unique, non-empty column names.');
-  if (headers.some(header => ['__proto__', 'prototype', 'constructor'].includes(header))) fail('This CSV column name is reserved.');
-  if (rows.some(values => values.length !== headers.length)) fail('Each CSV row must have the same number of cells as the header.');
+  if (headers.length > 30 || headers.some(header => !header || header.length > 100) || new Set(headers).size !== headers.length) fail("Use up to 30 different column names. Give each one 1 to 100 characters.");
+  if (headers.some(header => ['__proto__', 'prototype', 'constructor'].includes(header))) fail("This column name is reserved. Choose a different name.");
+  if (rows.some(values => values.length !== headers.length)) fail("Use the same number of cells in each row as in the column-name row.");
   return { headers, rows: rows.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index]]))) };
 }
 export function bulkCreate(document, pageId, csv) {
   const original = validateDocument(document), parsed = typeof csv === 'string' ? parseCSV(csv) : csv;
   const base = original.pages.find(page => page.id === pageId);
   if (!base) fail('Select a template page first.');
-  if (!parsed || !Array.isArray(parsed.headers) || !Array.isArray(parsed.rows) || !parsed.rows.length || parsed.rows.length > 30) fail('Bulk creation needs between 1 and 30 CSV rows.');
+  if (!parsed || !Array.isArray(parsed.headers) || !Array.isArray(parsed.rows) || !parsed.rows.length || parsed.rows.length > 30) fail("Use 1 to 30 data rows to create copies.");
   const placeholders = new Set();
   for (const source of [base.name, ...base.elements.filter(e => e.type === 'text').map(e => e.text)]) for (const match of source.matchAll(/\{\{([^{}]+)\}\}/g)) placeholders.add(match[1].trim());
-  if (!placeholders.size) fail('Add a {{column}} placeholder to page text or its name first.');
-  for (const placeholder of placeholders) if (!parsed.headers.includes(placeholder)) fail(`CSV is missing the column “${placeholder}”.`);
+  if (!placeholders.size) fail("Add a column name in double braces, such as {{column}}, to the page text or name first.");
+  for (const placeholder of placeholders) if (!parsed.headers.includes(placeholder)) fail(`Add the column “${placeholder}” to the CSV file.`);
   const replace = (text, values) => text.replace(/\{\{([^{}]+)\}\}/g, (_, key) => {
-    if (!Object.hasOwn(values, key.trim()) || typeof values[key.trim()] !== 'string') fail('CSV data does not match its headers.');
+    if (!Object.hasOwn(values, key.trim()) || typeof values[key.trim()] !== 'string') fail("The CSV data does not match its column names.");
     return values[key.trim()];
   });
   const pages = parsed.rows.map((values, index) => {

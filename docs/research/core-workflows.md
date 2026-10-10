@@ -1,25 +1,41 @@
-# Native clipboard and local file intake
+# Add files and use the clipboard
 
-This extension addresses the ordinary upload, insert, drop and copy/paste paths. It retains the existing original studio, document schema, guides, native datasets, local saves and optional configured sharing. It is not full Canva parity. Native-browser receipts and release qualification belong in [verification](../verification.md); the source behaviours below do not establish macOS browser or deployment execution by themselves.
+Choose **Image** to add pictures, or **File → Insert files** to add pictures and text files. You can also drop files onto the canvas. A drop inside the page places them near the pointer; a drop in the space around it uses the page centre. Drop outside the canvas and Stencil tells you where to try again.
 
-Canva documents choosing multiple local files, dragging files from a computer folder, then using uploaded media in a design. Its upload formats include more media and document types than this application. Stencil implements local raster/text insertion rather than a cloud upload catalogue or conversion service. [Canva upload workflow](https://www.canva.com/help/upload-media/), [file formats](https://www.canva.com/help/upload-formats-requirements/). These official pages were checked on 10 October 2026.
+Files keep their order and appear as selected layers. **Undo** removes the whole batch. Stencil checks and reads every file before adding anything, so one bad file leaves the design unchanged.
 
-## Delivered transport
+## Choose supported files
 
-The Image chooser accepts several raster images. File → Insert files and the Elements chooser accept PNG, JPEG, WebP, GIF and UTF-8 `.txt`; one strictly validated Stencil `.json` design can be opened separately after confirmation. The intentional File → Open JSON picker opens directly, with Undo and the same stale-draft guards. A canvas drop maps the pointer through the SVG artboard coordinates. Files dropped outside the artboard are placed at the current page centre; a file dropped outside the canvas is rejected while browser navigation is prevented. Files retain their input order, appear as selected native layers, persist through the document model and undo in one step.
+Images can be PNG, JPEG, WebP or GIF. Text files must be UTF-8 `.txt` files. SVG, HTML-only content, PDF, office files, folders and other media are not accepted. A file needs a valid image signature and must open in the browser; changing its extension does not make it an image.
 
-All files in a batch are classified, bounded, read and decoded before any model write. Images require matching raster signatures, supported dimensions and a successful browser decode. SVG, HTML-only content, PDFs, office files, folders and unsupported media are rejected. Text remains text, including literal URLs, markup, Unicode and line breaks. No imported URL is fetched and no HTML/SVG source is inserted into the DOM.
+Text stays text, including URLs, markup, Unicode and line breaks. Stencil does not open pasted URLs or insert imported HTML or SVG into the page.
 
-Limits are twenty files, 8 MiB combined image/text input, 6 MiB per raster, 16,384 source pixels per side and 40 megapixels. Text has at most 10,000 characters; JSON retains the model's 12 MiB UTF-8 limit. Existing page/document element and storage limits still apply. If a validated insertion cannot be saved to browser storage, it remains available in memory and JSON export with an error rather than a saved-success message.
+You can add up to 20 files with a combined size of 8 MiB. Each image can be up to 6 MiB, 16,384 pixels per side and 40 megapixels. Text can have up to 10,000 characters. Existing page and storage limits still apply. If the browser cannot save the result, the design stays open and Stencil asks you to download JSON.
 
-Pending work is tied to its design, page, cloud generation, accepted-edit revision and property draft. An edit, Undo/Redo, page/design replacement, newer intake, cancellation or changed editing draft prevents a stale completion from writing into later work. Open modal drafts are not replaced by a late intake. The visible Cancel insertion action aborts preparation; the design stays intact.
+## Open a saved design
 
-## System clipboard boundary
+**File → Open JSON** opens a Stencil design directly. Dropping or inserting one `.json` file asks before replacing the current design; it cannot be mixed with other files. **Undo** brings the previous design back. JSON uses the design's 12 MiB UTF-8 limit and is checked before opening.
 
-Copy and paste listen to real browser clipboard events. Text fields, contenteditable fields and open dialog forms retain native copy/paste. A canvas-owned paste prioritises a valid Stencil vector envelope, then actual clipboard files, then literal plain text. Prior internal selection data cannot override fresh external clipboard content: there is no separate tab-local object clipboard.
+Loading is cancelled if you switch designs or pages, make an edit, change a field, open a window or choose another batch. You can also choose **Cancel insertion**. These checks stop a file that finishes loading late from replacing newer work.
 
-Selected layers use `application/x-stencil-studio+json` when the browser preserves custom types. A portable plain-text representation begins with `STENCIL_STUDIO_CLIPBOARD_V1` and a newline. Both carry a strict versioned envelope with the source page dimensions and validated native layers. Pasting regenerates element/group identities, preserves relative geometry and independently clones crops, image data and native datasets. Bounds are derived from the layers rather than trusted from imported metadata. Other applications see JSON text; use Copy page as PNG for an actual image.
+## Copy and paste
 
-The explicit Copy layers, Paste and Copy page as PNG actions use secure clipboard APIs only after a click. A denied or unsupported read leaves the design intact and directs the user to keyboard paste. An unsupported PNG clipboard write downloads the page image instead. No clipboard permission probing, polling or automatic read occurs. Browser permission and user-activation behaviour differ across implementations. [Clipboard API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API), [WebKit clipboard behaviour](https://webkit.org/blog/10855/async-clipboard-api/).
+Select layers and press **Cmd/Ctrl-C**, then paste them into another Stencil tab with **Cmd/Ctrl-V**. Click the canvas before pasting text or an image from another app. Input fields and open form windows keep their normal copy and paste behaviour.
 
-The clipboard format is an independent Stencil interchange format. It cannot decode proprietary Canva project objects, does not claim Canva's internal clipboard protocol, and does not convert HTML, SVG, office or connected-cloud documents. Native browser clipboard checks, synthetic DataTransfer checks and real operating-system file-manager drag gestures must be reported separately.
+A paste first looks for copied Stencil layers, then image files, then plain text. An earlier layer copy does not override new content on your clipboard. Relative positions, groups, crops and table/chart values are kept, with new identities for the pasted layers.
+
+**Tools → Copy layers**, **Paste** and **Copy page as PNG** use your browser's clipboard controls after a click. The browser may require a secure page and permission. If a button is blocked, Stencil suggests the keyboard shortcut. If it cannot copy a PNG, it downloads the image instead. Clipboard access is never polled or read automatically.
+
+Other apps receive Stencil's copied layers as JSON text. Use **Copy page as PNG** when you want a picture instead. These clipboard controls cannot read proprietary Canva projects or turn HTML, SVG or office documents into a design.
+
+## Clipboard format and checks
+
+Stencil uses `application/x-stencil-studio+json` where the browser supports custom types. Its plain-text fallback starts with `STENCIL_STUDIO_CLIPBOARD_V1` and a newline. Both contain a checked, versioned record of the source page size and layers. Paste creates independent copies of the layer data and calculates their bounds from the layers, rather than trusting imported bounds.
+
+Browser clipboard tests, controlled File/DataTransfer drops and physical file-manager drags are different checks. [Release checks](../verification.md) record what was tested and on which platform. The behaviour described here alone does not establish a macOS run or a deployed release.
+
+## Sources
+
+Canva's public help describes choosing several files, dragging them from a folder and adding uploaded media to a design. Stencil adds local images and text; it has no cloud upload catalogue or conversion service. Canva supports more file types. These pages were checked on 10 October 2026: [upload workflow](https://www.canva.com/help/upload-media/), [file formats](https://www.canva.com/help/upload-formats-requirements/).
+
+Browser clipboard permissions and user-activation rules vary. See the [Clipboard API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) and [WebKit clipboard notes](https://webkit.org/blog/10855/async-clipboard-api/). This is Stencil's own format, not Canva's internal clipboard protocol or a full feature-parity claim.

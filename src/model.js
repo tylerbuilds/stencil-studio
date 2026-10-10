@@ -56,7 +56,7 @@ function identifier(value, name, seen) {
 function validateSchema(value, version) {
   record(value, 'Document');
   keys(value, ['schema', 'version', 'title', 'pages', ...(version >= 2 ? ['brand'] : [])], 'Document');
-  assert(value.schema === SCHEMA && value.version === version, 'Unsupported document format or version. Use a Stencil Studio v1, v2, v3 or v4 JSON file.');
+  assert(value.schema === SCHEMA && value.version === version, "This design format or version is not supported. Open a Stencil Studio v1, v2, v3 or v4 JSON file.");
   string(value.title, 'Document title', 150);
   if (version >= 2) {
     record(value.brand, 'Brand');
@@ -64,7 +64,7 @@ function validateSchema(value, version) {
     array(value.brand.colours, 'Brand colours', 8, 1);
     value.brand.colours.forEach(item => colour(item, 'Brand colour'));
     assert(new Set(value.brand.colours.map(item => item.toLowerCase())).size === value.brand.colours.length, 'Brand colours must be unique.');
-    assert(FONTS.includes(value.brand.fontFamily), 'Unsupported brand font family.');
+    assert(FONTS.includes(value.brand.fontFamily), "Choose a brand font available in Stencil Studio.");
   }
   array(value.pages, 'Document pages', 30, 1);
   const seen = new Set();
@@ -75,8 +75,8 @@ function validateSchema(value, version) {
     keys(page, ['id', 'name', 'width', 'height', 'background', 'elements', ...(version >= 3 ? ['transparentBackground', 'guides', 'guideSettings'] : [])], 'Page');
     identifier(page.id, 'Page ID', seen);
     string(page.name, 'Page name', 100);
-    numeric(page.width, 'Artboard width', 64, 4096);
-    numeric(page.height, 'Artboard height', 64, 4096);
+    numeric(page.width, "Page width", 64, 4096);
+    numeric(page.height, "Page height", 64, 4096);
     colour(page.background, 'Background');
     if (version >= 3) {
       assert(typeof page.transparentBackground === 'boolean', 'Transparent background must be true or false.');
@@ -88,10 +88,10 @@ function validateSchema(value, version) {
     }
     array(page.elements, 'Page elements', 300);
     total += page.elements.length;
-    assert(total <= 1000, 'A document supports up to 1000 elements.');
+    assert(total <= 1000, "A design can hold up to 1,000 layers.");
     for (const element of page.elements) {
       record(element, 'Element');
-      assert((version >= 4 ? TYPES : version === 3 ? V3_TYPES : LEGACY_TYPES).includes(element.type), 'Unsupported element type.');
+      assert((version >= 4 ? TYPES : version === 3 ? V3_TYPES : LEGACY_TYPES).includes(element.type), "This layer type is not supported here.");
       keys(element, [...(version === 1 ? LEGACY_COMMON : COMMON), ...typeFields(element.type, version), ...(version >= 2 && ['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element');
       identifier(element.id, 'Element ID', seen);
       numeric(element.x, 'Element x', -8192, 8192);
@@ -106,7 +106,7 @@ function validateSchema(value, version) {
         if (element.groupId !== null) {
           string(element.groupId, 'Group ID', 100);
           assert(element.groupId.length > 0 && /^[\w-]+$/.test(element.groupId), 'Group ID must be a valid identifier or null.');
-          assert(!groupPages.has(element.groupId) || groupPages.get(element.groupId) === page.id, 'A group cannot span multiple pages.');
+          assert(!groupPages.has(element.groupId) || groupPages.get(element.groupId) === page.id, "Keep each group on one page.");
           groupPages.set(element.groupId, page.id);
         }
         if (['rect', 'circle'].includes(element.type)) {
@@ -116,10 +116,10 @@ function validateSchema(value, version) {
       }
       if (element.type === 'text') {
         string(element.text, 'Element text', 10000);
-        assert(FONTS.includes(element.fontFamily), 'Unsupported font family.');
+        assert(FONTS.includes(element.fontFamily), "Choose a font available in Stencil Studio.");
         numeric(element.fontSize, 'Font size', 4, 500);
         assert([400, 700].includes(element.fontWeight), 'Font weight must be 400 or 700.');
-        assert(['left', 'center', 'right'].includes(element.align), 'Unsupported text alignment.');
+        assert(['left', 'center', 'right'].includes(element.align), "Align text to the left, centre or right.");
         if (version >= 2) {
           numeric(element.lineHeight, 'Line height', .8, 3);
           numeric(element.letterSpacing, 'Letter spacing', -10, 100);
@@ -127,7 +127,7 @@ function validateSchema(value, version) {
       }
       if (element.type === 'rect') numeric(element.radius, 'Corner radius', 0, 4096);
       if (element.type === 'shape') {
-        assert(SHAPE_KINDS.includes(element.kind), 'Unsupported shape.');
+        assert(SHAPE_KINDS.includes(element.kind), "Choose a shape available in Stencil Studio.");
         colour(element.stroke, 'Stroke colour'); numeric(element.strokeWidth, 'Stroke width', 0, 40);
       }
       if (element.type === 'freehand') {
@@ -136,7 +136,7 @@ function validateSchema(value, version) {
         for (const point of element.points) { record(point, 'Brush point'); keys(point, ['x', 'y'], 'Brush point'); numeric(point.x, 'Brush point x', 0, 1); numeric(point.y, 'Brush point y', 0, 1); }
       }
       if (element.type === 'image') {
-        assert(typeof element.src === 'string' && element.src.length <= MAX_IMAGE_BYTES && /^data:image\/(png|jpeg|webp|gif);base64,(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(element.src) && !element.src.endsWith(','), 'Images must be embedded PNG, JPEG, WebP or GIF data (up to 6 MB before encoding).');
+        assert(typeof element.src === 'string' && element.src.length <= MAX_IMAGE_BYTES && /^data:image\/(png|jpeg|webp|gif);base64,(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(element.src) && !element.src.endsWith(','), "Images must be embedded in the design as PNG, JPEG, WebP or GIF, up to 6 MB before encoding.");
         if (version >= 2) {
           numeric(element.sourceWidth, 'Source width', 1, 65535);
           numeric(element.sourceHeight, 'Source height', 1, 65535);
@@ -146,7 +146,7 @@ function validateSchema(value, version) {
           numeric(element.crop.y, 'Crop y', 0, 1);
           numeric(element.crop.width, 'Crop width', .0001, 1);
           numeric(element.crop.height, 'Crop height', .0001, 1);
-          assert(element.crop.x + element.crop.width <= 1 + Number.EPSILON && element.crop.y + element.crop.height <= 1 + Number.EPSILON, 'Image crop must fit inside the source image.');
+          assert(element.crop.x + element.crop.width <= 1 + Number.EPSILON && element.crop.y + element.crop.height <= 1 + Number.EPSILON, "Keep the crop inside the original image.");
           record(element.filters, 'Image filters');
           keys(element.filters, ['brightness', 'contrast', 'saturation', 'grayscale', 'blur'], 'Image filters');
           for (const prop of ['brightness', 'contrast', 'saturation']) numeric(element.filters[prop], prop, 0, 2);
@@ -157,12 +157,12 @@ function validateSchema(value, version) {
       if (['table', 'chart'].includes(element.type)) validateDataElementFields(element);
     }
   }
-  for (const groupId of groupPages.keys()) assert(!seen.has(groupId), 'Group ID must not reuse a page or element identifier.');
-  assert(byteLength(JSON.stringify(value, null, 2)) <= MAX_DOCUMENT_BYTES, 'The document is too large (12 MB maximum).');
+  for (const groupId of groupPages.keys()) assert(!seen.has(groupId), "Each group needs its own ID, separate from pages and layers.");
+  assert(byteLength(JSON.stringify(value, null, 2)) <= MAX_DOCUMENT_BYTES, "This design is too large. Use a file up to 12 MB.");
 }
 export function validateDocument(value) {
   record(value, 'Document');
-  assert(value.schema === SCHEMA && [1, 2, 3, VERSION].includes(value.version), 'Unsupported document format or version. Use a Stencil Studio v1, v2, v3 or v4 JSON file.');
+  assert(value.schema === SCHEMA && [1, 2, 3, VERSION].includes(value.version), "This design format or version is not supported. Open a Stencil Studio v1, v2, v3 or v4 JSON file.");
   validateSchema(value, value.version);
   if (value.version < VERSION) {
     const migrated = clone(value);
@@ -178,14 +178,14 @@ export function validateDocument(value) {
   return clone(value);
 }
 export function parseDocument(json) {
-  assert(typeof json === 'string' && byteLength(json) <= MAX_DOCUMENT_BYTES, 'The document is too large (12 MB maximum).');
+  assert(typeof json === 'string' && byteLength(json) <= MAX_DOCUMENT_BYTES, "This design is too large. Use a file up to 12 MB.");
   let value;
   try { value = JSON.parse(json); } catch { throw new Error('This file is not valid JSON.'); }
   return validateDocument(value);
 }
 export function serialiseDocument(value) { return JSON.stringify(validateDocument(value), null, 2); }
 export function createElement(type, patch = {}) {
-  assert(TYPES.includes(type), 'Unsupported element type.');
+  assert(TYPES.includes(type), "This layer type is not supported here.");
   record(patch, 'Element patch');
   keys(patch, [...COMMON, ...typeFields(type), ...(['rect', 'circle'].includes(type) ? STROKE : [])], 'Element patch');
   const element = { id: id(), type, x: 64, y: 64, width: type === 'text' ? 360 : 200, height: type === 'text' ? 130 : 200, rotation: 0, fill: '#e76543', opacity: 1, locked: false, hidden: false, flipX: false, flipY: false, groupId: null };
@@ -260,7 +260,7 @@ export function templateDocument(key) {
   } else if (key === 'menu') {
     doc.title = 'At our table'; page.width = 794; page.height = 1123; page.name = 'The menu';
     page.elements = [circle(619, -90, 240, 240, '#e76543'), text('AT OUR TABLE', 60, 73, 675, 54, '#232a27', { fontFamily: 'Georgia', align: 'center' }), text('SEASONAL FOOD / GOOD COMPANY', 60, 156, 674, 18, '#232a27', { fontWeight: 400, align: 'center' }), rect(64, 213, 665, 2, '#232a27'), text('SMALL PLATES', 65, 252, 664, 24), text('Roasted carrots, herby yoghurt          £7\nWarm focaccia, olive oil                    £5\nTomato salad, basil                         £8', 65, 302, 665, 23, '#232a27', { fontWeight: 400 }), text('FROM THE KITCHEN', 65, 476, 664, 24), text('Mushroom risotto                            £16\nMarket vegetables, lentils                 £14\nHouse pasta, seasonal greens             £15', 65, 526, 665, 23, '#232a27', { fontWeight: 400 }), text('SOMETHING SWEET', 65, 705, 664, 24), text('Lemon cake, fresh cream                   £7\nChocolate tart, sea salt                    £8', 65, 755, 665, 23, '#232a27', { fontWeight: 400 }), rect(64, 938, 665, 2, '#232a27'), text('Please tell us about dietary requirements.\nA sample menu, ready for your own dishes.', 65, 980, 665, 18, '#232a27', { fontWeight: 400, align: 'center' })];
-  } else throw new Error('Unknown template.');
+  } else throw new Error("This template is not available. Choose another template.");
   return validateDocument(doc);
 }
 export function editPage(document, pageId, updater) {
@@ -274,9 +274,9 @@ export function updateElement(document, pageId, elementId, patch) {
   return updateElements(document, pageId, [elementId], patch);
 }
 function selectedElements(page, ids, expandGroups = false) {
-  assert(Array.isArray(ids) && ids.every(item => typeof item === 'string'), 'Element IDs must be an array.');
+  assert(Array.isArray(ids) && ids.every(item => typeof item === 'string'), "Supply layer IDs as a list.");
   const chosen = new Set(ids);
-  assert(ids.every(elementId => page.elements.some(element => element.id === elementId)), 'Element not found.');
+  assert(ids.every(elementId => page.elements.some(element => element.id === elementId)), "Layer not found.");
   if (expandGroups) {
     const groups = new Set(page.elements.filter(element => chosen.has(element.id) && element.groupId).map(element => element.groupId));
     page.elements.forEach(element => { if (groups.has(element.groupId)) chosen.add(element.id); });
@@ -321,7 +321,7 @@ export function removeElement(document, pageId, elementId) { return removeElemen
 export function reorderElement(document, pageId, elementId, direction) {
   return editPage(document, pageId, page => {
     const from = page.elements.findIndex(item => item.id === elementId);
-    assert(from >= 0, 'Element not found.');
+    assert(from >= 0, "Layer not found.");
     numeric(direction, 'Layer direction', -1, 1);
     const elements = selectedElements(page, [elementId], true);
     if (!direction || elements.some(element => element.locked)) return;
@@ -337,7 +337,7 @@ export function reorderElement(document, pageId, elementId, direction) {
 }
 /** Move whole selected groups to an edge, or beside a target group, atomically. */
 export function positionLayers(document, pageId, ids, position, targetId = null) {
-  assert(['front', 'back', 'before', 'after'].includes(position), 'Unsupported layer position.');
+  assert(['front', 'back', 'before', 'after'].includes(position), "Move the layer to the front, back, before or after another layer.");
   return editPage(document, pageId, page => {
     const elements = selectedElements(page, ids, true);
     if (!elements.length || elements.some(element => element.locked)) return;
@@ -346,9 +346,9 @@ export function positionLayers(document, pageId, ids, position, targetId = null)
     const remaining = page.elements.filter(e => !chosen.has(e.id));
     let index = position === 'back' ? 0 : remaining.length;
     if (position === 'before' || position === 'after') {
-      assert(typeof targetId === 'string', 'Choose a target layer.');
+      assert(typeof targetId === 'string', "Choose the layer to place this beside.");
       const target = selectedElements(page, [targetId], true).filter(e => !chosen.has(e.id));
-      assert(target.length, 'Target layer not found.');
+      assert(target.length, "The layer to move beside was not found.");
       index = position === 'before' ? Math.min(...target.map(e => remaining.indexOf(e))) : Math.max(...target.map(e => remaining.indexOf(e))) + 1;
     }
     remaining.splice(index, 0, ...elements); page.elements = remaining;
@@ -366,7 +366,7 @@ export function duplicatePage(document, pageId) {
 export function reorderPage(document, pageId, targetIndex) {
   const next = validateDocument(document), index = next.pages.findIndex(page => page.id === pageId);
   assert(index >= 0, 'Page not found.');
-  assert(Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < next.pages.length, 'Page position must be an existing page number.');
+  assert(Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < next.pages.length, "Choose a position within the current page list.");
   if (index !== targetIndex) { const [page] = next.pages.splice(index, 1); next.pages.splice(targetIndex, 0, page); }
   return validateDocument(next);
 }
@@ -381,7 +381,7 @@ export function setPageGuideSettings(document, pageId, patch) {
   return editPage(document, pageId, page => { Object.assign(page.guideSettings, clone(patch)); });
 }
 export function resizePageDocument(document, pageId, width, height, scaleElements = false) {
-  numeric(width, 'Artboard width', 64, 4096); numeric(height, 'Artboard height', 64, 4096); assert(typeof scaleElements === 'boolean', 'Scale layout must be true or false.');
+  numeric(width, "Page width", 64, 4096); numeric(height, "Page height", 64, 4096); assert(typeof scaleElements === 'boolean', 'Scale layout must be true or false.');
   return editPage(document, pageId, page => {
     const sx = width / page.width, sy = height / page.height, lockedGroups = new Set(page.elements.filter(element => element.locked && element.groupId).map(element => element.groupId));
     if (scaleElements) page.elements.forEach(element => { if (element.locked || lockedGroups.has(element.groupId)) return; element.x *= sx; element.y *= sy; element.width *= sx; element.height *= sy; if (['text', 'table', 'chart'].includes(element.type)) element.fontSize = Math.max(4, Math.min(element.type === 'text' ? 500 : 100, element.fontSize * Math.min(sx, sy))); });
@@ -421,7 +421,7 @@ export function copyElements(document, pageId, ids) {
   return clone(selectedElements(page, ids, true));
 }
 export function pasteElements(document, pageId, elements, offset = 24) {
-  assert(Array.isArray(elements) && elements.length <= 300, 'Clipboard supports up to 300 elements.');
+  assert(Array.isArray(elements) && elements.length <= 300, "Copy or paste up to 300 layers at a time.");
   return editPage(document, pageId, page => {
     // Validate the clipboard before remapping so unsupported fields cannot be erased accidentally.
     validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [{ ...createPage(), elements }] });
@@ -432,8 +432,8 @@ export function duplicateElements(document, pageId, ids, offset = 24) { return p
 export function groupElements(document, pageId, ids) {
   return editPage(document, pageId, page => {
     const elements = selectedElements(page, ids, true);
-    assert(elements.length >= 2, 'Select at least two elements to group.');
-    assert(elements.every(element => !element.locked), 'Unlock elements before grouping.');
+    assert(elements.length >= 2, "Select at least two layers to group.");
+    assert(elements.every(element => !element.locked), "Unlock the layers before grouping them.");
     const groupId = id(), chosen = new Set(elements.map(element => element.id));
     elements.forEach(element => { element.groupId = groupId; });
     // A group occupies consecutive layers at the highest selected layer.
@@ -446,7 +446,7 @@ export function groupElements(document, pageId, ids) {
 export function ungroupElements(document, pageId, ids) {
   return editPage(document, pageId, page => {
     const elements = selectedElements(page, ids, true);
-    assert(elements.every(element => !element.locked), 'Unlock elements before ungrouping.');
+    assert(elements.every(element => !element.locked), "Unlock the layers before ungrouping them.");
     elements.forEach(element => { element.groupId = null; });
   });
 }
@@ -458,7 +458,7 @@ export function elementBounds(element) {
   return { x: element.x + halfW - width / 2, y: element.y + halfH - height / 2, width, height };
 }
 export function boundsOfElements(elements) {
-  assert(Array.isArray(elements) && elements.length > 0, 'Select at least one element.');
+  assert(Array.isArray(elements) && elements.length > 0, "Select at least one layer.");
   const bounds = elements.map(elementBounds), x = Math.min(...bounds.map(item => item.x)), y = Math.min(...bounds.map(item => item.y));
   return { x, y, width: Math.max(...bounds.map(item => item.x + item.width)) - x, height: Math.max(...bounds.map(item => item.y + item.height)) - y };
 }
@@ -472,7 +472,7 @@ function selectionUnits(page, ids) {
   return [...groups.values()].map(elements => ({ elements, bounds: boundsOfElements(elements), locked: elements.some(element => element.locked) }));
 }
 export function alignElements(document, pageId, ids, alignment, toPage = false) {
-  assert(['left', 'right', 'top', 'bottom', 'centerX', 'centerY'].includes(alignment), 'Unsupported alignment.');
+  assert(['left', 'right', 'top', 'bottom', 'centerX', 'centerY'].includes(alignment), "Choose left, right, top, bottom, horizontal centre or vertical centre alignment.");
   assert(typeof toPage === 'boolean', 'Page alignment must be true or false.');
   return editPage(document, pageId, page => {
     const units = selectionUnits(page, ids);
@@ -488,12 +488,12 @@ export function alignElements(document, pageId, ids, alignment, toPage = false) 
   });
 }
 export function distributeElements(document, pageId, ids, axis) {
-  assert(['horizontal', 'vertical'].includes(axis), 'Unsupported distribution axis.');
+  assert(['horizontal', 'vertical'].includes(axis), "Space layers horizontally or vertically.");
   return editPage(document, pageId, page => {
     const horizontal = axis === 'horizontal', coord = horizontal ? 'x' : 'y', size = horizontal ? 'width' : 'height';
     const units = selectionUnits(page, ids).sort((a, b) => a.bounds[coord] - b.bounds[coord]);
-    assert(units.length >= 3, 'Select at least three elements or groups to distribute.');
-    assert(units.every(unit => !unit.locked), 'Unlock elements before distributing.');
+    assert(units.length >= 3, "Select at least three layers or groups to space evenly.");
+    assert(units.every(unit => !unit.locked), "Unlock the layers before spacing them evenly.");
     const first = units[0].bounds, last = units.at(-1).bounds;
     const gap = (last[coord] + last[size] - first[coord] - units.reduce((sum, unit) => sum + unit.bounds[size], 0)) / (units.length - 1);
     let position = first[coord];
@@ -602,5 +602,5 @@ export function pageSVG(page, interactive = false) {
   }
   if (currentGroup) content += '</g>';
   const background = !page.transparentBackground || interactive ? `<rect width="100%" height="100%" fill="${page.transparentBackground ? 'transparent' : page.background}"/>` : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design artboard" role="img"' : ''}>${background}${content}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design canvas" role="img"' : ''}>${background}${content}</svg>`;
 }

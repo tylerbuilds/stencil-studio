@@ -56,9 +56,9 @@ function checkJSON(value) {
   function visit(item, depth) {
     require(++nodes <= 1000000 && depth <= 32, 'The library is too complex to import.');
     if (typeof item === 'string') {
-      require(item.length <= MAX_LIBRARY_BYTES, 'The library is too large (18 MB maximum).');
+      require(item.length <= MAX_LIBRARY_BYTES, "This backup is too large. Use a file up to 18 MB.");
       bytes += byteLength(item);
-      require(bytes <= MAX_LIBRARY_BYTES, 'The library is too large (18 MB maximum).');
+      require(bytes <= MAX_LIBRARY_BYTES, "This backup is too large. Use a file up to 18 MB.");
       return;
     }
     if (item === null || typeof item === 'boolean') return;
@@ -87,19 +87,19 @@ function designId(value) {
   return value;
 }
 function designName(value) {
-  require(typeof value === 'string' && value.trim().length > 0 && value.length <= 150 && !/[\u0000-\u001f\u007f]/.test(value), 'Design name must contain 1–150 characters without control characters.');
+  require(typeof value === 'string' && value.trim().length > 0 && value.length <= 150 && !/[\u0000-\u001f\u007f]/.test(value), "Use 1 to 150 characters for the design name, without hidden control characters.");
   return value.trim();
 }
 function validDocument(document) {
   checkJSON(document);
   try { return validateDocument(document); }
-  catch (cause) { throw new LibraryError(`This design cannot be saved: ${cause.message}`, 'invalid-document', cause); }
+  catch (cause) { throw new LibraryError(`This design could not be saved: ${cause.message}`, 'invalid-document', cause); }
 }
 function validateLibrary(value) {
   checkJSON(value);
   ownKeys(value, ['schema', 'version', 'designs'], 'Library');
-  require(value.schema === LIBRARY_SCHEMA && value.version === LIBRARY_VERSION, 'Unsupported library format or version. Use a Stencil Studio v1 library backup.');
-  require(Array.isArray(value.designs) && value.designs.length <= MAX_DESIGNS, `A library supports up to ${MAX_DESIGNS} saved designs. Export a backup, then remove a design to make room.`);
+  require(value.schema === LIBRARY_SCHEMA && value.version === LIBRARY_VERSION, "This backup format or version is not supported. Open a Stencil Studio v1 library backup.");
+  require(Array.isArray(value.designs) && value.designs.length <= MAX_DESIGNS, `Keep up to ${MAX_DESIGNS} saved designs. Export a backup, then remove a design to make room.`);
   const ids = new Set();
   const designs = value.designs.map(item => {
     ownKeys(item, ['id', 'name', 'updatedAt', 'document'], 'Saved design');
@@ -110,12 +110,12 @@ function validateLibrary(value) {
     return { id: identifier, name: designName(item.name), updatedAt: item.updatedAt, document: validDocument(item.document) };
   });
   const library = { schema: LIBRARY_SCHEMA, version: LIBRARY_VERSION, designs };
-  require(byteLength(JSON.stringify(library, null, 2)) <= MAX_LIBRARY_BYTES, 'The library is too large (18 MB maximum). Export a backup, then remove a design to make room.');
+  require(byteLength(JSON.stringify(library, null, 2)) <= MAX_LIBRARY_BYTES, "Your saved designs are too large (18 MB maximum). Export a backup, then remove a design to make room.");
   return library;
 }
 function parseLibrary(payload) {
   if (typeof payload !== 'string') return validateLibrary(payload);
-  require(byteLength(payload) <= MAX_LIBRARY_BYTES, 'The library is too large (18 MB maximum).');
+  require(byteLength(payload) <= MAX_LIBRARY_BYTES, "This backup is too large. Use a file up to 18 MB.");
   let value;
   try { value = JSON.parse(payload); }
   catch (cause) { throw new LibraryError('This library backup is not valid JSON.', 'invalid-json', cause); }
@@ -125,16 +125,16 @@ function readLibrary(storage) {
   const resolved = storageFor(storage);
   let payload;
   try { payload = resolved.getItem(LIBRARY_KEY); }
-  catch (cause) { throw new LibraryError('The saved library cannot be read because browser storage is unavailable. Export your open design as JSON to keep a copy.', 'storage-unavailable', cause); }
+  catch (cause) { throw new LibraryError("Your saved designs cannot be opened because browser storage is unavailable. Export your open design as JSON to keep a copy.", 'storage-unavailable', cause); }
   if (payload === null) return emptyLibrary();
   try { return parseLibrary(payload); }
-  catch (cause) { throw new LibraryError(`Your saved library could not be loaded. Its stored data has been kept. ${cause.message}`, 'invalid-stored-library', cause); }
+  catch (cause) { throw new LibraryError(`Your saved designs could not be opened. Their stored data has been kept. ${cause.message}`, 'invalid-stored-library', cause); }
 }
 function writeLibrary(library, storage) {
   const valid = validateLibrary(library);
   const payload = JSON.stringify(valid, null, 2);
   try { writeWithMigrationBackup(storageFor(storage), LIBRARY_KEY, payload, 'library'); }
-  catch (cause) { throw new LibraryError('The library could not be saved because browser storage is full or unavailable. Your previous saved library is unchanged. Export your open design as JSON to keep a copy.', 'storage-write-failed', cause); }
+  catch (cause) { throw new LibraryError("Your designs could not be saved because browser storage is full or unavailable. Your previously saved designs are unchanged. Export your open design as JSON to keep a copy.", 'storage-write-failed', cause); }
   return valid;
 }
 function metadata(library) {
@@ -143,7 +143,7 @@ function metadata(library) {
 function findDesign(library, identifier) {
   designId(identifier);
   const record = library.designs.find(item => item.id === identifier);
-  require(record, 'Saved design not found. Refresh your library and try again.');
+  require(record, "Saved design not found. Refresh My designs and try again.");
   return record;
 }
 function uniqueId(library) {
@@ -196,7 +196,7 @@ function canonicalJSON(value) {
 export function importLibrary(payload, options = {}, storage) {
   options = checkedOptions(options, ['mode'], 'Import options');
   const mode = options.mode ?? 'merge';
-  require(['merge', 'replace'].includes(mode), 'Import mode must be merge or replace.');
+  require(['merge', 'replace'].includes(mode), "Choose whether to add this backup to your saved designs or replace them.");
   const imported = parseLibrary(payload);
   const library = mode === 'replace' ? emptyLibrary() : readLibrary(storage);
   let added = 0, skipped = 0;

@@ -1,22 +1,32 @@
-# Page videos
+# Make a slideshow video
 
-Stencil Studio turns the current design's pages into a local slideshow video. Pages remain editable still designs. The video module renders them to a canvas and records its stream with the browser's native `MediaRecorder`. Export takes approximately the timeline's running time and needs the tab to stay active.
+Open **Tools → Video** to turn your design pages into a slideshow. Set how long each page appears, choose a cut or fade between pages, then choose **Load preview**.
 
-The implementation supports a separate duration for each page, cuts or cross-fades, and an optional local audio file during export. It does not generate video with AI, import or trim video footage, animate individual elements, or provide a multi-track editor. The preview is visual only; it does not play the chosen audio file.
+Use **Play**, **Pause** and the slider to check the result. The preview shows the pictures only. If you add an audio file, you will hear it in the exported video.
 
-## Timing and output
+Choose **Export video** when you are ready. Export takes about as long as the video itself, so keep the tab open and active. The file downloads when it finishes, and you can play it in the window. **Cancel export** stops it.
 
-Pages play in document order. Each page defaults to 3 seconds and can last from 0.25 to 30 seconds. The whole video is limited to 180 seconds. The available frame rates are 15, 24, 30 and 60 fps. A cross-fade uses the final 0.5 seconds of each page, or half that page's duration if shorter. It blends into the next page without extending the timeline. The last page has no outgoing fade.
+## Set the timing
 
-The first page sets the output aspect ratio. The longest edge is capped at 1280 pixels, with no upscaling; both dimensions are rounded down to even numbers. Pages with different proportions fit within this frame with letterboxing, rather than being stretched or cropped. Preparation checks raster source images' decoded dimensions and rejects images above 24 megapixels, including imports with inaccurate dimension metadata. Recording stops with an error if the accumulated output exceeds 128 MiB.
+Pages play in design order. Each starts at 3 seconds; you can choose from 0.25 to 30 seconds per page, up to 180 seconds in total. A crossfade uses the last half-second of a page, or half its length if the page is shorter. It does not add time to the video.
 
-Export selects a supported format at runtime. It tries WebM with VP8, then VP9, then generic WebM, followed by MP4 with an explicit AVC codec and generic MP4. Audio exports request the corresponding Opus or AAC codec. The returned file extension matches the selected container. If canvas stream capture or a suitable recorder format is unavailable, export reports that limitation. A `.mp4` download is available only when the browser reports MP4 recording support.
+The first page sets the video shape. Other page sizes fit inside that frame with space around them where needed. The longest edge is at most 1,280 pixels, and smaller designs are not enlarged.
 
-Native streaming WebM can omit container duration metadata even when its frames decode and play correctly. A player may initially show an indefinite duration. This module returns the browser's recording without remuxing; inspect packet timestamps when checking the exported running time.
+Timing, transitions and audio last for this export session. They are not saved in the design JSON, so finish or export your video before closing the window.
 
-Audio is optional and stays in memory for the export; it is not saved in the design JSON. A file must be at most 12 MiB, decode to at most 300 seconds, and have no more than two channels. Its beginning aligns with the beginning of the timeline. Longer audio is cut at the video's end; shorter audio leaves the remaining video silent. Decoding and recording still depend on formats supported by the current browser.
+## Add sound
 
-Timing and transition settings belong to the export session and are not stored in the design JSON. Preview pauses when the tab becomes hidden; recording stops with an explanatory error because a background tab can produce unreliable timing. Aborting releases recorder and stream tracks, scheduled frames, prepared scene bitmaps and any audio context. A new export can start after cleanup.
+Choose an optional audio file up to 12 MiB. It starts with the first page. Long audio stops when the video ends; short audio leaves the rest silent. The browser must be able to read the file. Audio can be up to 300 seconds with one or two channels, and stays in memory for the export.
+
+## Check the downloaded file
+
+Stencil uses the video formats your browser can record. WebM is preferred; MP4 is available only in browsers that support recording it. Some WebM players cannot show a duration until they have read the video, even when playback works.
+
+Keep the tab in the foreground while exporting. Switching away can interrupt the timing, so Stencil stops the export and tells you to try again. Large source images over 24 megapixels and recordings over 128 MiB are refused.
+
+This tool makes slideshows from still pages. It does not trim video footage or animate individual layers. Codec support varies between browsers and devices.
+
+The sections below describe the module and checks for developers.
 
 ## Module API
 

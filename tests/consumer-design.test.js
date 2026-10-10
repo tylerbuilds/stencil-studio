@@ -20,12 +20,12 @@ test('v3 migration changes only the version and keeps all ordered pages, guides,
  p.elements=[createElement('image',{id:'image',groupId:'old-group',src:'data:image/png;base64,iVBORw0KGgo=',sourceWidth:800,sourceHeight:600,crop:{x:.1,y:.2,width:.7,height:.5},filters:{contrast:1.2,saturation:.4},hidden:true}),createElement('text',{id:'text',groupId:'old-group',text:'Original\n界',lineHeight:1.7,letterSpacing:2}),createElement('table',{id:'table',headerFill:'#123456',data:{columns:['Literal <'],rows:[['First\nSecond']]}}),createElement('chart',{id:'chart',data:{kind:'pie',labels:['Original','More'],values:[2,3]},palette:['#123456','#abcdef']})];
  d.pages.unshift(createPage(900,600));const raw=JSON.stringify(d,null,3)+'\n', old=structuredClone(d), migrated=parseDocument(raw);
  assert.deepEqual(migrated,{...old,version:4});assert.deepEqual(d,old);const storage=new Storage();storage.values.set(key,raw);writeWithMigrationBackup(storage,key,serialiseDocument(migrated));assert.ok([...storage.values].some(([k,v])=>k.includes('.migration.v4.')&&v===raw));assert.deepEqual(parseDocument(storage.getItem(key)),migrated);
- const bad=structuredClone(old);bad.pages[1].elements.push(createElement('shape'));assert.throws(()=>validateDocument(bad),/Unsupported element type/);
+ const bad=structuredClone(old);bad.pages[1].elements.push(createElement('shape'));assert.throws(()=>validateDocument(bad),/This layer type is not supported here\./);
 });
 
 test('shape factory produces original visible native polygons and lines with editable stroke, colour and exact transforms',()=>{
  for(const kind of SHAPE_KINDS){const e=createElement('shape',{kind,x:31,y:47,width:123,height:89,rotation:15,fill:'#abcdef',opacity:.5});const svg=elementSVG(e);assert.match(svg,/translate\(31 47\) rotate\(15 61.5 44.5\)/);assert.match(svg,/opacity="0.5"/);assert.match(svg,kind==='line'?/<line /:/<polygon /);assert.doesNotMatch(svg,/NaN|undefined|script|href=/);if(kind==='line')assert.equal(e.strokeWidth,6);else assert.match(svg,/fill="#abcdef"/);}
- assert.throws(()=>elementSVG(createElement('shape',{kind:'<script>'})),/Unsupported shape/);assert.throws(()=>elementSVG(createElement('shape',{stroke:'url(https://example.test)'})),/Stroke colour/);assert.throws(()=>createElement('shape',{path:'M0 0'}),/unsupported properties/);
+ assert.throws(()=>elementSVG(createElement('shape',{kind:'<script>'})),/Choose a shape available in Stencil Studio\./);assert.throws(()=>elementSVG(createElement('shape',{stroke:'url(https://example.test)'})),/Stroke colour/);assert.throws(()=>createElement('shape',{path:'M0 0'}),/unsupported properties/);
 });
 
 test('one-point brush is a round native dot; a gesture has bounded normalised points and retained brush geometry',()=>{

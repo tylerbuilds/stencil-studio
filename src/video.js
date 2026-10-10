@@ -12,21 +12,21 @@ export function createTimeline(document, { sceneSeconds = 3, transition = 'cut',
   assert(['cut', 'fade'].includes(transition), 'Choose a cut or fade transition.');
   assert([15, 24, 30, 60].includes(fps), 'Choose 15, 24, 30 or 60 frames per second.');
   const durations = Array.isArray(sceneSeconds) ? Array.from(sceneSeconds) : validated.pages.map(() => sceneSeconds);
-  assert(durations.length === validated.pages.length, 'Supply one duration for every page.');
+  assert(durations.length === validated.pages.length, "Set a duration for each page.");
   assert(durations.every(seconds => finite(seconds) && seconds >= VIDEO_LIMITS.minSceneSeconds && seconds <= VIDEO_LIMITS.maxSceneSeconds), 'Each scene must last between 0.25 and 30 seconds.');
   let duration = 0;
   const scenes = validated.pages.map((page, pageIndex) => {
     const start = duration; duration += durations[pageIndex];
     return { pageId: page.id, pageIndex, start, end: duration, duration: durations[pageIndex], fadeSeconds: transition === 'fade' && pageIndex < validated.pages.length - 1 ? Math.min(.5, durations[pageIndex] / 2) : 0 };
   });
-  assert(duration <= VIDEO_LIMITS.maxSeconds, 'Video timelines must be 180 seconds or shorter.');
+  assert(duration <= VIDEO_LIMITS.maxSeconds, "Keep the video to 180 seconds or less.");
   const first = validated.pages[0], scale = Math.min(1, VIDEO_LIMITS.maxEdge / Math.max(first.width, first.height));
   const even = value => Math.max(2, Math.floor(value * scale / 2) * 2);
   return { scenes, duration, fps, transition, width: even(first.width), height: even(first.height) };
 }
 
 export function frameAt(timeline, seconds) {
-  assert(finite(seconds), 'Timeline position must be a finite number of seconds.');
+  assert(finite(seconds), "Choose a valid time in seconds.");
   const position = Math.min(timeline.duration, Math.max(0, seconds));
   const scene = timeline.scenes.find(item => position < item.end) ?? timeline.scenes.at(-1);
   const mix = scene.fadeSeconds ? Math.min(1, Math.max(0, (position - (scene.end - scene.fadeSeconds)) / scene.fadeSeconds)) : 0;
@@ -47,7 +47,7 @@ export function selectVideoType(Recorder = globalThis.MediaRecorder, { audio = f
 export function getVideoSupport() {
   const type = selectVideoType();
   const canvasAvailable = typeof globalThis.HTMLCanvasElement?.prototype?.captureStream === 'function';
-  if (!canvasAvailable || !type) return { supported: false, mime: null, extension: null, reason: 'This browser cannot record a canvas in a supported WebM or MP4 format. Try a current Chrome, Chromium, Firefox or Safari browser.' };
+  if (!canvasAvailable || !type) return { supported: false, mime: null, extension: null, reason: "This browser cannot export WebM or MP4 video. Try an up-to-date version of Chrome, Chromium, Firefox or Safari." };
   return { supported: true, ...type, reason: '' };
 }
 
@@ -69,19 +69,19 @@ function bounded(promise, signal, milliseconds, message) {
 }
 
 function canvas2D(width, height) {
-  assert(globalThis.document?.createElement, 'Video needs a browser canvas.');
+  assert(globalThis.document?.createElement, "Open Stencil Studio in a browser to export video.");
   const canvas = globalThis.document.createElement('canvas'); canvas.width = width; canvas.height = height;
   const context = canvas.getContext('2d', { alpha: false });
-  assert(context, 'This browser could not create a video canvas.');
+  assert(context, "This browser could not prepare the video. Try another browser.");
   return { canvas, context };
 }
 
 async function verifyRaster(src, signal) {
   const image = new Image();
   try {
-    await bounded(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error('A video image could not be decoded. Replace that image before exporting.')); image.src = src; }), signal, 15000, 'A video image took too long to load. Try a smaller image.');
+    await bounded(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("An image in this video could not be opened. Replace it before exporting.")); image.src = src; }), signal, 15000, "An image in this video took too long to open. Try a smaller image.");
     checkAbort(signal);
-    assert(image.naturalWidth > 0 && image.naturalHeight > 0 && image.naturalWidth * image.naturalHeight <= VIDEO_LIMITS.maxImagePixels, 'A video image exceeds 24 million pixels. Resize that image before exporting video.');
+    assert(image.naturalWidth > 0 && image.naturalHeight > 0 && image.naturalWidth * image.naturalHeight <= VIDEO_LIMITS.maxImagePixels, "Use video images with at most 24 million pixels. Resize the image before exporting.");
   } finally { image.onload = image.onerror = null; image.src = ''; }
 }
 
@@ -96,7 +96,7 @@ async function rasterScene(page, timeline, signal, checkedImages) {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   const image = new Image();
   try {
-    await bounded(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error(`Could not render page “${page.name || 'Untitled'}” for video.`)); image.src = url; }), signal, 15000, 'A video page took too long to render. Try smaller images.');
+    await bounded(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error(`Could not render page “${page.name || 'Untitled'}” for video.`)); image.src = url; }), signal, 15000, "A video page took too long to prepare. Try smaller images.");
     checkAbort(signal);
     context.fillStyle = '#161a18'; context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
@@ -108,7 +108,7 @@ async function rasterScene(page, timeline, signal, checkedImages) {
 async function prepareScenes(document, timeline, signal, onProgress) {
   const scenes = [], checkedImages = new Set();
   try {
-    if (globalThis.document?.fonts?.ready) await bounded(globalThis.document.fonts.ready, signal, 5000, 'Local fonts were not ready for video.');
+    if (globalThis.document?.fonts?.ready) await bounded(globalThis.document.fonts.ready, signal, 5000, "The fonts did not load in time. Try exporting the video again.");
     progress(onProgress, 'preparing', timeline, 0, 0, 0);
     for (let index = 0; index < document.pages.length; index++) {
       scenes.push(await rasterScene(document.pages[index], timeline, signal, checkedImages));
@@ -128,13 +128,13 @@ function drawFrame(context, scenes, timeline, seconds) {
 
 /** A visual-only, seekable timeline player. stop() is terminal and frees scene bitmaps. */
 export async function previewTimeline(document, { canvas, signal, onProgress, ...options } = {}) {
-  assert(canvas && typeof canvas.getContext === 'function', 'Supply a canvas for the video preview.');
+  assert(canvas && typeof canvas.getContext === 'function', "The video preview needs a canvas to display it.");
   checkAbort(signal);
   const timeline = createTimeline(document, options), validated = validateDocument(document);
   const scenes = await prepareScenes(validated, timeline, signal, onProgress);
   canvas.width = timeline.width; canvas.height = timeline.height;
   const context = canvas.getContext('2d', { alpha: false });
-  if (!context) { scenes.forEach(scene => { scene.width = scene.height = 1; }); throw new Error('This browser could not create a preview canvas.'); }
+  if (!context) { scenes.forEach(scene => { scene.width = scene.height = 1; }); throw new Error("This browser could not prepare the preview. Try another browser."); }
   let seconds = 0, running = false, stopped = false, timer = null, started = 0;
   const paint = () => { const frame = drawFrame(context, scenes, timeline, seconds); progress(onProgress, 'preview', timeline, frame.seconds, frame.pageIndex); };
   const pause = () => { if (running) seconds = Math.min(timeline.duration, (performance.now() - started) / 1000); running = false; clearTimeout(timer); timer = null; };
@@ -161,18 +161,18 @@ async function prepareAudio(audioSrc, signal) {
   if (audioSrc === undefined || audioSrc === null) return null;
   assert(audioSrc instanceof Blob && audioSrc.size > 0 && audioSrc.size <= VIDEO_LIMITS.maxAudioBytes, 'Choose a local audio file up to 12 MB.');
   const Context = globalThis.AudioContext ?? globalThis.webkitAudioContext;
-  assert(Context, 'This browser cannot mix an audio track into video.');
+  assert(Context, "This browser cannot add audio to the video. Export without audio or try another browser.");
   const context = new Context();
   let source, destination;
   try {
     // Resume while this function still runs in the export button's user gesture.
     const resumed = context.resume().then(() => ({}), error => ({ error }));
     const bytes = await bounded(audioSrc.arrayBuffer(), signal, 10000, 'Could not read this audio file.');
-    const buffer = await bounded(context.decodeAudioData(bytes), signal, 15000, 'Could not decode this audio file. Try a WAV or MP3 file.');
-    const resumeResult = await bounded(resumed, signal, 5000, 'Audio is blocked. Start the export using its button, or remove the audio file.');
+    const buffer = await bounded(context.decodeAudioData(bytes), signal, 15000, "This audio file could not be opened. Try a WAV or MP3 file.");
+    const resumeResult = await bounded(resumed, signal, 5000, "Your browser blocked the audio. Start the export with its button, or remove the audio file.");
     if (resumeResult.error) throw resumeResult.error;
     checkAbort(signal);
-    assert(context.state === 'running', 'Audio is blocked. Start the export using its button, or remove the audio file.');
+    assert(context.state === 'running', "Your browser blocked the audio. Start the export with its button, or remove the audio file.");
     assert(buffer.duration > 0 && buffer.duration <= 300 && buffer.numberOfChannels <= 2, 'Audio must be no longer than five minutes and have one or two channels.');
     source = context.createBufferSource(); source.buffer = buffer;
     destination = context.createMediaStreamDestination(); source.connect(destination);
@@ -189,10 +189,10 @@ export async function exportTimeline(document, { signal: externalSignal, onProgr
   assert(!globalThis.document.hidden, 'Keep this tab visible while exporting video.');
   const validated = validateDocument(document), timeline = createTimeline(validated, options);
   const type = selectVideoType(globalThis.MediaRecorder, { audio: audioSrc !== undefined && audioSrc !== null });
-  assert(type, 'This browser cannot record video with that audio track. Remove audio or try another browser.');
+  assert(type, "This browser cannot export video with this audio track. Remove the audio or try another browser.");
   const controller = new AbortController(), signal = controller.signal;
   const cancel = () => controller.abort(abortReason(externalSignal));
-  const hidden = () => { if (globalThis.document.hidden) controller.abort(new Error('Export stopped because the tab became hidden. Keep the export tab visible and try again.')); };
+  const hidden = () => { if (globalThis.document.hidden) controller.abort(new Error("Export stopped because the tab was hidden. Keep this tab visible and try again.")); };
   const pagehide = () => controller.abort(new DOMException('Video stopped because the page closed.', 'AbortError'));
   externalSignal?.addEventListener('abort', cancel, { once: true });
   globalThis.document.addEventListener('visibilitychange', hidden); globalThis.window?.addEventListener('pagehide', pagehide, { once: true });
@@ -227,7 +227,7 @@ export async function exportTimeline(document, { signal: externalSignal, onProgr
         } catch (error) { fail(error); }
       };
       recorder.ondataavailable = event => { if (settled || !event.data?.size) return; bytes += event.data.size; if (bytes > VIDEO_LIMITS.maxOutputBytes) { fail(new Error('Video recording exceeded 128 MB. Use fewer scenes or a shorter duration.')); return; } chunks.push(event.data); };
-      recorder.onerror = event => fail(event.error ?? new Error('The browser could not encode this video. Try another browser or fewer scenes.'));
+      recorder.onerror = event => fail(event.error ?? new Error("This browser could not create the video file. Try another browser or fewer scenes."));
       recorder.onstop = () => {
         if (settled) return;
         if (!expectedStop) { settle(reject, new Error('Video recording stopped unexpectedly.')); return; }

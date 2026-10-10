@@ -19,5 +19,5 @@ test('bulk creation substitutes literal text, owns identifiers and leaves origin
   assert.equal(next.pages[0].elements[0].text, 'Hello Ada\n<script>');
   assert.notEqual(next.pages[0].id, doc.pages[0].id); assert.notEqual(next.pages[0].elements[0].id, next.pages[1].elements[0].id);
   assert.equal(doc.pages[0].elements[0].text, 'Hello {{name}}\n{{note}}');
-  assert.throws(() => bulkCreate(doc, doc.pages[0].id, 'other\nAda'), /missing the column/);
+  assert.throws(() => bulkCreate(doc, doc.pages[0].id, 'other\nAda'), /Add the column “name” to the CSV file\./);
 });
