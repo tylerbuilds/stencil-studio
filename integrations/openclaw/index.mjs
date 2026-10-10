@@ -1,15 +1,14 @@
 import { defineToolPlugin } from 'openclaw/plugin-sdk/tool-plugin';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { authorisedAgent, createManager } from './core.mjs';
 import { TOOL_SPECS } from './schemas.mjs';
 
 const manifest = JSON.parse(readFileSync(new URL('./openclaw.plugin.json', import.meta.url), 'utf8'));
-const runtimeRoot = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, '');
 const managers = new Map();
 
 export function toolFactory(spec, config, context) {
   if (!authorisedAgent(config, context)) return null;
+  const runtimeRoot = config.runtimeDirectory;
   const key = JSON.stringify([runtimeRoot, config.releaseSha, config.manifestSha256, config.outputDirectory]);
   let manager = managers.get(key);
   if (!manager) {

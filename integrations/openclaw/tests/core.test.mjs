@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, chmod, realpath, rm, symlink, link, open, rename } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
@@ -53,7 +53,7 @@ async function fixture(t) {
   const manifestBytes = Buffer.from(`${JSON.stringify(manifest)}\n`);
   await writeFile(join(runtime, 'runtime-public-manifest.json'), manifestBytes, { flag: 'wx', mode: 0o600 });
   await writeFile(join(incoming, 'tile.png'), png, { flag: 'wx', mode: 0o600 });
-  const config = { releaseSha, manifestSha256: hash(manifestBytes), outputDirectory: output, allowedAgentIds: ['main', 'zeus'] };
+  const config = { runtimeDirectory: runtime, releaseSha, manifestSha256: hash(manifestBytes), outputDirectory: output, allowedAgentIds: ['main', 'zeus'] };
   const manager = createManager(runtime, config);
   return { base, runtime, output, incoming, manifest, config, manager };
 }
@@ -138,7 +138,8 @@ test('configured root directories and their ancestors cannot be symlinks or publ
   const outputAlias = join(f.base, 'design-alias'), ancestorAlias = join(f.base, 'runtime-alias');
   await symlink(f.output, outputAlias); await symlink(f.base, ancestorAlias);
   rejected(await createManager(f.runtime, { ...f.config, outputDirectory: outputAlias }).execute('stencil_presets'), /symlink ancestors/);
-  rejected(await createManager(join(ancestorAlias, releaseSha), f.config).execute('stencil_presets'), /symlink ancestors/);
+  const aliasedRuntime = join(ancestorAlias, releaseSha);
+  rejected(await createManager(aliasedRuntime, { ...f.config, runtimeDirectory: aliasedRuntime }).execute('stencil_presets'), /symlink ancestors/);
   await chmod(f.output, 0o755); rejected(await f.manager.execute('stencil_presets'), /private/); await chmod(f.output, 0o700);
   await rm(f.incoming, { recursive: true }); await symlink(f.base, f.incoming);
   rejected(await f.manager.execute('stencil_presets'), /symlink ancestors/);
@@ -168,6 +169,7 @@ test('a rehashed manifest must pin all transitive modules, schemas, font faces a
     ['src/typography.js', /local module dependency/],
     ['src/font-loader.js', /required source file/],
     ['schemas/design-request.schema.json', /required source file/],
+    ['integrations/openclaw/design-request.schema.json', /required source file/],
     ['integrations/openclaw/schemas.mjs', /required source file/],
     ['public/fonts/dm-sans-400-700-latin.woff2', /bundled font or its licence/],
     ['public/fonts/dm-sans-OFL.txt', /bundled font or its licence/],
@@ -186,6 +188,74 @@ test('a rehashed manifest must pin all transitive modules, schemas, font faces a
     await writeFile(path, original);
   }
   assert.deepEqual((await readdir(f.output)).sort(), ['incoming']);
+});
+
+test('runtime configuration binds the exact absolute source root and both schema copies', async t => {
+  const f = await fixture(t), local = 'integrations/openclaw/design-request.schema.json';
+  for (const runtimeDirectory of [undefined, '.', join(f.base, 'different-source-root')]) {
+    const config = { ...f.config, runtimeDirectory };
+    await assert.rejects(verifyRuntime(f.runtime, config), /runtime|directory|configured/i);
+  }
+  const localPath = join(f.runtime, local), original = await readFile(localPath);
+  assert.deepEqual(original, await readFile(join(f.runtime, 'schemas/design-request.schema.json')));
+  await rm(localPath);
+  await assert.rejects(verifyRuntime(f.runtime, f.config));
+  rejected(await f.manager.execute('stencil_presets'));
+  const divergent = JSON.parse(original.toString('utf8')); divergent.title = 'A different local authoring schema';
+  const bytes = Buffer.from(`${JSON.stringify(divergent)}\n`); await writeFile(localPath, bytes, { mode: 0o600 });
+  await assert.rejects(verifyRuntime(f.runtime, f.config), /pinned hash/);
+  const manifest = { ...f.manifest, entries: f.manifest.entries.map(entry => entry.path === local ? { ...entry, bytes: bytes.length, sha256: hash(bytes) } : entry) };
+  const manifestBytes = Buffer.from(`${JSON.stringify(manifest)}\n`);
+  await writeFile(join(f.runtime, 'runtime-public-manifest.json'), manifestBytes);
+  const config = { ...f.config, manifestSha256: hash(manifestBytes) };
+  await assert.rejects(verifyRuntime(f.runtime, config), /schema/i);
+  rejected(await createManager(f.runtime, config).execute('stencil_presets'), /schema/i);
+  assert.deepEqual((await readdir(f.output)).sort(), ['incoming']);
+});
+
+test('the unchanged relocated tool factory uses its configured runtime and its local schema', async t => {
+  const f = await fixture(t), cache = join(f.base, 'relocated-openclaw-cache', 'plugin');
+  await mkdir(cache, { recursive: true, mode: 0o700 });
+  for (const file of ['index.mjs', 'core.mjs', 'schemas.mjs', 'openclaw.plugin.json', 'package.json', 'design-request.schema.json']) {
+    const bytes = await readFile(join(f.runtime, 'integrations/openclaw', file));
+    await writeFile(join(cache, file), bytes, { flag: 'wx', mode: 0o600 });
+    assert.deepEqual(await readFile(join(cache, file)), bytes);
+  }
+  // This identity stub supplies only the external registration boundary. The
+  // factory, schemas, filesystem guards and native authoring/export code are
+  // unchanged public source. Actual managed-loader qualification is separate.
+  const sdk = join(cache, 'node_modules', 'openclaw'); await mkdir(sdk, { recursive: true, mode: 0o700 });
+  await writeFile(join(sdk, 'package.json'), JSON.stringify({ name: 'openclaw', type: 'module', exports: { './plugin-sdk/tool-plugin': './tool-plugin.mjs' } }), { mode: 0o600 });
+  await writeFile(join(sdk, 'tool-plugin.mjs'), 'export function defineToolPlugin(spec) { return spec; }\n', { mode: 0o600 });
+  const { toolFactory } = await import(pathToFileURL(join(cache, 'index.mjs')).href);
+  const { TOOL_SPECS } = await import(pathToFileURL(join(cache, 'schemas.mjs')).href);
+  const context = { agentId: 'zeus', sessionKey: 'agent:zeus:main' };
+  const invoke = async (name, parameters) => {
+    const tool = toolFactory(TOOL_SPECS.find(spec => spec.name === name), f.config, context);
+    assert.ok(tool); const result = await tool.execute('fictional-relocated-call', parameters);
+    assert.equal(result.isError, false, result.details?.message); return result.details;
+  };
+  const created = await invoke('stencil_create_design', { request: request() });
+  assert.equal(created.releaseSha, releaseSha); assert.equal(dirname(created.path), f.output);
+  await invoke('stencil_validate_design', { design: created.designFile });
+  const exported = await invoke('stencil_export_svg', { design: created.designFile });
+  const svg = await readFile(join(exported.output, 'page-01.svg'), 'utf8');
+  assert.match(svg, /A good book awaits/); assert.match(svg, /data:font\/woff2;base64,/);
+  assert.equal(toolFactory(TOOL_SPECS[0], f.config, { agentId: 'unlisted' }), null);
+  await cleanWork(f);
+});
+
+test('a relocated native CLI exports bundled fonts from its trusted resourceRoot', async t => {
+  const f = await fixture(t), createdDesign = await created(f), cache = join(f.base, 'relocated-native-cli');
+  await mkdir(join(cache, 'scripts'), { recursive: true, mode: 0o700 });
+  await mkdir(join(cache, 'src'), { mode: 0o700 });
+  for (const path of ['package.json', 'scripts/agent-design.mjs', ...f.manifest.entries.filter(entry => /^src\/[^/]+\.(?:js|mjs)$/.test(entry.path)).map(entry => entry.path)]) await writeFile(join(cache, path), await readFile(join(f.runtime, path)), { mode: 0o600 });
+  await assert.rejects(readFile(join(cache, 'public/fonts/dm-sans-400-700-latin.woff2')), { code: 'ENOENT' });
+  const { runAgentCLI } = await import(pathToFileURL(join(cache, 'scripts/agent-design.mjs')).href);
+  const output = join(f.output, 'relocated-native-svg');
+  const exported = await runAgentCLI(['export', '--input', createdDesign.path, '--format', 'svg', '--outdir', output], { resourceRoot: f.runtime });
+  assert.equal(exported.ok, true);
+  const svg = await readFile(join(output, 'page-01.svg'), 'utf8'); assert.match(svg, /A good book awaits/); assert.match(svg, /data:font\/woff2;base64,/);
 });
 
 test('remote imports require opt-in and reject local HTTPS targets without DNS or downloads', async t => {

@@ -2,7 +2,7 @@
 /** Explicit local CLI. No provider calls, runtime credentials or browser storage. */
 import { stat, mkdir, unlink, rmdir, open, link } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
-import { resolve, dirname, join } from 'node:path';
+import { resolve, dirname, join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
@@ -160,23 +160,23 @@ function numberOption(options, key, fallback) {
   return Number(options[key]);
 }
 function summary(document) { return { title: document.title, pages: document.pages.length, layers: document.pages.reduce((sum, page) => sum + page.elements.length, 0), documentSchema: document.schema, documentVersion: document.version }; }
-async function embeddedFontCSS(page) {
+async function embeddedFontCSS(page, resourceRoot) {
   const wanted = documentFontFamilies(page), rules = [];
   for (const font of wanted) for (const face of font.faces) {
-    const bytes = await bytesFromFile(join(root, 'public', face.path), 256 * 1024, 'Bundled font');
+    const bytes = await bytesFromFile(join(resourceRoot, 'public', face.path), 256 * 1024, 'Bundled font');
     if (bytes.length !== face.bytes || createHash('sha256').update(bytes).digest('hex') !== face.sha256) fail('A bundled font does not match its pinned version.');
     rules.push(`/* ${font.family} | ${font.license}\n${font.notice.replaceAll('*/', '* /')} */\n@font-face{font-family:'${font.family}';font-style:normal;font-weight:${face.weight};font-display:block;src:url('data:font/woff2;base64,${bytes.toString('base64')}') format('woff2');unicode-range:${face.unicodeRange}}`);
   }
   return rules.join('\n');
 }
-async function rasterPages(pages, format, browserPath, signal) {
+async function rasterPages(pages, format, browserPath, signal, resourceRoot) {
   let chromium; try { ({ chromium } = await import('@playwright/test')); } catch { fail('PNG/JPEG export needs the existing development package. Run npm ci, or export SVG.'); }
   const server = createServer(async (request, response) => {
     const path = new URL(request.url, 'http://127.0.0.1').pathname;
     if (!['GET', 'HEAD'].includes(request.method)) { response.writeHead(405); response.end(); return; }
     if (path === '/') { response.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }); response.end('<!doctype html><html><body></body></html>'); return; }
     if (!/^\/src\/[a-z0-9-]+\.(?:js|mjs)$/.test(path) && !/^\/public\/fonts\/[a-z0-9-]+\.woff2$/.test(path)) { response.writeHead(404); response.end(); return; }
-    try { const bytes = await bytesFromFile(join(root, path.slice(1)), path.endsWith('.woff2') ? 256 * 1024 : 2 * 1024 * 1024, 'Renderer source'); response.writeHead(200, { 'Content-Type': path.endsWith('.woff2') ? 'font/woff2' : 'text/javascript', 'Cache-Control': 'no-store' }); response.end(request.method === 'HEAD' ? undefined : bytes); }
+    try { const bytes = await bytesFromFile(join(resourceRoot, path.slice(1)), path.endsWith('.woff2') ? 256 * 1024 : 2 * 1024 * 1024, 'Renderer source'); response.writeHead(200, { 'Content-Type': path.endsWith('.woff2') ? 'font/woff2' : 'text/javascript', 'Cache-Control': 'no-store' }); response.end(request.method === 'HEAD' ? undefined : bytes); }
     catch { response.writeHead(404); response.end(); }
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
@@ -203,7 +203,7 @@ async function rasterPages(pages, format, browserPath, signal) {
     await context.close(); return result;
   } finally { signal?.removeEventListener('abort', cancel); if (browser) await browser.close(); server.closeAllConnections(); await new Promise(resolveClose => server.close(resolveClose)); }
 }
-async function exportArtwork(document, options, signal) {
+async function exportArtwork(document, options, signal, resourceRoot) {
   document = structuredClone(document);
   for (const page of document.pages) for (const layer of page.elements) layer.credit = sanitiseAgentCredit(layer.credit);
   const format = options.format ?? 'svg'; if (!['svg', 'png', 'jpeg'].includes(format)) fail('Choose SVG, PNG or JPEG.');
@@ -212,8 +212,8 @@ async function exportArtwork(document, options, signal) {
   try { await stat(resolve(options.outdir)); fail('Export folder already exists. Choose a new folder; existing work was kept.'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   if (document.pages.reduce((sum, page) => sum + Math.round(page.width) * Math.round(page.height), 0) > 120000000) fail('Artwork exceeds the 120 megapixel batch limit. Export a smaller design.');
   const pages = [];
-  for (const page of document.pages) pages.push({ page, svg: pageSVG(page, false, true, await embeddedFontCSS(page)) });
-  const files = format === 'svg' ? pages.map(({ svg }) => Buffer.from(svg)) : await rasterPages(pages, format, options.browser, signal);
+  for (const page of document.pages) pages.push({ page, svg: pageSVG(page, false, true, await embeddedFontCSS(page, resourceRoot)) });
+  const files = format === 'svg' ? pages.map(({ svg }) => Buffer.from(svg)) : await rasterPages(pages, format, options.browser, signal, resourceRoot);
   if (files.reduce((total, file) => total + file.length, 0) > 100 * 1024 * 1024) fail('Export exceeds the 100 MiB batch limit. Export fewer pages.');
   const manifest = { schema: 'stencil-artwork-export', version: 1, title: document.title, format, pages: document.pages.map((page, index) => ({ file: `page-${String(index + 1).padStart(2, '0')}.${format === 'jpeg' ? 'jpg' : format}`, name: page.name, width: Math.round(page.width), height: Math.round(page.height), credits: page.elements.filter(element => !element.hidden && element.credit).map(element => element.credit) })) };
   if (options['dry-run']) return { ok: true, command: 'export', dryRun: true, ...summary(document), format, files: manifest.pages.map(page => page.file) };
@@ -226,7 +226,8 @@ async function exportArtwork(document, options, signal) {
   } catch (error) { for (const path of written) await unlink(path).catch(() => {}); await rmdir(output).catch(() => {}); throw error; }
   return { ok: true, command: 'export', output, ...summary(document), format, files: manifest.pages.map(page => page.file) };
 }
-export async function runAgentCLI(args = process.argv.slice(2), { signal } = {}) {
+export async function runAgentCLI(args = process.argv.slice(2), { signal, resourceRoot = root } = {}) {
+  if (typeof resourceRoot !== 'string' || !isAbsolute(resourceRoot)) fail('The trusted resource root must be an absolute directory.');
   signal?.throwIfAborted();
   const { values: options, positionals } = parseArgs({ args, options: optionSpecs, allowPositionals: true, strict: true });
   if (options.help || !positionals.length) return { help };
@@ -248,7 +249,7 @@ export async function runAgentCLI(args = process.argv.slice(2), { signal } = {})
   }
   const document = await documentFromFile(required(options, 'input'));
   if (command === 'validate') return { ok: true, command, ...summary(document) };
-  if (command === 'export') return exportArtwork(document, options, signal);
+  if (command === 'export') return exportArtwork(document, options, signal, resourceRoot);
   required(options, 'output');
   await newOutput(options.output);
   if (['image', 'url', 'prediction'].filter(key => options[key] !== undefined).length !== 1) fail('Import needs exactly one --image, --url or --prediction.');

@@ -12,18 +12,18 @@ The tool result must contain `"ok":true`, the current presets and templates, and
 
 ## Install a pinned public runtime
 
-Use OpenClaw 2026.9.9 or later, with the Node version required by that OpenClaw release. Stencil's portable CLI supports Node 22.19+ or 24.11+. Install on the machine that runs the existing OpenClaw Gateway, as the same service user. A checkout on a laptop is not available automatically on a remote agent host.
+Use Stencil Studio `v0.9.1` or later for this OpenClaw integration, and OpenClaw 2026.9.9 or later with the Node version required by that OpenClaw release. Stencil's portable CLI supports Node 22.19+ or 24.11+. Install on the machine that runs the existing OpenClaw Gateway, as the same service user. A checkout on a laptop is not available automatically on a remote agent host.
 
-The plugin needs a complete pinned Stencil runtime, not a copy of this directory alone. Its runtime manifest covers the plugin, the CLI's source dependencies, the bundled fonts and their licences. On every tool call it checks the configured release SHA and manifest hash against the installed files.
+The plugin needs a complete pinned Stencil runtime, not a copy of this directory alone. Its runtime manifest covers the plugin, authoring schemas, the CLI's source dependencies, the bundled fonts and their licences. Set the required `runtimeDirectory` to the builder's absolute runtime path. On every tool call it checks that configured runtime's release SHA and manifest hash against the installed files.
 
 The runtime directory must be named with the full, lowercase, 40-character released Git SHA. It and the separate output directory must belong to the service user and have mode `0700`. Neither directory nor its ancestors may be symlinks. Create an `incoming` directory inside the output directory, also with mode `0700`; it holds image and prediction files supplied by an authorised operator or an existing approved integration.
 
-Clone the public source into a new checkout, then select a published release. This example pins `v0.9.0`; choose another published tag when updating:
+Clone the public source into a new checkout, then select a published release. This example pins `v0.9.1`; choose another published tag when updating:
 
 ```bash
 git clone --filter=blob:none https://github.com/tylerbuilds/stencil-studio.git "$HOME/stencil-studio-openclaw"
 cd "$HOME/stencil-studio-openclaw"
-stencil_release_sha="$(git rev-parse 'v0.9.0^{commit}')"
+stencil_release_sha="$(git rev-parse 'v0.9.1^{commit}')"
 git checkout --detach "$stencil_release_sha"
 stencil_runtime_parent="$HOME/.local/share/stencil-studio/runtime"
 stencil_output="$HOME/.local/share/stencil-studio/designs"
@@ -31,7 +31,7 @@ install -d -m 700 "$stencil_runtime_parent" "$stencil_output" "$stencil_output/i
 node integrations/openclaw/package-runtime.mjs --revision "$stencil_release_sha" --output "$stencil_runtime_parent/$stencil_release_sha"
 ```
 
-The builder returns JSON with `releaseSha`, `manifestSha256`, `runtimeDirectory`, `pluginDirectory`, `files` and `bytes`. Copy the actual hashes and plugin path into the configuration below. It reads the selected Git revision and writes a new runtime directory; an existing destination is refused. No package installation or provider key is needed.
+The builder returns JSON with `releaseSha`, `manifestSha256`, `runtimeDirectory`, `pluginDirectory`, `files` and `bytes`. Copy the actual hashes, runtime directory and plugin path into the configuration below. `runtimeDirectory` is the complete release folder; `pluginDirectory` is the plugin package inside it. It reads the selected Git revision and writes a new runtime directory; an existing destination is refused. No package installation or provider key is needed.
 
 Run these steps as the Gateway service user. If its home or intended destination has symlink ancestors, choose another absolute path that satisfies the directory checks. Keep the installed runtime unchanged. See the [published releases](https://github.com/tylerbuilds/stencil-studio/releases) when choosing an update.
 
@@ -49,6 +49,7 @@ Merge the following fragment into the existing OpenClaw configuration. Use the r
       "stencil-studio": {
         "enabled": true,
         "config": {
+          "runtimeDirectory": "/absolute/runtime/<release-sha>",
           "releaseSha": "<40-character-release-sha>",
           "manifestSha256": "<64-character-manifest-sha256>",
           "outputDirectory": "/absolute/private/stencil-designs",
@@ -59,6 +60,8 @@ Merge the following fragment into the existing OpenClaw configuration. Use the r
   }
 }
 ```
+
+Keep `runtimeDirectory` pointing to the unchanged release folder named by `releaseSha`. OpenClaw can capture plugin code into a managed directory when registering its tools. The plugin ships its authoring schema inside its own package, byte for byte identical to the portable request schema, so registration has no out-of-package schema dependency. Tool execution uses the explicitly configured runtime rather than the captured plugin's location. Keep that full runtime available even when OpenClaw loads a managed copy of the plugin.
 
 `allowedAgentIds` uses OpenClaw's agent IDs, not their display names. It defaults to `["main"]`; change it explicitly if your intended agent has another ID. An agent's supplied identity and session identity must agree.
 
@@ -203,7 +206,8 @@ OpenClaw wraps the plugin's JSON in its tool result; the original result is in `
 | --- | --- |
 | Tool unavailable | Plugin load path, enablement, plugin allowlist, intended agent's tool allowlist and existing denies. |
 | Agent not authorised | `allowedAgentIds` and the resolved agent/session identity. |
-| Runtime hash mismatch | Rebuild from the intended public release, then use its actual manifest hash and release SHA. Keep a release directory unchanged after installation. |
+| Runtime hash mismatch | Check `runtimeDirectory`, its SHA folder name, `releaseSha` and `manifestSha256` against the builder's result. Keep the complete release directory unchanged. |
+| Required `runtimeDirectory` missing | Rebuild from `v0.9.1` or later and add the builder's absolute runtime path to the existing plugin config. |
 | Directory or file unavailable | Service-user ownership, `0700` directories, incoming basename and regular files without links. |
 | Remote import refused | Supply local bytes, or explicitly set `allowRemote: true` for an existing public HTTPS output. |
 | `busy` | Wait for the current Stencil operation to finish, then retry. |
@@ -214,6 +218,6 @@ Design work has a 45-second cancellation deadline after the release checks. Impo
 
 ## Update or disable the integration
 
-Build a new runtime for the chosen public release, then update the load path, `releaseSha` and `manifestSha256` together through the existing Gateway owner's normal procedure. Keep the previous runtime and design outputs until the replacement passes the direct `stencil_presets`, create, validate and export checks.
+Build a new runtime for the chosen public release, then update the load path, `runtimeDirectory`, `releaseSha` and `manifestSha256` together through the existing Gateway owner's normal procedure. When upgrading from `v0.9.0`, add the required runtime directory as part of that configuration change. Keep `outputDirectory` and `allowedAgentIds` unless you intend to change them. Keep the previous runtime and design outputs until the replacement passes the direct `stencil_presets`, create, validate and export checks.
 
 Set `plugins.entries["stencil-studio"].enabled` to `false` to disable it. Preserve output files you want to keep. Installing or updating this integration does not require a second Gateway, schedule, shell permission or provider account.

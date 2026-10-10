@@ -114,21 +114,24 @@ export function authorisedAgent(config, context) {
 
 /** The manifest pins the whole installed runtime, including this plugin and bundled fonts. */
 export async function verifyRuntime(runtimeRoot, config) {
+  if (typeof config.runtimeDirectory !== 'string' || !isAbsolute(config.runtimeDirectory) || config.runtimeDirectory !== runtimeRoot) fail('Configure the absolute pinned runtimeDirectory.');
   if (!SHA.test(config.releaseSha ?? '') || !HASH.test(config.manifestSha256 ?? '') || basename(runtimeRoot) !== config.releaseSha) fail('Configure the exact released runtime and manifest hashes.');
   await directory(runtimeRoot, true);
   const manifestBytes = await readOwned(join(runtimeRoot, 'runtime-public-manifest.json'), runtimeRoot, 256 * 1024);
   if (digest(manifestBytes) !== config.manifestSha256) fail('The installed runtime manifest does not match its configured hash.');
   const manifest = json(manifestBytes, 'Runtime manifest');
   if (manifest.schema !== 'stencil-public-runtime/v1' || manifest.source_head !== config.releaseSha || manifest.source_state !== 'public-release' || !Array.isArray(manifest.entries) || manifest.entries.length < 1 || manifest.entries.length > 300) fail('Use a pinned public release runtime.');
-  const seen = new Set(), sources = new Map(); let total = 0;
+  const seen = new Set(), sources = new Map(), authoringSchemas = new Map(); let total = 0;
   for (const entry of manifest.entries) {
     if (!entry || typeof entry.path !== 'string' || entry.path.startsWith('/') || entry.path.split('/').some(part => !part || part === '.' || part === '..' || part.startsWith('.')) || seen.has(entry.path) || !HASH.test(entry.sha256 ?? '') || !Number.isInteger(entry.bytes) || entry.bytes < 1 || entry.bytes > 2 * 1024 * 1024) fail('The runtime manifest contains an unsupported file.');
     seen.add(entry.path); total += entry.bytes; if (total > 8 * 1024 * 1024) fail('The installed runtime exceeds its size limit.');
     const bytes = await readOwned(join(runtimeRoot, entry.path), runtimeRoot, 2 * 1024 * 1024);
     if (bytes.length !== entry.bytes || digest(bytes) !== entry.sha256) fail('An installed runtime file does not match its pinned hash.');
     if (/\.(?:js|mjs)$/.test(entry.path)) sources.set(entry.path, bytes.toString('utf8'));
+    if (entry.path === 'schemas/design-request.schema.json' || entry.path === 'integrations/openclaw/design-request.schema.json') authoringSchemas.set(entry.path, bytes);
   }
-  for (const path of ['package.json', 'scripts/agent-design.mjs', 'src/model.js', 'src/agent-design.js', 'src/font-loader.js', 'schemas/design-request.schema.json', 'integrations/openclaw/index.mjs', 'integrations/openclaw/core.mjs', 'integrations/openclaw/schemas.mjs', 'integrations/openclaw/openclaw.plugin.json', 'integrations/openclaw/package.json']) if (!seen.has(path)) fail('The runtime manifest is missing a required source file.');
+  for (const path of ['package.json', 'scripts/agent-design.mjs', 'src/model.js', 'src/agent-design.js', 'src/font-loader.js', 'schemas/design-request.schema.json', 'integrations/openclaw/index.mjs', 'integrations/openclaw/core.mjs', 'integrations/openclaw/schemas.mjs', 'integrations/openclaw/openclaw.plugin.json', 'integrations/openclaw/package.json', 'integrations/openclaw/design-request.schema.json']) if (!seen.has(path)) fail('The runtime manifest is missing a required source file.');
+  if (!authoringSchemas.get('schemas/design-request.schema.json')?.equals(authoringSchemas.get('integrations/openclaw/design-request.schema.json'))) fail('The plugin authoring schema must exactly match the released runtime schema.');
   // Every literal local module dependency must itself be checked, even when an
   // incomplete operator manifest leaves an unlisted file on disk.
   for (const [path, source] of sources) {
@@ -153,7 +156,8 @@ async function unchanged(path, expected) {
 }
 
 export function createManager(runtimeRoot, config) {
-  fields(config, ['releaseSha', 'manifestSha256', 'outputDirectory', 'allowedAgentIds'], ['releaseSha', 'manifestSha256', 'outputDirectory']);
+  fields(config, ['releaseSha', 'manifestSha256', 'runtimeDirectory', 'outputDirectory', 'allowedAgentIds'], ['releaseSha', 'manifestSha256', 'runtimeDirectory', 'outputDirectory']);
+  if (typeof runtimeRoot !== 'string' || !isAbsolute(runtimeRoot) || config.runtimeDirectory !== runtimeRoot) fail('Configure the absolute pinned runtimeDirectory.');
   const output = resolve(config.outputDirectory ?? '');
   if (!isAbsolute(config.outputDirectory ?? '') || inside(runtimeRoot, output) || inside(output, runtimeRoot)) fail('Choose a separate absolute design output directory.');
   const incoming = join(output, 'incoming');
@@ -174,7 +178,7 @@ export function createManager(runtimeRoot, config) {
         await unchanged(output, outputIdentity); await unchanged(incoming, incomingIdentity);
         if (work) await unchanged(work, workIdentity);
       }
-      const run = async args => { await guard(); return cli.runAgentCLI(args, { signal }); };
+      const run = async args => { await guard(); return cli.runAgentCLI(args, { signal, resourceRoot: runtimeRoot }); };
       if (name === 'stencil_presets') { fields(parameters, []); return { ...await run(['presets']), releaseSha: config.releaseSha }; }
       await guard(); work = join(output, `work-${randomUUID()}`); await mkdir(work, { mode: 0o700 }); workIdentity = await identity(work);
       async function stage(filename, bytes) {

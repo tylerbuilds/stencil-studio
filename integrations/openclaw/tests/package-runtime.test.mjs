@@ -88,7 +88,7 @@ test('exact Git blobs form a verified private runtime despite dirty source and a
   assert.equal(digest(manifestBytes), packaged.manifestSha256);
   const output = join(f.base, 'editable-designs'); await mkdir(output, { mode: 0o700 }); await mkdir(join(output, 'incoming'), { mode: 0o700 });
   const { verifyRuntime, createManager } = await import(pathToFileURL(join(packaged.runtimeDirectory, 'integrations/openclaw/core.mjs')).href);
-  const config = { releaseSha: f.revision, manifestSha256: packaged.manifestSha256, outputDirectory: output };
+  const config = { runtimeDirectory: packaged.runtimeDirectory, releaseSha: f.revision, manifestSha256: packaged.manifestSha256, outputDirectory: output };
   const manifest = await verifyRuntime(packaged.runtimeDirectory, config);
   assert.equal(manifest.entries.length, packaged.files); assert.equal(manifest.source_state, 'public-release');
   const manager = createManager(packaged.runtimeDirectory, config);
@@ -119,9 +119,22 @@ test('malformed revisions, public parents and symlink ancestors cannot admit an 
 });
 
 test('a committed revision missing a required public file creates no runtime or partial output', async t => {
-  const f = await fixture(t), missing = 'schemas/design-request.schema.json';
-  await rm(join(f.repository, missing)); f.git(['add', '--', missing]); f.git(['commit', '-m', 'Fictional incomplete public source']);
+  for (const missing of ['schemas/design-request.schema.json', 'integrations/openclaw/design-request.schema.json']) {
+    const f = await fixture(t);
+    await rm(join(f.repository, missing)); f.git(['add', '--', missing]); f.git(['commit', '-m', 'Fictional incomplete public source']);
+    const revision = f.git(['rev-parse', 'HEAD']).trim();
+    assert.ok(f.packageAt(revision, join(f.parent, revision), false).includes(`missing a regular file: ${missing}`));
+    assert.deepEqual(await readdir(f.parent), []);
+  }
+});
+
+test('divergent committed authoring schemas are rejected before any runtime is written', async t => {
+  const f = await fixture(t), path = 'integrations/openclaw/design-request.schema.json';
+  const schema = JSON.parse(await readFile(join(f.repository, path), 'utf8'));
+  schema.title = 'A deliberately different fictional plugin schema';
+  await writeFile(join(f.repository, path), `${JSON.stringify(schema)}\n`);
+  f.git(['add', '--', path]); f.git(['commit', '-m', 'Fictional divergent authoring schema']);
   const revision = f.git(['rev-parse', 'HEAD']).trim();
-  assert.match(f.packageAt(revision, join(f.parent, revision), false), /missing a regular file: schemas\/design-request\.schema\.json/);
+  assert.match(f.packageAt(revision, join(f.parent, revision), false), /schema must exactly match/);
   assert.deepEqual(await readdir(f.parent), []);
 });

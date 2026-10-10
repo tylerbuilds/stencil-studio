@@ -39,7 +39,7 @@ export function packageRuntime({ revision, output }) {
     'package.json', 'LICENSE', 'README.md', 'scripts/agent-design.mjs',
     'docs/agent-design.md', 'schemas/design-request.schema.json',
     'integrations/openclaw/index.mjs', 'integrations/openclaw/core.mjs', 'integrations/openclaw/schemas.mjs',
-    'integrations/openclaw/openclaw.plugin.json', 'integrations/openclaw/package.json',
+    'integrations/openclaw/openclaw.plugin.json', 'integrations/openclaw/package.json', 'integrations/openclaw/design-request.schema.json',
     'integrations/openclaw/package-runtime.mjs', 'integrations/openclaw/README.md',
   ];
   const paths = [...new Set([...fixed, ...catalogue.keys()].filter(path => fixed.includes(path) || /^src\/[^/]+\.(?:js|mjs)$/.test(path) || /^public\/fonts\/[^/]+\.(?:woff2|txt|json)$/.test(path) || /^examples\/agent-design\/[^/]+\.json$/.test(path)))].sort();
@@ -52,6 +52,9 @@ export function packageRuntime({ revision, output }) {
     if (!bytes.length || bytes.length > 2 * 1024 * 1024 || (total += bytes.length) > 8 * 1024 * 1024) fail('The public runtime exceeds its size limit.');
     blobs.push({ path, bytes }); entries.push({ path, bytes: bytes.length, sha256: digest(bytes) });
   }
+  const authoringSchema = blobs.find(item => item.path === 'schemas/design-request.schema.json')?.bytes;
+  const pluginSchema = blobs.find(item => item.path === 'integrations/openclaw/design-request.schema.json')?.bytes;
+  if (!authoringSchema?.equals(pluginSchema)) fail('The plugin authoring schema must exactly match the released runtime schema.');
   const manifestBytes = Buffer.from(`${JSON.stringify({ schema: 'stencil-public-runtime/v1', source_head: revision, source_state: 'public-release', entries }, null, 2)}\n`);
   if (manifestBytes.length > 256 * 1024) fail('The runtime manifest exceeds its size limit.');
   // A new runtime only: exclusive files, never merge with an existing installation.

@@ -11,7 +11,7 @@ const incoming = {
 
 // Keep the portable authoring schema as the source of truth. Its local refs
 // must resolve from the tool parameter root, rather than the nested request.
-const portable = JSON.parse(readFileSync(new URL('../../schemas/design-request.schema.json', import.meta.url), 'utf8'));
+const portable = JSON.parse(readFileSync(new URL('./design-request.schema.json', import.meta.url), 'utf8'));
 const { $schema: _portableDialect, $id: _portableId, $defs: definitions, ...request } = portable;
 definitions.asset.properties.file = { ...incoming };
 definitions.asset.properties.prediction = { ...incoming, description: 'An owned JSON prediction file basename in the configured incoming folder. Remote outputs require allowRemote: true.' };
