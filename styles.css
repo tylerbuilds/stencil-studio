@@ -321,3 +321,17 @@
 }
 
 .data-grid textarea { resize: vertical; line-height: 1.45; }
+.asset-intake { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; }
+.asset-intake > button { width: 100%; border: 1px dashed #a4b1a5; text-align: left; min-height: 40px; }
+.asset-intake p { font-size: 12px; line-height: 1.6; color: var(--muted); }
+.asset-intake .intake-status { margin-bottom: 0; font-size: 11px; }
+.intake-status.error { color: #963e30; }
+.canvas-area.accepting-drop { outline: 2px dashed var(--accent); outline-offset: -10px; }
+.intake-overlay { position: absolute; inset: 16px; z-index: 4; border: 2px dashed #dc7958; border-radius: 8px; background: #f6f1e7ed; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 24px; text-align: center; pointer-events: none; }
+.intake-overlay[hidden] { display: none; }
+.intake-overlay strong { font-family: Georgia, serif; font-size: 26px; font-weight: 400; }
+.intake-overlay span { font-size: 12px; color: #626b63; }
+.intake-overlay button { pointer-events: auto; border: 1px solid #a4b1a5; min-height: 40px; }
+.intake-overlay.preparing { inset: auto 14px 14px; padding: 14px; border-style: solid; border-width: 1px; gap: 8px; }
+.intake-overlay.preparing strong { font-family: Arial, sans-serif; font-size: 14px; font-weight: 600; }
+@media (max-width:700px) { .asset-intake { margin-top: 12px; padding-top: 10px; } .asset-intake > button, .intake-overlay button { min-height: 44px; } .asset-intake p { font-size: 12px; margin: 8px 0; } .intake-overlay { inset: 10px; padding: 16px; } .intake-overlay strong { font-size: 23px; } }

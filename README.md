@@ -2,6 +2,8 @@
 
 An original, open-source design studio for posters, social graphics, cards and presentations. Edit on your own device, save named designs, turn CSV data into layouts and export real SVG, PNG, JPEG or multi-page PDF.
 
+![Original Stencil canvas with editable text, charts and tables](docs/screenshots/editable-layers-0.4.png)
+
 ## Start on Linux or macOS
 
 Install Node.js **22.19+** or **24.11+**, clone this repository and run:
@@ -19,7 +21,7 @@ The editor runs in a modern browser. There is no native desktop installer. See [
 
 Choose from eight original templates: poster, square social graphic, card, two-page presentation, banner, vertical story, résumé or menu. Start blank or use pixel-size presets. When resizing a page, **Scale the layout** proportionally resizes unlocked elements; this is a local scaling tool, not AI reflow.
 
-Add plain text, rectangles, circles or your own PNG/JPEG/WebP/GIF images. Edit dimensions, position, rotation, opacity, outlines, text spacing and fonts. Inspector fields apply when you finish editing a field. The document carries a palette of up to eight colours and a default font; swatches apply to the selection or artboard.
+Add plain text, rectangles, circles or your own PNG/JPEG/WebP/GIF images. **Image** opens a multiple-image chooser; **File → Insert files** or **Elements → Insert files** also accepts UTF-8 text files. Drop files onto the canvas to place them near the drop point. Up to twenty files and 8 MiB combined input form one ordered insertion and one Undo step; each image is limited to 6 MiB, 16,384 pixels per side and 40 megapixels. The entire batch must validate and decode before any layer is inserted. Dropping or inserting one Stencil JSON design asks before replacing the current design and cannot be mixed with other files. File → Open JSON is an explicit open action and keeps its direct-open behaviour. Pending intake cancels if the page, design or editing draft changes, or when you choose another batch or Cancel insertion. Edit dimensions, position, rotation, opacity, outlines, text spacing and fonts. Inspector fields apply when you finish editing a field. The document carries a palette of up to eight colours and a default font; swatches apply to the selection or artboard.
 
 Shift-click layers or objects to select several. Drag empty space for a marquee selection. Group and ungroup layers, then move, duplicate, copy or paste them together. **Alt-click** edits one object inside a group. Align a selection to its combined bounds or the page; distribute independent objects or groups evenly. Drag snapping uses page and neighbouring object edges and centres; hold **Alt** while dragging to bypass it. Lock protects a layer and its group; hiding removes a layer from presentation and exports.
 
@@ -62,13 +64,15 @@ Static hosting has no inference backend and reports AI unavailable. No browser c
 | Move selection / move ten pixels | Arrow keys / Shift + arrows |
 | Delete selection | Delete / Backspace |
 | Undo / redo | Cmd/Ctrl-Z / Shift-Cmd/Ctrl-Z or Ctrl-Y |
-| Copy / paste within the studio | Cmd/Ctrl-C / Cmd/Ctrl-V |
+| Copy / paste layers between Stencil tabs; paste external text/images | Cmd/Ctrl-C / Cmd/Ctrl-V |
 | Duplicate | Cmd/Ctrl-D |
 | Select unlocked visible objects | Cmd/Ctrl-A |
 | Group / ungroup | Cmd/Ctrl-G / Shift-Cmd/Ctrl-G |
 | Deselect | Escape |
 
-Text fields retain their normal editing shortcuts. The studio clipboard is local to the running tab.
+Text fields and open dialog forms retain their normal editing shortcuts. Click the canvas before pasting external text or images. Selected layers use the real system clipboard: their validated Stencil data, relative positions, groups, crops and editable chart/table values survive a paste into another Stencil tab. Other applications receive the portable JSON text rather than editable Stencil objects. External URLs and markup in plain text remain literal text; HTML-only content, SVG files, PDFs and office documents are not imported.
+
+**Tools → Copy layers** and **Paste** provide explicit clipboard buttons on supported secure pages with browser permission. If reading is unavailable or denied, use the keyboard shortcuts; no automatic clipboard reads occur. **Copy page as PNG** copies the current page as an image for another application when supported, and otherwise downloads a real PNG. Clipboard capabilities and permissions vary by browser; the [clipboard and file-intake notes](docs/research/core-workflows.md) separate this implementation from native runtime qualification.
 
 ## Build and verify
 
@@ -84,6 +88,8 @@ The static build writes `dist/`. Runtime dependencies remain empty; Playwright i
 ## Scope and research
 
 The [next-wave scope and migration notes](docs/research/parity-next.md) describe page order, precise guides, transparent exports and retained data elements. The [source-linked parity ledger](docs/research/parity-ledger.md) and [all-tier source comparison](docs/research/feature-comparison.md) record delivered, partial, remaining and unknown behaviours across Canva's free and premium workflows. The [original feature map](docs/research/feature-map.md) preserves the first release's observations. [REA](https://github.com/morluto/rea), pinned to `6ce3288`, supplied bounded public investigation; [provenance](docs/research/rea-provenance.md) distinguishes captured public evidence from official documentation and unknown authenticated internals.
+
+The all-tier source comparison retains the dated 0.3 audit. Current clipboard and file insertion are described in the [0.4 workflow guide](docs/research/core-workflows.md); that guide does not relabel the full inventory as parity.
 
 This release is not full Canva parity. Canva-scale collaboration, account/team administration, shared brand management, stock asset catalogues, uploaded fonts, rich text effects, semantic background removal, generative photo editing, footage/multi-track animation editing, GIF export, social scheduling, CMYK/bleed/crop marks, PPTX/DOCX and SSO/SCIM remain separate work. MP4 output depends on actual browser recording support. Optional shared workspaces require a configured server and capability links; they are not available on static hosting. Real model-backed writing is conditional on the local bridge; it is not a claim of equivalent Canva AI systems.
 

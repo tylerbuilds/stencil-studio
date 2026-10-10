@@ -6,6 +6,8 @@ import { TABLE_FIELDS, CHART_FIELDS } from './data-elements.js';
 import { buildPDF } from './export.js';
 import { getAiStatus, generateWriting } from './ai-client.js';
 import { needsMigration, preserveMigrationSource, writeWithMigrationBackup } from './migration-storage.js';
+import { CLIPBOARD_MIME, CLIPBOARD_PREFIX, encodeSelection, encodeSelectionText, isSelectionText, pasteSelection, insertElements } from './transfer.js';
+import { prepareFiles, textElement } from './browser-intake.js';
 const $ = selector => document.querySelector(selector);
 const STORAGE_KEY = 'stencil-studio.document.v1'; // Retained so earlier installations migrate in place.
 let initial, recoveryMessage, recoveryRaw = null, recoveryPreserved = true, storageHealthy = true, storedRaw = null;
@@ -30,7 +32,8 @@ catch {
   recoveryMessage = recoveryPreserved ? 'Your previous design could not be loaded. Its original data has been preserved as a recovery copy; a fresh template is open.' : 'Your previous design could not be loaded. Its original data is kept, and automatic saves are blocked until a recovery copy is possible. Save your new work as JSON.';
 }
 const history = new History(initial);
-let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, clipboard = [], snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
+let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
+let intakeGeneration = 0, intakeActive = null, documentRevision = 0, fileDragDepth = 0;
 const page = () => history.current.pages.find(item => item.id === pageId) ?? history.current.pages[0];
 const selectedElements = () => page().elements.filter(element => selection.has(element.id));
 const selected = () => selectedElements().at(-1);
@@ -47,6 +50,7 @@ function attempt(operation) { try { return operation(); } catch (error) { toast(
 function commit(next, options = {}) {
   if (cloudSession?.role === 'view' && !options.fromCloud) throw new Error('This shared design is view-only. Keep a local copy and disconnect to edit your own version.');
   if (!history.commit(next)) return false;
+  documentRevision++; cancelIntake('Insertion cancelled because the design changed. Choose your files or paste again.');
   drag = null; // A new accepted edit invalidates any preview based on the earlier document.
   if (!history.current.pages.some(item => item.id === pageId)) pageId = history.current.pages[0].id;
   selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId)));
@@ -60,7 +64,7 @@ function requireGuideTarget(target = guideTarget) {
   if (!target || target !== guideTarget || target.pageId !== pageId || !$('#guides-dialog').open) throw new Error('The active design changed. Reopen Guides & rulers before applying a change.');
 }
 function openDocument(next, savedId = null) {
-  const valid = validateDocument(next); closePageTools(); drag = null; cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
+  const valid = validateDocument(next); cancelIntake('Insertion cancelled because a different design was opened.'); closePageTools(); drag = null; cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
   const unchanged = JSON.stringify(valid) === JSON.stringify(history.current), saved = commit(valid); if (!saved) render(); return unchanged ? storageHealthy : saved;
 }
 function field(label, key, value, options = {}) {
@@ -184,6 +188,8 @@ function renderCanvas(previewPage = page()) {
 }
 function render(options = {}) {
   const p = page(); pageId = p.id; selection = new Set([...selection].filter(elementId => p.elements.some(e => e.id === elementId)));
+  if (intakeActive && intakeActive.pageId !== pageId) cancelIntake('Insertion cancelled because the active page changed.');
+  $('#copy-selection').disabled = !selection.size; $('#paste-content').disabled = cloudSession?.role === 'view';
   if (document.activeElement !== $('#document-title')) $('#document-title').value = history.current.title;
   $('#page-name-display').textContent = p.name || 'Untitled page'; $('#canvas-size').textContent = `${Math.round(p.width)} × ${Math.round(p.height)} px`;
   $('#undo').disabled = !history.past.length || cloudSession?.role === 'view'; $('#redo').disabled = !history.future.length || cloudSession?.role === 'view'; $('#document-title').disabled = cloudSession?.role === 'view'; $('#delete-page').disabled = history.current.pages.length === 1;
@@ -253,6 +259,7 @@ $('#move-page-to').addEventListener('click', () => { try { const value = $('#pag
 const svgPoint = (event, inverse) => new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
 function startDrag(event) {
   if (event.button !== 0) return;
+  if (editingTarget(document.activeElement)) document.activeElement.blur();
   const guideNode = event.target.closest('[data-guide-id]'), node = event.target.closest('[data-element-id]'), handle = event.target.closest('[data-resize]'), inverse = $('#artboard').getScreenCTM().inverse();
   event.preventDefault(); $('#canvas-mount').setPointerCapture(event.pointerId);
   if (guideNode) {
@@ -315,7 +322,7 @@ $('#templates').querySelectorAll('button').forEach(button => button.addEventList
 $('#blank-design').addEventListener('click', () => { openDocument(createDocument()); switchLibrary('elements'); });
 $('#add-text').addEventListener('click', () => addElement('text')); $('#add-rectangle').addEventListener('click', () => addElement('rect')); $('#add-circle').addEventListener('click', () => addElement('circle'));
 $('#document-title').addEventListener('change', event => attempt(() => commit({ ...history.current, title: event.target.value }, { keepInspector: true })));
-function undoRedo(redo = false) { const hadDrag = Boolean(drag); drag = null; if (cloudSession?.role === 'view') { if (hadDrag) render(); toast('This shared design is view-only. Keep a local copy and disconnect to edit.', true); return; } if (redo ? history.redo() : history.undo()) { pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } else if (hadDrag) render(); }
+function undoRedo(redo = false) { const hadDrag = Boolean(drag); drag = null; cancelIntake('Insertion cancelled by Undo or Redo.'); if (cloudSession?.role === 'view') { if (hadDrag) render(); toast('This shared design is view-only. Keep a local copy and disconnect to edit.', true); return; } if (redo ? history.redo() : history.undo()) { documentRevision++; pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } else if (hadDrag) render(); }
 $('#undo').addEventListener('click', () => undoRedo()); $('#redo').addEventListener('click', () => undoRedo(true));
 $('#select-all').addEventListener('click', () => { selection = new Set(page().elements.filter(e => !e.hidden && !effectivelyLocked(e)).map(e => e.id)); render(); });
 $('#group-selection').addEventListener('click', () => attempt(() => commit(groupElements(history.current, pageId, selectionIds())))); $('#ungroup-selection').addEventListener('click', () => attempt(() => commit(ungroupElements(history.current, pageId, selectionIds()))));
@@ -333,8 +340,6 @@ window.addEventListener('keydown', event => {
   if (mod && key === 'z') { event.preventDefault(); undoRedo(event.shiftKey); }
   else if (mod && key === 'y') { event.preventDefault(); undoRedo(true); }
   else if (mod && key === 'a') { event.preventDefault(); $('#select-all').click(); }
-  else if (mod && key === 'c') { event.preventDefault(); clipboard = copyElements(history.current, pageId, selectionIds()); toast(`${clipboard.length} layers copied inside this studio.`); }
-  else if (mod && key === 'v') { event.preventDefault(); if (clipboard.length) attempt(() => selectNewElements(pasteElements(history.current, pageId, clipboard))); }
   else if (mod && key === 'd') { event.preventDefault(); duplicateSelection(); }
   else if (mod && key === 'g') { event.preventDefault(); (event.shiftKey ? $('#ungroup-selection') : $('#group-selection')).click(); }
   else if (event.key === 'Escape') { selection.clear(); render(); }
@@ -344,23 +349,162 @@ window.addEventListener('keydown', event => {
     attempt(() => commit(updateElements(history.current, pageId, selectionIds(), e => ({ x: e.x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0), y: e.y + (event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0) }))));
   }
 });
-$('#upload-image').addEventListener('click', () => $('#image-input').click());
-$('#image-input').addEventListener('change', async event => {
-  const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
-  if (file.size > 6 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) { toast('Choose a PNG, JPEG, WebP or GIF image smaller than 6 MB.', true); return; }
+function editingTarget(target) { return Boolean(target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])')); }
+const modalOpen = () => [...document.querySelectorAll('dialog')].some(dialog => dialog.open);
+function draftSignature() { return JSON.stringify([...document.querySelectorAll('#document-title, #page-order-position, #properties input, #properties textarea, #properties select')].map(input => [input.id, input.dataset.property, input.type === 'checkbox' ? input.checked : input.value])); }
+function intakeFeedback(message, error = false) { $('#intake-status').textContent = message; $('#intake-status').classList.toggle('error', error); }
+function updateIntakeOverlay() {
+  const active = Boolean(intakeActive), dropping = fileDragDepth > 0;
+  $('#intake-overlay').hidden = !active && !dropping;
+  $('#intake-overlay').classList.toggle('preparing', active);
+  $('#intake-overlay-label').textContent = active ? 'Preparing your files…' : 'Drop files onto your canvas';
+  $('#cancel-insertion').hidden = !active;
+  $('#canvas-area').classList.toggle('accepting-drop', dropping && !active);
+}
+function cancelIntake(message = '') {
+  if (!intakeActive) return;
+  intakeGeneration++; intakeActive.controller.abort(); intakeActive = null; updateIntakeOverlay();
+  if (message) intakeFeedback(message, true);
+}
+function captureIntake() {
+  if (cloudSession?.role === 'view') throw new Error('This shared design is view-only. Disconnect to insert into a local copy.');
+  if (modalOpen()) throw new Error('Finish or close the open dialog before inserting files or pasting onto the canvas.');
+  if (editingTarget(document.activeElement)) document.activeElement.blur();
+  cancelIntake();
+  const request = { generation: ++intakeGeneration, revision: documentRevision, pageId, cloudGeneration, base: serialiseDocument(history.current), draft: draftSignature(), page: structuredClone(page()), brand: structuredClone(history.current.brand), controller: new AbortController() };
+  intakeActive = request; updateIntakeOverlay(); intakeFeedback('Preparing content. Nothing is inserted until the whole batch is valid.'); return request;
+}
+function requireIntakeTarget(request) {
+  if (intakeActive !== request || request.generation !== intakeGeneration || request.controller.signal.aborted) throw new DOMException('Insertion cancelled.', 'AbortError');
+  if (request.revision !== documentRevision || request.pageId !== pageId || request.cloudGeneration !== cloudGeneration || request.base !== serialiseDocument(history.current) || request.draft !== draftSignature() || modalOpen() || cloudSession?.role === 'view') throw new Error('Your design or an editing draft changed while content was being prepared. Nothing was inserted; choose your files or paste again.');
+}
+async function runIntake(prepare, description = 'Content') {
+  let request;
   try {
-    const dataURL = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
-    const image = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('This image could not be decoded.')); img.src = dataURL; });
-    const width = Math.min(page().width * .65, image.naturalWidth), height = width * image.naturalHeight / image.naturalWidth;
-    if (!image.naturalWidth || !image.naturalHeight || height > 8192) throw new Error('This image has unsupported dimensions.');
-    if (addElement('image', { src: dataURL, sourceWidth: image.naturalWidth, sourceHeight: image.naturalHeight, width: Math.max(1, Math.round(width)), height: Math.max(1, Math.round(height)) })) toast('Image added from your device.');
-  } catch (error) { toast(error.message || 'Could not read this image.', true); }
+    request = captureIntake(); const result = await prepare(request); requireIntakeTarget(request);
+    let next;
+    if (result.kind === 'document') {
+      if (result.confirmDocument !== false && !window.confirm('Open this Stencil design and replace the current design? Undo restores your previous design.')) { intakeActive = null; updateIntakeOverlay(); intakeFeedback('The current design was kept.'); return; }
+      requireIntakeTarget(request); intakeActive = null; updateIntakeOverlay();
+      if (openDocument(result.document)) { intakeFeedback('Design opened. Undo restores the previous design.'); toast('Design opened. Undo restores your previous design.'); }
+      return;
+    }
+    next = result.kind === 'selection' ? pasteSelection(history.current, pageId, result.payload, result.point ? { point: result.point } : {}) : insertElements(history.current, pageId, result.elements);
+    const old = new Set(page().elements.map(element => element.id)), ids = next.pages.find(p => p.id === pageId).elements.filter(element => !old.has(element.id)).map(element => element.id);
+    intakeActive = null; updateIntakeOverlay(); selection = new Set(ids);
+    const saved = commit(next); intakeFeedback(saved ? `${description} inserted · ${ids.length} ${ids.length === 1 ? 'layer' : 'layers'}. Undo removes the whole insertion.` : 'Inserted in memory. Browser storage is unavailable; use Save JSON to keep your work.', !saved);
+    if (saved) toast(`${ids.length} ${ids.length === 1 ? 'layer' : 'layers'} inserted. Undo removes the whole insertion.`);
+  } catch (error) {
+    if (request && request.generation !== intakeGeneration) return;
+    if (request) { intakeActive = null; updateIntakeOverlay(); }
+    const message = error.name === 'AbortError' ? 'Insertion cancelled. The design was kept.' : error.message || 'This content could not be inserted.';
+    intakeFeedback(message, true); toast(message, true);
+  }
+}
+function insertFiles(files, point, confirmDocument = true) { return runIntake(async request => ({ ...await prepareFiles(files, { page: request.page, brand: request.brand, point, signal: request.controller.signal }), confirmDocument }), 'Files'); }
+function insertText(text, point) { return runIntake(request => ({ kind: 'elements', elements: [textElement(text, request.page, request.brand, point)] }), 'Text'); }
+function pastePayload(payload, point) { return runIntake(() => ({ kind: 'selection', payload, point }), 'Copied layers'); }
+$('#cancel-insertion').addEventListener('click', () => cancelIntake('Insertion cancelled. The design was kept.'));
+$('#upload-image').addEventListener('click', () => $('#image-input').click());
+for (const selector of ['#insert-files', '#upload-assets']) $(selector).addEventListener('click', () => $('#asset-input').click());
+for (const selector of ['#image-input', '#asset-input', '#document-input']) $(selector).addEventListener('change', event => { const files = Array.from(event.target.files ?? []); event.target.value = ''; if (files.length) insertFiles(files, undefined, selector !== '#document-input'); });
+window.addEventListener('copy', event => {
+  if (editingTarget(event.target) || modalOpen() || !selection.size || !event.clipboardData || window.getSelection()?.toString()) return;
+  try {
+    const payload = encodeSelection(history.current, pageId, selectionIds());
+    event.clipboardData.setData('text/plain', encodeSelectionText(payload));
+    try { event.clipboardData.setData(CLIPBOARD_MIME, payload); } catch { /* The portable text envelope works when custom MIME types are unsupported. */ }
+    event.preventDefault(); toast('Layers copied to your system clipboard. Paste in another Stencil tab.');
+  } catch (error) { toast(error.message || 'These layers could not be copied.', true); }
 });
+function transferContent(data) {
+  const payload = data.getData(CLIPBOARD_MIME), text = data.getData('text/plain') || data.getData('text/uri-list');
+  if (payload) return { kind: 'selection', payload };
+  if (isSelectionText(text)) return { kind: 'selection', payload: text.slice(CLIPBOARD_PREFIX.length) };
+  const files = Array.from(data.files ?? []);
+  if (!files.length) for (const item of Array.from(data.items ?? [])) if (item.kind === 'file') { const file = item.getAsFile(); if (file) files.push(file); }
+  if (files.length) return { kind: 'files', files };
+  if (text) return { kind: 'text', text };
+  return { kind: 'unsupported' };
+}
+function insertTransfer(content, point) {
+  if (content.kind === 'selection') pastePayload(content.payload, point);
+  else if (content.kind === 'files') insertFiles(content.files, point);
+  else if (content.kind === 'text') insertText(content.text, point);
+  else { const message = 'There is no supported text or image here. Copy plain text, an image, or layers from another Stencil tab; HTML and SVG are not imported.'; intakeFeedback(message, true); toast(message, true); }
+}
+window.addEventListener('paste', event => {
+  if (editingTarget(event.target) || modalOpen() || !event.clipboardData) return;
+  event.preventDefault(); insertTransfer(transferContent(event.clipboardData));
+});
+$('#copy-selection').addEventListener('click', async () => {
+  try { const payload = encodeSelection(history.current, pageId, selectionIds()); if (!navigator.clipboard?.writeText || !window.isSecureContext) throw new Error('Use Ctrl/Cmd-C to copy selected layers. Clipboard buttons require a secure page and browser permission.'); await navigator.clipboard.writeText(encodeSelectionText(payload)); toast('Layers copied to your system clipboard.'); }
+  catch (error) { toast(error.name === 'NotAllowedError' ? 'Clipboard access was denied. Select your layers and use Ctrl/Cmd-C instead.' : error.message || 'Could not copy layers. Use Ctrl/Cmd-C.', true); }
+});
+$('#paste-content').addEventListener('click', () => runIntake(async request => {
+  if (!navigator.clipboard || !window.isSecureContext) throw new Error('Click the canvas and use Ctrl/Cmd-V to paste. This browser cannot read the clipboard with a button.');
+  let text = '', files = [];
+  try {
+    if (navigator.clipboard.read) {
+      const items = await navigator.clipboard.read();
+      if (items.length > 20) throw new Error('The clipboard contains too many items. Paste up to twenty files at a time.');
+      const readClipboardText = async (item, type) => { const blob = await item.getType(type); if (blob.size > 12 * 1024 * 1024 + CLIPBOARD_PREFIX.length) throw new Error('The clipboard data is too large. Copy fewer layers or less text.'); return blob.text(); };
+      // Native layers take precedence over a raster alternative in both event and button paths.
+      for (const item of items) {
+        const nativeType = item.types.find(type => type === CLIPBOARD_MIME || type === `web ${CLIPBOARD_MIME}`);
+        if (nativeType) return { kind: 'selection', payload: await readClipboardText(item, nativeType) };
+      }
+      const texts = [];
+      for (const item of items) if (item.types.includes('text/plain')) {
+        const value = await readClipboardText(item, 'text/plain');
+        if (isSelectionText(value)) return { kind: 'selection', payload: value.slice(CLIPBOARD_PREFIX.length) };
+        texts.push(value);
+      }
+      text = texts.join('');
+      for (const item of items) {
+        const imageType = item.types.find(type => ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'].includes(type));
+        if (imageType) { const blob = await item.getType(imageType); files.push(new File([blob], `clipboard-${files.length + 1}`, { type: imageType })); }
+      }
+    } else if (navigator.clipboard.readText) text = await navigator.clipboard.readText();
+    else throw new Error('Clipboard reading is unavailable. Click the canvas and use Ctrl/Cmd-V.');
+  } catch (error) { if (error.name === 'NotAllowedError') throw new Error('Clipboard access was denied. Click the canvas and use Ctrl/Cmd-V; your design has not changed.'); throw error; }
+  if (files.length) return prepareFiles(files, { page: request.page, brand: request.brand, signal: request.controller.signal });
+  if (isSelectionText(text)) return { kind: 'selection', payload: text.slice(CLIPBOARD_PREFIX.length) };
+  return { kind: 'elements', elements: [textElement(text, request.page, request.brand)] };
+}, 'Clipboard content'));
+$('#copy-page-image').addEventListener('click', async () => {
+  const p = structuredClone(page()), outputName = `${filename()}-page-${history.current.pages.findIndex(item => item.id === pageId) + 1}.png`;
+  let rasterPromise;
+  try {
+    if (!navigator.clipboard?.write || !window.ClipboardItem || !window.isSecureContext) throw new Error('unsupported');
+    rasterPromise = renderRaster(p);
+    rasterPromise.catch(() => {}); // Clipboard construction or permission can fail before the raster settles.
+    const item = new ClipboardItem({ 'image/png': rasterPromise }); await navigator.clipboard.write([item]); toast('Current page copied as a PNG image.');
+  } catch {
+    try { download(await (rasterPromise ?? renderRaster(p)), 'image/png', outputName); toast('This browser could not copy an image. The PNG was downloaded so you can open or share it.'); }
+    catch (error) { toast(error.message || 'The page could not be copied or downloaded.', true); }
+  }
+});
+const transferableDrag = data => data && Array.from(data.types ?? []).some(type => ['Files', 'text/plain', 'text/html', 'text/uri-list', CLIPBOARD_MIME].includes(type));
+window.addEventListener('dragover', event => { if (transferableDrag(event.dataTransfer) && (!editingTarget(event.target) || Array.from(event.dataTransfer.types).includes('Files'))) { event.preventDefault(); event.dataTransfer.dropEffect = event.target.closest?.('#canvas-area') ? 'copy' : 'none'; } });
+$('#canvas-area').addEventListener('dragenter', event => { if (transferableDrag(event.dataTransfer)) { event.preventDefault(); fileDragDepth++; updateIntakeOverlay(); } });
+$('#canvas-area').addEventListener('dragleave', event => { if (transferableDrag(event.dataTransfer)) { fileDragDepth = Math.max(0, fileDragDepth - 1); updateIntakeOverlay(); } });
+window.addEventListener('drop', event => {
+  if (!transferableDrag(event.dataTransfer)) return;
+  const files = Array.from(event.dataTransfer.types).includes('Files');
+  if (editingTarget(event.target) && !files) return;
+  event.preventDefault(); fileDragDepth = 0; updateIntakeOverlay();
+  if (!event.target.closest?.('#canvas-area')) { toast('Drop images or text files onto the canvas, or choose Insert files from File.', true); return; }
+  let point; const board = $('#artboard'), rect = board.getBoundingClientRect();
+  if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) { const value = svgPoint(event, board.getScreenCTM().inverse()); point = { x: Math.max(0, Math.min(page().width, value.x)), y: Math.max(0, Math.min(page().height, value.y)) }; }
+  insertTransfer(transferContent(event.dataTransfer), point);
+});
+window.addEventListener('dragend', () => { fileDragDepth = 0; updateIntakeOverlay(); });
+$('#canvas-area').addEventListener('click', () => { if (editingTarget(document.activeElement)) document.activeElement.blur(); });
 function download(content, type, filename) { const url = URL.createObjectURL(new Blob([content], { type })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); }
 const filename = () => (history.current.title || 'stencil-design').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'stencil-design';
 $('#save-document').addEventListener('click', () => attempt(() => { download(serialiseDocument(history.current), 'application/json', `${filename()}.stencil.json`); toast('All pages saved as editable JSON.'); }));
 $('#import-document').addEventListener('click', () => $('#document-input').click());
-$('#document-input').addEventListener('change', async event => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { if (file.size > 12 * 1024 * 1024) throw new Error('The document is too large (12 MB maximum).'); if (openDocument(parseDocument(await file.text()))) toast('Design opened. Undo restores your previous design.'); } catch (error) { toast(error.message || 'Could not open this document.', true); } });
 $('#export-svg').addEventListener('click', () => attempt(() => { download(pageSVG(page()), 'image/svg+xml', `${filename()}-page-${history.current.pages.findIndex(p => p.id === pageId) + 1}.svg`); toast('Current page downloaded as SVG.'); }));
 async function renderRaster(p, type = 'image/png') {
   const url = URL.createObjectURL(new Blob([pageSVG(p)], { type: 'image/svg+xml' })); let image;
@@ -467,8 +611,9 @@ $('#video-preview-start').addEventListener('click', async () => {
 $('#video-preview-play').addEventListener('click', () => videoPreview?.play()); $('#video-preview-pause').addEventListener('click', () => videoPreview?.pause()); $('#video-seek').addEventListener('input', event => videoPreview?.seek(Number(event.target.value) / 100 * videoPreview.duration));
 $('#video-dialog').addEventListener('close', () => { videoSessionGeneration++; videoPreviewGeneration++; videoController?.abort(); videoPreviewController?.abort(); videoPreviewController = null; videoPreview?.stop(); videoPreview = null; $('#video-live-preview').hidden = true; $('#video-preview-play').disabled = true; $('#video-preview-pause').disabled = true; $('#video-seek').disabled = true; $('#video-result video')?.pause(); if (videoURL) { URL.revokeObjectURL(videoURL); videoURL = null; $('#video-result').innerHTML = ''; } });
 async function getCloudClient() { if (!cloudClient) { const module = await import('./cloud-client.mjs'); cloudClient = module.createCloudClient({ baseURL: '/api/workspaces' }); } return cloudClient; }
-function cloudDirty() { const active = document.activeElement, editing = active?.matches('input,textarea,select') && (active.id === 'document-title' || active.closest('#properties,#table-dialog,#guides-dialog,.page-order')); return cloudBaseline !== null && (Boolean(editing) || Boolean(drag) || $('#table-dialog').open || $('#guides-dialog').open || serialiseDocument(history.current) !== cloudBaseline); }
+function cloudDirty() { const active = document.activeElement, editing = active?.matches('input,textarea,select') && (active.id === 'document-title' || active.closest('#properties,#table-dialog,#guides-dialog,.page-order')); return cloudBaseline !== null && (Boolean(editing) || Boolean(drag) || Boolean(intakeActive) || $('#table-dialog').open || $('#guides-dialog').open || serialiseDocument(history.current) !== cloudBaseline); }
 async function openCloudSnapshot(snapshot, token) {
+  cancelIntake('Insertion cancelled because the shared design changed.');
   if (snapshot.workspace.kind !== 'stencil-studio') throw new Error('This access link belongs to a different application.');
   const valid = validateDocument(snapshot.workspace.document), unchanged = serialiseDocument(valid) === serialiseDocument(history.current); cloudSession = { ...snapshot, token }; cloudBaseline = serialiseDocument(valid); cloudPending = null; if (!unchanged || !valid.pages.some(p => p.id === pageId)) { pageId = valid.pages[0].id; selection.clear(); fit = true; } libraryId = null; closePageTools(); drag = null;
   commit(valid, { fromCloud: true }); render(); await renderCloud(); startCloudWatch();
