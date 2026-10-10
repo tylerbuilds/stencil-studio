@@ -6,7 +6,7 @@ const COLLECTIONS = ['tabler', 'fluent', 'doodles'];
 const fail = message => { throw new Error(message); };
 const plain = value => value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype;
 const text = (value, max) => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
-const identifier = value => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 160;
+const identifier = value => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 128;
 export const foldSearch = value => String(value).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 export function validateCatalogue(value) {
   if (!plain(value) || value.version !== 1 || !Array.isArray(value.collections) || value.collections.length !== 3 || !Array.isArray(value.assets) || !value.assets.length || value.assets.length > 10000) fail('This asset library cannot be opened. Try again after updating Stencil.');
@@ -18,7 +18,7 @@ export function validateCatalogue(value) {
   }
   const ids = new Set(), paths = new Set();
   for (const asset of value.assets) {
-    if (!plain(asset) || !identifier(asset.id) || !asset.id.startsWith(`${asset.collection}-`) || ids.has(asset.id) || !collectionIds.has(asset.collection) || !text(asset.name, 120) || !text(asset.category, 80) || !Array.isArray(asset.tags) || asset.tags.length > 40 || asset.tags.some(tag => !text(tag, 80)) || !new RegExp(`^assets/svg/${asset.collection}/[a-z0-9]+(?:-[a-z0-9]+)*\\.svg$`).test(asset.path) || paths.has(asset.path) || !/^[a-f0-9]{64}$/.test(asset.sha256) || !Number.isInteger(asset.bytes) || asset.bytes < 1 || asset.bytes > MAX_ASSET_BYTES) fail('This asset library has an invalid item. Try again after updating Stencil.');
+    if (!plain(asset) || !identifier(asset.id) || !asset.id.startsWith(`${asset.collection}-`) || ids.has(asset.id) || !collectionIds.has(asset.collection) || !text(asset.name, 100) || !asset.name.trim() || /[<>]/.test(asset.name) || !text(asset.category, 80) || !Array.isArray(asset.tags) || asset.tags.length > 40 || asset.tags.some(tag => !text(tag, 80)) || !new RegExp(`^assets/svg/${asset.collection}/[a-z0-9]+(?:-[a-z0-9]+)*\\.svg$`).test(asset.path) || paths.has(asset.path) || !/^[a-f0-9]{64}$/.test(asset.sha256) || !Number.isInteger(asset.bytes) || asset.bytes < 1 || asset.bytes > MAX_ASSET_BYTES) fail('This asset library has an invalid item. Try again after updating Stencil.');
     ids.add(asset.id); paths.add(asset.path);
   }
   return value;
@@ -39,17 +39,23 @@ export function assetURL(path, moduleURL = import.meta.url) {
   return new URL(`../public/${path}`, moduleURL).href;
 }
 export async function readLimitedBytes(response, max, signal) {
+  signal?.throwIfAborted();
+  if (!Number.isSafeInteger(max) || max < 0) fail('This asset file has an invalid size limit.');
   if (!response.ok || response.redirected) fail('The asset library could not load. Check your connection and try again.');
   const declared = Number(response.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > max) fail('This asset file is too large to open.');
-  if (!response.body?.getReader) { const bytes = new Uint8Array(await response.arrayBuffer()); if (bytes.length > max) fail('This asset file is too large to open.'); return bytes; }
+  if (!response.body?.getReader) { const bytes = new Uint8Array(await response.arrayBuffer()); signal?.throwIfAborted(); if (bytes.length > max) fail('This asset file is too large to open.'); return bytes; }
   const reader = response.body.getReader(), chunks = []; let length = 0;
+  let cancelled = false;
+  const cancel = reason => { if (cancelled) return; cancelled = true; try { void Promise.resolve(reader.cancel(reason)).catch(() => {}); } catch { /* Cleanup cannot strand the original error. */ } };
+  const aborted = () => cancel(signal.reason);
+  signal?.addEventListener('abort', aborted, { once: true });
   try {
     while (true) {
-      signal?.throwIfAborted(); const { done, value } = await reader.read(); if (done) break;
+      signal?.throwIfAborted(); const { done, value } = await reader.read(); signal?.throwIfAborted(); if (done) break;
       length += value.length; if (length > max) fail('This asset file is too large to open.'); chunks.push(value);
     }
-  } catch (error) { await reader.cancel().catch(() => {}); throw error; } finally { reader.releaseLock(); }
+  } catch (error) { cancel(error); throw error; } finally { signal?.removeEventListener('abort', aborted); try { reader.releaseLock(); } catch { /* Preserve the original error. */ } }
   signal?.throwIfAborted(); const result = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; } return result;
 }
 export async function fetchCatalogue({ signal } = {}) {

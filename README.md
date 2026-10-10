@@ -13,7 +13,7 @@ Make a poster, card, presentation or social graphic in your browser. Start with 
 1. Choose **New design**, give it a name and pick a size. Choose **Create design** to open your canvas.
 2. Add text, shapes or images from **Elements**, or find free artwork in **Assets**. Choose **Draw** to sketch with a brush.
 3. Select something on the canvas to change its colour, size or position. Drag the corner handles to resize it.
-4. Choose **Download** when it is ready, or **File → Save design** to keep it in **My designs**.
+4. Choose **Download** when it is ready, or **File → Save design**, give it a name and choose **Save design** to keep it in **My designs**.
 
 Prefer a starting point? **Templates** has eight original designs, including a poster, card, presentation, story and menu. Starting another design keeps your current work in **My designs** first. If its backup cannot be saved, your current design stays open. Download JSON to keep a copy; starting another design stays blocked until the backup can be saved.
 
@@ -47,7 +47,11 @@ See [file and clipboard limits](docs/research/core-workflows.md) for the full li
 
 ## Save and download
 
-Your open design saves in this browser. **File → Save design** keeps a named version in **My designs**; **Save a new copy** keeps another version. **File → Save JSON** downloads all pages so you can reopen and edit them in Stencil. Back up the whole library from **My designs** to move it to another browser.
+**My designs** in the header opens your saved-design library. Preview the first page, search by name, or sort by recently saved or name. Choose **Open design** to continue editing. Stencil keeps changes to your current design before switching, and leaves it open if that save fails. **Open a file** opens an editable Stencil JSON design from your device.
+
+Your open canvas autosaves in this browser. **Save design** asks for a name and keeps a separate named version; **Save changes** updates it, and **Save a copy** creates another version. Rename or duplicate a saved design from its card. Delete asks before removing it and keeps the current canvas open.
+
+**File → Save JSON** downloads all pages so you can reopen and edit them in Stencil. **Library backups** downloads your saved designs together or adds a backup from another browser. The library holds up to 20 designs within 18 MiB; browser storage can fill up sooner.
 
 Download the current page as **PNG**, **JPG** or **SVG**, or all pages as **PDF**. Select the empty canvas and turn on **Transparent background** for transparent PNG or SVG output. JPG and PDF use your background colour. The PDF download keeps the layout as images; its text is not selectable. **Print / Save PDF** opens your browser's print dialog instead. Check the result before sharing, since fonts can vary between devices.
 
@@ -56,6 +60,8 @@ Download the current page as **PNG**, **JPG** or **SVG**, or all pages as **PDF*
 ## Keep your work safe
 
 Designs and images stay in this browser unless you download them or use an optional sharing service. There are no accounts or tracking. Clearing browser data can remove saved designs, so keep a JSON backup somewhere safe. Undo works while the tab is open; it is not a saved history. If the browser cannot save, keep the design open and download it.
+
+If another tab changes a named design, Stencil keeps your local edits and asks you to save a copy or reopen the newer version. A newer autosaved draft in another tab is also kept. Supported browsers coordinate named saves with a short exclusive lock. In browsers without Web Locks, simultaneous saves have drift checks but cannot be made atomic across tabs; use one editing tab at a time.
 
 **Share** and **AI writing** need a configured server and are unavailable on the online demo. Sharing sends the active design to that server and uses separate owner, editor and viewer links. Anyone with a link can use its access level, so keep the owner link private. AI writing sends only the text and direction shown in its window when you ask for a draft. You decide whether to use the result. See [server setup and data handling](docs/self-hosting.md).
 

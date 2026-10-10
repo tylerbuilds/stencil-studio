@@ -1,6 +1,6 @@
 /** Named local designs. A failed validation or storage write never replaces a library. */
 import { id as createId, validateDocument } from './model.js';
-import { writeWithMigrationBackup } from './migration-storage.js';
+import { StorageConflictError, writeWithMigrationBackup } from './migration-storage.js';
 
 export const LIBRARY_KEY = 'stencil-studio.library.v1';
 export const LIBRARY_SCHEMA = 'stencil-studio-library';
@@ -10,6 +10,18 @@ export const MAX_LIBRARY_BYTES = 18 * 1024 * 1024;
 const encoder = new TextEncoder();
 const clone = value => structuredClone(value);
 const emptyLibrary = () => ({ schema: LIBRARY_SCHEMA, version: LIBRARY_VERSION, designs: [] });
+const snapshots = new WeakMap();
+const hiddenControls = /[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/;
+function timestamp(previous) {
+  const value = Math.max(Date.now(), previous ? Date.parse(previous) + 1 : 0);
+  require(Number.isFinite(value) && value <= 253402300799999, 'The device clock cannot create a valid saved-design timestamp.');
+  return new Date(value).toISOString();
+}
+function checkExpectedTimestamp(options, existing) {
+  if (options.expectedUpdatedAt === undefined) return;
+  require(existing && typeof options.expectedUpdatedAt === 'string' && Number.isFinite(Date.parse(options.expectedUpdatedAt)), 'Choose an existing design and its saved timestamp before updating it.');
+  if (existing.updatedAt !== options.expectedUpdatedAt) throw new LibraryError('This design was changed in another tab. Your local edits are still open. Save a copy or reopen the newer design.', 'design-conflict');
+}
 
 export class LibraryError extends Error {
   constructor(message, code = 'invalid-library', cause) {
@@ -86,8 +98,9 @@ function designId(value) {
   require(typeof value === 'string' && value.length > 0 && value.length <= 100 && /^[\w-]+$/.test(value), 'Saved design ID must be a valid identifier.');
   return value;
 }
-function designName(value) {
-  require(typeof value === 'string' && value.trim().length > 0 && value.length <= 150 && !/[\u0000-\u001f\u007f]/.test(value), "Use 1 to 150 characters for the design name, without hidden control characters.");
+function designName(value, retainedName = false) {
+  const controls = retainedName ? /[\u0000-\u001f\u007f]/ : hiddenControls;
+  require(typeof value === 'string' && value.trim().length > 0 && value.length <= 150 && !controls.test(value), "Use 1 to 150 characters for the design name, without hidden control characters.");
   return value.trim();
 }
 function validDocument(document) {
@@ -107,7 +120,7 @@ function validateLibrary(value) {
     require(!ids.has(identifier), 'The library contains duplicate design IDs.');
     ids.add(identifier);
     require(typeof item.updatedAt === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(item.updatedAt) && Number.isFinite(Date.parse(item.updatedAt)) && new Date(item.updatedAt).toISOString() === item.updatedAt, 'Saved design date must be a valid UTC timestamp.');
-    return { id: identifier, name: designName(item.name), updatedAt: item.updatedAt, document: validDocument(item.document) };
+    return { id: identifier, name: designName(item.name, true), updatedAt: item.updatedAt, document: validDocument(item.document) };
   });
   const library = { schema: LIBRARY_SCHEMA, version: LIBRARY_VERSION, designs };
   require(byteLength(JSON.stringify(library, null, 2)) <= MAX_LIBRARY_BYTES, "Your saved designs are too large (18 MB maximum). Export a backup, then remove a design to make room.");
@@ -115,7 +128,7 @@ function validateLibrary(value) {
 }
 function parseLibrary(payload) {
   if (typeof payload !== 'string') return validateLibrary(payload);
-  require(byteLength(payload) <= MAX_LIBRARY_BYTES, "This backup is too large. Use a file up to 18 MB.");
+  require(payload.length <= MAX_LIBRARY_BYTES && byteLength(payload) <= MAX_LIBRARY_BYTES, "This backup is too large. Use a file up to 18 MB.");
   let value;
   try { value = JSON.parse(payload); }
   catch (cause) { throw new LibraryError('This library backup is not valid JSON.', 'invalid-json', cause); }
@@ -126,15 +139,15 @@ function readLibrary(storage) {
   let payload;
   try { payload = resolved.getItem(LIBRARY_KEY); }
   catch (cause) { throw new LibraryError("Your saved designs cannot be opened because browser storage is unavailable. Export your open design as JSON to keep a copy.", 'storage-unavailable', cause); }
-  if (payload === null) return emptyLibrary();
-  try { return parseLibrary(payload); }
+  if (payload === null) { const library = emptyLibrary(); snapshots.set(library, null); return library; }
+  try { const library = parseLibrary(payload); snapshots.set(library, payload); return library; }
   catch (cause) { throw new LibraryError(`Your saved designs could not be opened. Their stored data has been kept. ${cause.message}`, 'invalid-stored-library', cause); }
 }
 function writeLibrary(library, storage) {
   const valid = validateLibrary(library);
   const payload = JSON.stringify(valid, null, 2);
-  try { writeWithMigrationBackup(storageFor(storage), LIBRARY_KEY, payload, 'library'); }
-  catch (cause) { throw new LibraryError("Your designs could not be saved because browser storage is full or unavailable. Your previously saved designs are unchanged. Export your open design as JSON to keep a copy.", 'storage-write-failed', cause); }
+  try { writeWithMigrationBackup(storageFor(storage), LIBRARY_KEY, payload, 'library', { expectedRaw: snapshots.get(library) }); }
+  catch (cause) { if (cause instanceof StorageConflictError) throw new LibraryError('Your saved designs changed in another tab. Your local edits are still open. Refresh My designs and try again.', 'library-conflict', cause); throw new LibraryError("Your designs could not be saved because browser storage is full or unavailable. Your previously saved designs are unchanged. Export your open design as JSON to keep a copy.", 'storage-write-failed', cause); }
   return valid;
 }
 function metadata(library) {
@@ -147,19 +160,31 @@ function findDesign(library, identifier) {
   return record;
 }
 function uniqueId(library) {
-  let identifier;
-  do { identifier = createId(); } while (library.designs.some(item => item.id === identifier));
-  return identifier;
+  for (let attempt = 0; attempt < 64; attempt++) { const identifier = createId(); if (!library.designs.some(item => item.id === identifier)) return identifier; }
+  throw new LibraryError('A unique design ID could not be created. Your saved designs are unchanged. Try again.', 'id-unavailable');
 }
 
 export function listDesigns(storage) { return metadata(readLibrary(storage)); }
+export function listDesignSummaries(storage) {
+  const library = readLibrary(storage);
+  return metadata(library).map(record => { const document = findDesign(library, record.id).document; return { ...record, pageCount: document.pages.length, firstPage: clone(document.pages[0]) }; });
+}
+export function renameDesign(identifier, name, storage, options = {}) {
+  options = checkedOptions(options, ['expectedUpdatedAt'], 'Rename options');
+  const library = readLibrary(storage), record = findDesign(library, identifier);
+  checkExpectedTimestamp(options, record);
+  record.name = designName(name, typeof name === 'string' && name.trim() === record.name); record.document.title = record.name; record.updatedAt = timestamp(record.updatedAt);
+  writeLibrary(library, storage); return clone(record);
+}
 
 export function saveDesign(document, options = {}, storage) {
-  options = checkedOptions(options, ['id', 'name'], 'Save options');
+  options = checkedOptions(options, ['id', 'name', 'expectedUpdatedAt'], 'Save options');
   const valid = validDocument(document), library = readLibrary(storage);
   const existing = options.id === undefined ? null : findDesign(library, options.id);
-  const name = designName(options.name ?? (valid.title.replace(/\s+/g, ' ').trim() || 'Untitled design'));
-  const record = { id: existing?.id ?? uniqueId(library), name, updatedAt: new Date().toISOString(), document: valid };
+  checkExpectedTimestamp(options, existing);
+  const proposedName = options.name ?? (valid.title.replace(/\s+/g, ' ').trim() || 'Untitled design');
+  const name = designName(proposedName, Boolean(existing && typeof proposedName === 'string' && proposedName.trim() === existing.name));
+  const record = { id: existing?.id ?? uniqueId(library), name, updatedAt: timestamp(existing?.updatedAt), document: valid };
   if (existing) library.designs[library.designs.indexOf(existing)] = record;
   else library.designs.push(record);
   writeLibrary(library, storage);
@@ -168,17 +193,21 @@ export function saveDesign(document, options = {}, storage) {
 
 export function loadDesign(identifier, storage) { return clone(findDesign(readLibrary(storage), identifier).document); }
 
-export function duplicateDesign(identifier, storage) {
+export function duplicateDesign(identifier, storage, options = {}) {
+  options = checkedOptions(options, ['expectedUpdatedAt'], 'Duplicate options');
   const library = readLibrary(storage), source = findDesign(library, identifier);
+  checkExpectedTimestamp(options, source);
   const name = `${source.name.slice(0, 145)} copy`;
-  const record = { id: uniqueId(library), name, updatedAt: new Date().toISOString(), document: { ...clone(source.document), title: name } };
+  const record = { id: uniqueId(library), name, updatedAt: timestamp(), document: { ...clone(source.document), title: name } };
   library.designs.push(record);
   writeLibrary(library, storage);
   return clone(record);
 }
 
-export function deleteDesign(identifier, storage) {
+export function deleteDesign(identifier, storage, options = {}) {
+  options = checkedOptions(options, ['expectedUpdatedAt'], 'Delete options');
   const library = readLibrary(storage), record = findDesign(library, identifier);
+  checkExpectedTimestamp(options, record);
   library.designs.splice(library.designs.indexOf(record), 1);
   writeLibrary(library, storage);
   return true;
@@ -199,6 +228,7 @@ export function importLibrary(payload, options = {}, storage) {
   require(['merge', 'replace'].includes(mode), "Choose whether to add this backup to your saved designs or replace them.");
   const imported = parseLibrary(payload);
   const library = mode === 'replace' ? emptyLibrary() : readLibrary(storage);
+  if (mode === 'replace') { let raw; try { raw = storageFor(storage).getItem(LIBRARY_KEY); } catch (cause) { throw new LibraryError('Browser storage is unavailable. Your saved designs are unchanged.', 'storage-unavailable', cause); } snapshots.set(library, raw); }
   let added = 0, skipped = 0;
   for (const record of imported.designs) {
     const existing = library.designs.find(item => item.id === record.id);
@@ -209,4 +239,19 @@ export function importLibrary(payload, options = {}, storage) {
   }
   if (mode === 'replace' || added) writeLibrary(library, storage);
   return { imported: added, skipped, total: library.designs.length };
+}
+
+/** Serialise cooperating browser tabs. The fallback detects drift but cannot provide cross-tab atomicity. */
+let localMutationQueue = Promise.resolve();
+export async function withLibraryLock(operation, { locks = globalThis.navigator?.locks, signal } = {}) {
+  require(typeof operation === 'function', 'A saved-design operation is required.');
+  const boundedSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000);
+  const run = () => { if (boundedSignal.aborted) throw new LibraryError('Saved designs are busy in another tab. Your work is still open. Try again.', 'library-busy'); return operation(); };
+  try {
+    if (typeof locks?.request === 'function') return await locks.request(LIBRARY_KEY, { mode: 'exclusive', signal: boundedSignal }, run);
+    const next = localMutationQueue.then(run, run); localMutationQueue = next.catch(() => {}); return await next;
+  } catch (cause) {
+    if (boundedSignal.aborted) throw new LibraryError('Saved designs are busy in another tab. Your work is still open. Try again.', 'library-busy', cause);
+    throw cause;
+  }
 }

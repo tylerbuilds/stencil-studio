@@ -1,5 +1,6 @@
 // Original colour-key background editing, performed entirely on this device.
 import { preserveAssetNoticesDataURI } from './asset-notices.js';
+import { identifyRaster } from './browser-intake.js';
 const MAX_PIXELS=4_000_000;
 function colourChannels(colour, pixels) {
   if(colour===undefined || colour==='') return [...pixels.slice(0,3)];
@@ -32,6 +33,16 @@ export function keyBackgroundPixels(pixels,width,height,{colour,tolerance=35,con
 }
 export async function removeBackground(src,options={}) {
   if(typeof src!=='string' || src.length>8*1024*1024+64 || !/^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(src)) throw new Error('Choose an uploaded PNG, JPEG or WebP image.');
+  let bytes;
+  try {
+    const encoded=src.slice(src.indexOf(',')+1);
+    if(encoded.length%4 || !/^[a-z0-9+/]*={0,2}$/i.test(encoded)) throw new Error();
+    bytes=Uint8Array.from(atob(encoded),char=>char.charCodeAt(0));
+  } catch { throw new Error('Choose an uploaded PNG, JPEG or WebP image.'); }
+  let declared;
+  try { declared=identifyRaster(bytes); } catch { throw new Error('Choose an uploaded PNG, JPEG or WebP image.'); }
+  if(declared.type!==src.slice(5,src.indexOf(';')).toLowerCase()) throw new Error('Choose an uploaded PNG, JPEG or WebP image.');
+  if(declared.width*declared.height>MAX_PIXELS || declared.width<1 || declared.height<1) throw new Error('Resize this image to at most four million pixels before removing its background.');
   const image=new Image();
   image.src=src;
   try { await image.decode(); } catch { throw new Error("This image could not be opened."); }

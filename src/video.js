@@ -1,5 +1,6 @@
 /** Page-based browser video. No camera, microphone, remote media or service is used. */
 import { validateDocument, pageSVG } from './model.js';
+import { identifyRaster } from './browser-intake.js';
 
 export const VIDEO_LIMITS = Object.freeze({ maxEdge: 1280, minSceneSeconds: .25, maxSceneSeconds: 30, maxSeconds: 180, maxAudioBytes: 12 * 1024 * 1024, maxImagePixels: 24_000_000, maxOutputBytes: 128 * 1024 * 1024 });
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -77,6 +78,12 @@ function canvas2D(width, height) {
 }
 
 async function verifyRaster(src, signal) {
+  checkAbort(signal);
+  // Imported designs can declare large bitmaps. Bound their real header before native decoding.
+  let raster;
+  try { const bytes = Uint8Array.from(atob(src.slice(src.indexOf(',') + 1)), character => character.charCodeAt(0)); raster = identifyRaster(bytes); }
+  catch { throw new Error('An image in this video could not be opened. Replace it before exporting.'); }
+  assert(raster.width > 0 && raster.height > 0 && raster.width * raster.height <= VIDEO_LIMITS.maxImagePixels, 'Use video images with at most 24 million pixels. Resize the image before exporting.');
   const image = new Image();
   try {
     await bounded(new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("An image in this video could not be opened. Replace it before exporting.")); image.src = src; }), signal, 15000, "An image in this video took too long to open. Try a smaller image.");

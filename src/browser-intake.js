@@ -53,6 +53,7 @@ export function validatePlainText(text) {
 }
 export function classifyFiles(files) {
   if (!Array.isArray(files) || !files.length || files.length > MAX_FILES) fail(`Choose between 1 and ${MAX_FILES} files.`);
+  for (let index = 0; index < files.length; index++) if (!Object.hasOwn(files, index)) fail("This file list is incomplete. Choose the files again.");
   const kinds = files.map(file => {
     if (!file || !Number.isInteger(file.size) || file.size < 1) fail("This file is empty or cannot be read. Choose another file.");
     const type = String(file.type || '').toLowerCase(), name = String(file.name || '');

@@ -6,18 +6,24 @@ export function needsMigration(raw, kind = 'document') {
   const earlier = document => document?.schema === 'stencil-studio' && Number.isInteger(document.version) && document.version >= 1 && document.version < VERSION;
   return kind === 'library' ? parsed?.schema === 'stencil-studio-library' && Array.isArray(parsed.designs) && parsed.designs.some(record => earlier(record?.document)) : earlier(parsed);
 }
+export class StorageConflictError extends Error {
+  constructor() { super('This saved data changed in another tab. Your local edits are still open. Save a copy or download them before reopening the newer design.'); this.name = 'StorageConflictError'; }
+}
 export function preserveMigrationSource(storage, key, raw) {
   if (!storage || typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function' || typeof key !== 'string' || typeof raw !== 'string') throw new Error("Browser storage cannot keep a backup before updating this saved design.");
   let hash = 2166136261; for (let index = 0; index < raw.length; index++) hash = Math.imul(hash ^ raw.charCodeAt(index), 16777619);
   const prefix = `${key}.migration.v${VERSION}.${(hash >>> 0).toString(16)}`;
   let backupKey = prefix, suffix = 0;
-  while (true) { const previous = storage.getItem(backupKey); if (previous === raw) return backupKey; if (previous === null) break; backupKey = `${prefix}.${++suffix}`; }
+  while (true) { const previous = storage.getItem(backupKey); if (previous === raw) return backupKey; if (previous === null) break; if (++suffix > 128) throw new Error('Too many recovery copies use this backup name. Export your saved data before updating it.'); backupKey = `${prefix}.${suffix}`; }
   storage.setItem(backupKey, raw);
   if (storage.getItem(backupKey) !== raw) throw new Error("The original saved data could not be backed up before updating it.");
   return backupKey;
 }
-export function writeWithMigrationBackup(storage, key, payload, kind = 'document') {
+export function writeWithMigrationBackup(storage, key, payload, kind = 'document', options = {}) {
   const original = storage.getItem(key);
+  if (Object.hasOwn(options, 'expectedRaw') && original !== options.expectedRaw) throw new StorageConflictError();
   if (original !== null && needsMigration(original, kind)) preserveMigrationSource(storage, key, original);
+  // A recovery write may yield to another storage owner. Check again before replacing the active key.
+  if (Object.hasOwn(options, 'expectedRaw') && storage.getItem(key) !== options.expectedRaw) throw new StorageConflictError();
   storage.setItem(key, payload);
 }

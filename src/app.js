@@ -1,5 +1,5 @@
 import { FONTS, TEMPLATES, PRESETS, SHAPE_KINDS, MAX_STROKE_POINTS, History, id, createDocument, createBlankDesign, createBrushStroke, createPage, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, positionLayers, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, pageSVG, escapeXML, reorderPage, addPageGuide, updatePageGuide, removePageGuide, setPageGuideSettings, resizePageDocument, snapMovement } from './model.js';
-import { listDesigns, saveDesign, loadDesign, duplicateDesign, deleteDesign, exportLibrary, importLibrary } from './library.js';
+import { LIBRARY_KEY, withLibraryLock, listDesigns, listDesignSummaries, saveDesign, loadDesign, renameDesign, duplicateDesign, deleteDesign, exportLibrary, importLibrary } from './library.js';
 import { parseCSV, bulkCreate } from './bulk.js';
 import { parseDataCSV, serialiseDataCSV } from './data-csv.js';
 import { TABLE_FIELDS, CHART_FIELDS } from './data-elements.js';
@@ -37,6 +37,35 @@ const pristineDocument = storedRaw === null && recoveryPreserved ? serialiseDocu
 let drawMode = false, brushColour = '#232a27', brushWidth = 6, layerDrag = null;
 let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoCreditsURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
 let intakeGeneration = 0, intakeActive = null, documentRevision = 0, fileDragDepth = 0;
+let expectedDocumentRaw = storedRaw, designNameTarget = null;
+const ACTIVE_DESIGN_KEY = 'stencil-studio.active-design.v1';
+const savedBindings = new Map(), historyBindings = new WeakMap();
+// Detect an ordinary shared-autosave change before restoring a per-tab association.
+// The fingerprint is not a credential or a tamper-proof security check.
+function draftFingerprint(raw) {
+  let first = 2166136261, second = 5381;
+  for (let index = 0; index < raw.length; index++) { const code = raw.charCodeAt(index); first = Math.imul(first ^ code, 16777619); second = Math.imul(second, 33) ^ code; }
+  return `${raw.length}:${(first >>> 0).toString(16)}:${(second >>> 0).toString(16)}`;
+}
+function rememberSaved(record) {
+  savedBindings.set(record.id, { updatedAt: record.updatedAt, baseline: serialiseDocument(record.document) });
+  libraryId = record.id; historyBindings.set(history.current, libraryId); keepActiveBinding();
+}
+function keepActiveBinding() {
+  try { if (storageHealthy && recoveryPreserved && libraryId && savedBindings.has(libraryId)) sessionStorage.setItem(ACTIVE_DESIGN_KEY, JSON.stringify({ id: libraryId, updatedAt: savedBindings.get(libraryId).updatedAt, draft: draftFingerprint(serialiseDocument(history.current)) })); else sessionStorage.removeItem(ACTIVE_DESIGN_KEY); }
+  catch { /* Saving a named design still works when per-tab storage is unavailable. */ }
+}
+try {
+  const raw = sessionStorage.getItem(ACTIVE_DESIGN_KEY);
+  if (raw && raw.length <= 300) {
+    const binding = JSON.parse(raw);
+    if (recoveryPreserved && storedRaw !== null && binding && Object.keys(binding).length === 3 && binding.draft === draftFingerprint(serialiseDocument(initial)) && typeof binding.id === 'string' && /^[\w-]{1,100}$/.test(binding.id) && typeof binding.updatedAt === 'string') {
+      const record = listDesigns().find(item => item.id === binding.id && item.updatedAt === binding.updatedAt);
+      if (record) { libraryId = record.id; savedBindings.set(record.id, { updatedAt: record.updatedAt, baseline: serialiseDocument(loadDesign(record.id)) }); }
+    }
+  }
+} catch { /* Keep the open draft when a stale or invalid saved binding cannot be restored. */ }
+historyBindings.set(history.current, libraryId); keepActiveBinding();
 const page = () => history.current.pages.find(item => item.id === pageId) ?? history.current.pages[0];
 const selectedElements = () => page().elements.filter(element => selection.has(element.id));
 const selected = () => selectedElements().at(-1);
@@ -46,13 +75,14 @@ const effectivelyLocked = e => e.locked || Boolean(e.groupId && page().elements.
 function toast(message, error = false) { const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { node.hidden = true; }, error ? 6500 : 3500); }
 function persist() {
   if (!recoveryPreserved) { storageHealthy = false; $('#save-status').textContent = 'Autosave paused. Save JSON'; toast('Autosave is paused to keep your earlier design. Choose File → Save JSON to keep your new work.', true); return false; }
-  try { writeWithMigrationBackup(localStorage, STORAGE_KEY, serialiseDocument(history.current)); $('#save-status').textContent = 'Saved on this device'; storageHealthy = true; return true; }
-  catch { storageHealthy = false; $('#save-status').textContent = 'Not saved. Save JSON'; toast('Your browser could not save this design. Keep it open and choose File → Save JSON to download a copy.', true); return false; }
+  try { const payload = serialiseDocument(history.current); writeWithMigrationBackup(localStorage, STORAGE_KEY, payload, 'document', { expectedRaw: expectedDocumentRaw }); expectedDocumentRaw = payload; $('#save-status').textContent = 'Saved on this device'; storageHealthy = true; keepActiveBinding(); return true; }
+  catch (error) { storageHealthy = false; keepActiveBinding(); $('#save-status').textContent = 'Not saved. Save JSON'; toast(error?.name === 'StorageConflictError' || error?.code === 'storage-conflict' ? 'Another tab saved a newer draft. Your edits are still here. Save a named copy or download JSON before refreshing.' : 'Your browser could not save this design. Keep it open and choose File → Save JSON to download a copy.', true); return false; }
 }
 function attempt(operation) { try { return operation(); } catch (error) { toast(error.message || 'That change didn’t work. Try again.', true); return false; } }
 function commit(next, options = {}) {
   if (cloudSession?.role === 'view' && !options.fromCloud) throw new Error('You have view-only access. Keep a local copy and disconnect to make your own edits.');
   if (!history.commit(next)) return false;
+  historyBindings.set(history.current, libraryId);
   documentRevision++; cancelIntake('The design changed, so insertion was cancelled. Choose your files or paste again.');
   drag = null; // A new accepted edit invalidates any preview based on the earlier document.
   if (!history.current.pages.some(item => item.id === pageId)) pageId = history.current.pages[0].id;
@@ -68,7 +98,7 @@ function requireGuideTarget(target = guideTarget) {
 }
 function openDocument(next, savedId = null) {
   const valid = validateDocument(next); setDrawMode(false); cancelIntake('Insertion cancelled. You opened another design.'); closePageTools(); drag = null; cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
-  const unchanged = JSON.stringify(valid) === JSON.stringify(history.current), saved = commit(valid); if (!saved) render(); return unchanged ? storageHealthy : saved;
+  const unchanged = JSON.stringify(valid) === JSON.stringify(history.current), saved = commit(valid); historyBindings.set(history.current, libraryId); keepActiveBinding(); if (!saved) render(); return unchanged ? storageHealthy : saved;
 }
 function field(label, key, value, options = {}) {
   const { type = 'number', min, max, step = 'any', maxlength } = options;
@@ -229,7 +259,7 @@ function render(options = {}) {
   $('#move-page-earlier').disabled = readOnly || pageIndex === 0; $('#move-page-later').disabled = readOnly || pageIndex === history.current.pages.length - 1;
   $('#page-order-position').max = history.current.pages.length; $('#page-order-position').disabled = readOnly; $('#move-page-to').disabled = readOnly;
   if (document.activeElement !== $('#page-order-position')) $('#page-order-position').value = pageIndex + 1;
-  renderCanvas(); renderLayers(); if (!options.keepInspector) renderProperties();
+  renderCanvas(); renderLayers(); if (!options.keepInspector) renderProperties(); updateSavedStatus();
 }
 function rulerMarkup(p, axis) {
   const size = p[axis === 'x' ? 'width' : 'height'], raw = 50 / zoom, magnitude = 10 ** Math.floor(Math.log10(raw));
@@ -406,15 +436,27 @@ for (const tab of libraryTabs) {
   });
 }
 $('#templates').innerHTML = TEMPLATES.map(template => `<button class="template-button" data-template="${template.key}"><span class="template-preview">${pageSVG(templateDocument(template.key).pages[0])}</span><strong>${safe(template.name)}</strong><small>${safe(template.category)}</small></button>`).join('');
-function preserveCurrentDesign() {
-  if (pristineDocument === serialiseDocument(history.current)) return null;
-  if (!recoveryPreserved) throw new Error('Autosave is paused. Save JSON for your new work. If File shows Recovery data, download that too. New design stays blocked while autosave is paused.');
-  const name = `Recovery — ${(history.current.title || 'Untitled design').replace(/\s+/g, ' ').trim().slice(0, 110)} — ${new Date().toLocaleString()}`.slice(0, 150);
-  try { return saveDesign(history.current, { name }); }
-  catch { throw new Error('Your backup could not be saved, so New design is still blocked. Save JSON keeps a copy of your work. Make space in My designs or restore browser saving, then try again.'); }
+function designDialogState() { return [...document.querySelectorAll('dialog[open]')].filter(dialog => dialog.id !== 'design-name-dialog').map(dialog => dialog.id).join(','); }
+function captureDesignState() { return { revision: documentRevision, document: serialiseDocument(history.current), draft: draftSignature(), dialogs: designDialogState(), libraryId, updatedAt: savedBindings.get(libraryId)?.updatedAt }; }
+function requireDesignState(state, checkBinding = true) {
+  if (state.revision !== documentRevision || state.document !== serialiseDocument(history.current) || state.draft !== draftSignature() || state.dialogs !== designDialogState() || Boolean(drag) || checkBinding && (state.libraryId !== libraryId || state.updatedAt !== savedBindings.get(libraryId)?.updatedAt)) throw new Error('Your design changed while saved designs were busy. Your edits are still here. Try again when you are ready.');
 }
-function startNewDocument(next) {
-  const valid = validateDocument(next); const recovery = preserveCurrentDesign(); setDrawMode(false);
+async function preserveCurrentDesign(guard = () => {}) {
+  const state = captureDesignState(); guard();
+  if (pristineDocument === state.document) return null;
+  if (!recoveryPreserved) throw new Error('Autosave is paused to protect your earlier design. Download your current JSON and Recovery data before starting or opening another design.');
+  const binding = libraryId && savedBindings.get(libraryId);
+  if (binding && state.document === binding.baseline) return null;
+  const options = { name: history.current.title.trim() || 'Untitled design', ...(binding ? { id: libraryId, expectedUpdatedAt: binding.updatedAt } : {}) };
+  try {
+    const record = await withLibraryLock(() => { guard(); requireDesignState(state); const saved = saveDesign(parseDocument(state.document), options); rememberSaved(saved); return saved; });
+    guard(); requireDesignState(state, false);
+    if (libraryId !== record.id || savedBindings.get(record.id)?.updatedAt !== record.updatedAt) throw new Error('A different saved design was opened while this one was being kept.');
+    return record;
+  } catch (error) { throw new Error(`Your current design is still open. ${error.message} Choose Save a copy or download JSON, then try again.`); }
+}
+async function startNewDocument(next, guard = () => {}) {
+  const valid = validateDocument(next), state = captureDesignState(); const recovery = await preserveCurrentDesign(guard); guard(); requireDesignState(state, false); setDrawMode(false);
   const saved = openDocument(valid); switchLibrary('elements');
   if (saved) toast(recovery ? 'Your new canvas is ready. Your previous design is kept in My designs.' : 'Your canvas is ready. Add text or a shape, or choose Draw.');
   return saved;
@@ -428,13 +470,16 @@ function openNewDesign() {
 $('#new-design').addEventListener('click', openNewDesign); $('#blank-design').addEventListener('click', openNewDesign);
 $('#new-preset').addEventListener('change', () => { const preset = PRESETS.find(p => p.key === $('#new-preset').value); if (preset) { $('#new-width').value = preset.width; $('#new-height').value = preset.height; } });
 for (const selector of ['#new-width', '#new-height']) $(selector).addEventListener('input', () => { $('#new-preset').value = ''; });
-$('#new-design-form').addEventListener('submit', event => {
-  event.preventDefault();
-  try { const next = createBlankDesign({ title: $('#new-title').value.trim() || 'Untitled design', width: Number($('#new-width').value), height: Number($('#new-height').value), background: $('#new-background').value }); startNewDocument(next); $('#new-design-dialog').close(); }
+$('#new-design-form').addEventListener('submit', async event => {
+  event.preventDefault(); if ($('#create-new-design').disabled) return; $('#create-new-design').disabled = true;
+  const signature = () => JSON.stringify([...$('#new-design-form').querySelectorAll('input,select')].map(input => input.value)), draft = signature();
+  const guard = () => { if (!$('#new-design-dialog').open || signature() !== draft) throw new Error('Your new design settings changed. Choose Create design again when you are ready.'); };
+  try { const next = createBlankDesign({ title: $('#new-title').value.trim() || 'Untitled design', width: Number($('#new-width').value), height: Number($('#new-height').value), background: $('#new-background').value }); await startNewDocument(next, guard); $('#new-design-dialog').close(); }
   catch (error) { $('#new-design-error').textContent = error.message; }
+  finally { $('#create-new-design').disabled = false; }
 });
 $('#new-export-current').addEventListener('click', () => download(serialiseDocument(history.current), 'application/json', `${filename()}.json`));
-$('#templates').querySelectorAll('button').forEach(button => button.addEventListener('click', () => attempt(() => startNewDocument(templateDocument(button.dataset.template)))));
+$('#templates').querySelectorAll('button').forEach(button => button.addEventListener('click', async () => { if (button.disabled) return; button.disabled = true; drag = null; renderCanvas(); try { await startNewDocument(templateDocument(button.dataset.template)); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } }));
 function setDrawMode(enabled) {
   if (enabled && cloudSession?.role === 'view') { toast('You have view-only access. Keep a local copy and disconnect to draw on it.', true); return; }
   drag = null; drawMode = Boolean(enabled); $('#draw-tool').setAttribute('aria-pressed', String(drawMode)); $('#draw-tool').textContent = drawMode ? 'Brush on · B' : 'Draw · B'; $('#select-tool').setAttribute('aria-pressed', String(!drawMode)); $('#brush-settings').hidden = !drawMode; $('#canvas-mount').classList.toggle('drawing', drawMode); renderCanvas();
@@ -445,7 +490,7 @@ $('#brush-width').addEventListener('change', event => { const width = Number(eve
 for (const kind of SHAPE_KINDS) $(`#add-${kind}`).addEventListener('click', () => { setDrawMode(false); addElement('shape', { kind, ...(kind === 'line' ? { height: 40, stroke: history.current.brand.colours[1] ?? '#e76543', strokeWidth: 6 } : {}) }); });
 $('#add-text').addEventListener('click', () => { setDrawMode(false); addElement('text'); }); $('#add-rectangle').addEventListener('click', () => { setDrawMode(false); addElement('rect'); }); $('#add-circle').addEventListener('click', () => { setDrawMode(false); addElement('circle'); });
 $('#document-title').addEventListener('change', event => attempt(() => commit({ ...history.current, title: event.target.value }, { keepInspector: true })));
-function undoRedo(redo = false) { const hadDrag = Boolean(drag); drag = null; cancelIntake('Insertion cancelled by Undo or Redo.'); if (cloudSession?.role === 'view') { if (hadDrag) render(); toast('You have view-only access. Keep a local copy and disconnect to edit it.', true); return; } if (redo ? history.redo() : history.undo()) { documentRevision++; pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } else if (hadDrag) render(); }
+function undoRedo(redo = false) { const hadDrag = Boolean(drag); drag = null; cancelIntake('Insertion cancelled by Undo or Redo.'); if (cloudSession?.role === 'view') { if (hadDrag) render(); toast('You have view-only access. Keep a local copy and disconnect to edit it.', true); return; } if (redo ? history.redo() : history.undo()) { documentRevision++; libraryId = historyBindings.get(history.current) ?? null; if (!savedBindings.has(libraryId)) libraryId = null; keepActiveBinding(); pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } else if (hadDrag) render(); }
 $('#undo').addEventListener('click', () => undoRedo()); $('#redo').addEventListener('click', () => undoRedo(true));
 $('#select-all').addEventListener('click', () => { selection = new Set(page().elements.filter(e => !e.hidden && !effectivelyLocked(e)).map(e => e.id)); render(); });
 $('#group-selection').addEventListener('click', () => attempt(() => commit(groupElements(history.current, pageId, selectionIds())))); $('#ungroup-selection').addEventListener('click', () => attempt(() => commit(ungroupElements(history.current, pageId, selectionIds()))));
@@ -511,9 +556,9 @@ async function runIntake(prepare, description = 'Content') {
     request = captureIntake(); const result = await prepare(request); requireIntakeTarget(request);
     let next;
     if (result.kind === 'document') {
-      if (result.confirmDocument !== false && !window.confirm('Open this Stencil design in place of your current one? Undo brings your current design back.')) { intakeActive = null; updateIntakeOverlay(); intakeFeedback('Your current design is still open.'); return; }
-      requireIntakeTarget(request); intakeActive = null; updateIntakeOverlay();
-      if (openDocument(result.document)) { intakeFeedback('Design opened. Use Undo to go back.'); toast('Design opened. Use Undo to go back.'); }
+      if (result.confirmDocument !== false && !window.confirm('Open this Stencil design? Your current work will be kept in My designs first.')) { intakeActive = null; updateIntakeOverlay(); intakeFeedback('Your current design is still open.'); return; }
+      requireIntakeTarget(request); await preserveCurrentDesign(); requireIntakeTarget(request); intakeActive = null; updateIntakeOverlay();
+      if (openDocument(result.document)) { intakeFeedback('Design opened. Your previous design is kept in My designs.'); toast('Design opened. Your previous design is kept in My designs.'); }
       return;
     }
     next = result.kind === 'selection' ? pasteSelection(history.current, pageId, result.payload, result.point ? { point: result.point } : {}) : insertElements(history.current, pageId, result.elements);
@@ -649,17 +694,111 @@ $('#export-pdf').addEventListener('click', async () => {
   catch (error) { toast(error.message || 'PDF export failed.', true); } finally { button.disabled = false; $('#save-status').textContent = storageHealthy ? 'Saved on this device' : recoveryPreserved ? 'Not saved. Save JSON' : 'Autosave paused. Save JSON'; }
 });
 $('#print-design').addEventListener('click', () => attempt(() => { $('#print-pages').innerHTML = history.current.pages.map(p => `<section class="print-page">${pageSVG(p, false, true)}</section>`).join(''); window.print(); }));
-function renderLibrary() {
-  try { const records = listDesigns(); $('#saved-designs').innerHTML = records.length ? records.map(record => `<article class="saved-design"><button class="saved-open" data-open-design="${safe(record.id)}">${safe(record.name)}</button><small>Updated ${safe(new Date(record.updatedAt).toLocaleDateString())}</small><div class="saved-design-actions"><button data-copy-design="${safe(record.id)}">Duplicate</button><button data-delete-design="${safe(record.id)}">Delete</button></div></article>`).join('') : '<div class="empty-layers">Save a design to find it here<br>next time.</div>'; }
-  catch (error) { $('#saved-designs').textContent = error.message; return; }
-  $('#saved-designs').querySelectorAll('[data-open-design]').forEach(button => button.addEventListener('click', () => attempt(() => { if (openDocument(loadDesign(button.dataset.openDesign), button.dataset.openDesign)) toast('Saved design opened.'); })));
-  $('#saved-designs').querySelectorAll('[data-copy-design]').forEach(button => button.addEventListener('click', () => attempt(() => { duplicateDesign(button.dataset.copyDesign); renderLibrary(); toast('Saved design duplicated.'); })));
-  $('#saved-designs').querySelectorAll('[data-delete-design]').forEach(button => button.addEventListener('click', () => { if (window.confirm('Delete this saved design from My designs? The design on your canvas will stay open.')) attempt(() => { deleteDesign(button.dataset.deleteDesign); if (libraryId === button.dataset.deleteDesign) libraryId = null; renderLibrary(); }); }));
+function updateSavedStatus() {
+  const binding = libraryId && savedBindings.get(libraryId), changed = Boolean(binding && serialiseDocument(history.current) !== binding.baseline);
+  $('#library-save-current').textContent = binding ? changed ? 'Save changes' : 'Saved design' : 'Save design';
+  $('#library-save-current').disabled = Boolean(binding && !changed);
+  $('#open-designs').classList.toggle('has-unsaved-design', changed);
+  $('#open-designs').title = changed ? 'Open My designs · named design has changes to save' : 'Open and organise your saved designs';
+  $('#saved-designs').querySelectorAll('[data-saved-id]').forEach(card => { const active = card.dataset.savedId === libraryId; card.classList.toggle('current-design', active); const badge = card.querySelector('.saved-design-badge'); badge.hidden = !active; badge.textContent = changed ? 'Open · edited' : 'Open'; });
 }
-function saveToLibrary(copy = false) { attempt(() => { const record = saveDesign(history.current, { ...(libraryId && !copy ? { id: libraryId } : {}), name: history.current.title || 'Untitled design' }); libraryId = record.id; renderLibrary(); toast(copy ? 'A new copy was saved to your library.' : 'Design saved to your library.'); }); }
-$('#save-to-library').addEventListener('click', () => saveToLibrary()); $('#library-save-copy').addEventListener('click', () => saveToLibrary(true));
+function savedDesignPreview(firstPage, namespace = `preview-${id()}`) {
+  const preview = structuredClone(firstPage), groups = new Map();
+  preview.id = `${namespace}-page`;
+  preview.elements.forEach((element, index) => { element.id = `${namespace}-layer-${index}`; if (element.groupId) { if (!groups.has(element.groupId)) groups.set(element.groupId, `${namespace}-group-${groups.size}`); element.groupId = groups.get(element.groupId); } });
+  preview.guides.forEach((guide, index) => { guide.id = `${namespace}-guide-${index}`; });
+  return pageSVG(preview, false);
+}
+function renderLibrary() {
+  let records;
+  try { records = listDesignSummaries(); }
+  catch (error) { $('#saved-designs').textContent = error.message; $('#library-count').textContent = ''; $('#library-status').textContent = 'Your stored designs have been kept. You can still download the open design from File.'; $('#library-status').classList.add('error'); return; }
+  const identifiers = new Set(records.map(record => record.id));
+  for (const identifier of savedBindings.keys()) if (!identifiers.has(identifier)) savedBindings.delete(identifier);
+  if (libraryId && !identifiers.has(libraryId)) { libraryId = null; historyBindings.set(history.current, null); keepActiveBinding(); }
+  const externalChange = Boolean(libraryId && records.find(record => record.id === libraryId)?.updatedAt !== savedBindings.get(libraryId)?.updatedAt);
+  const query = $('#design-search').value.trim().toLocaleLowerCase();
+  const visible = records.filter(record => record.name.toLocaleLowerCase().includes(query));
+  if ($('#design-sort').value === 'name') visible.sort((a, b) => a.name.localeCompare(b.name) || a.updatedAt.localeCompare(b.updatedAt));
+  $('#library-count').textContent = `${records.length} / 20`;
+  $('#library-status').classList.remove('error');
+  $('#library-status').textContent = externalChange ? 'This design changed in another tab. Your open draft stays here. Save a copy to keep your edits, or open the latest version.' : query ? `${visible.length} ${visible.length === 1 ? 'design' : 'designs'} found.` : records.length ? 'Open a design to carry on where you left off.' : 'Save a named design, or open a Stencil JSON file from your device.';
+  $('#saved-designs').innerHTML = visible.length ? visible.map(record => `<article class="saved-design" data-saved-id="${safe(record.id)}"><button class="saved-open" data-open-design="${safe(record.id)}" aria-label="Open ${safe(record.name)}"><span class="saved-design-preview" aria-hidden="true">${savedDesignPreview(record.firstPage)}</span><span class="saved-design-title">${safe(record.name)}</span><span class="saved-design-badge" hidden>Open</span><span class="saved-design-meta">${record.pageCount} ${record.pageCount === 1 ? 'page' : 'pages'} · ${record.firstPage.width} × ${record.firstPage.height} px</span><span class="saved-design-date">Saved ${safe(new Date(record.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span><span class="saved-open-label">Open design <span aria-hidden="true">↗</span></span></button><div class="saved-design-actions"><button data-rename-design="${safe(record.id)}" aria-label="Rename ${safe(record.name)}">Rename</button><button data-copy-design="${safe(record.id)}" aria-label="Duplicate ${safe(record.name)}">Duplicate</button><button data-delete-design="${safe(record.id)}" class="danger" aria-label="Delete ${safe(record.name)}">Delete</button></div></article>`).join('') : `<div class="design-empty"><span aria-hidden="true">▧</span><strong>${query ? 'No matching designs' : 'Your designs belong here'}</strong><p>${query ? 'Try another name or clear your search.' : 'Give your canvas a name and save it to come back to it later.'}</p></div>`;
+  $('#saved-designs').querySelectorAll('[data-open-design]').forEach(button => button.addEventListener('click', async () => {
+    try {
+      const identifier = button.dataset.openDesign; loadDesign(identifier);
+      if (editingTarget(document.activeElement)) document.activeElement.blur();
+      const state = captureDesignState(); await preserveCurrentDesign(); requireDesignState(state, false);
+      const record = listDesigns().find(item => item.id === identifier);
+      if (!record) throw new Error('This saved design was removed in another tab. Your current design is still open.');
+      const openedDocument = loadDesign(identifier);
+      savedBindings.set(identifier, { updatedAt: record.updatedAt, baseline: serialiseDocument(openedDocument) });
+      const saved = openDocument(openedDocument, identifier); renderLibrary();
+      if (saved) toast('Design opened. Your previous work is kept in My designs.');
+    } catch (error) { toast(error.message, true); }
+  }));
+  $('#saved-designs').querySelectorAll('[data-rename-design]').forEach(button => button.addEventListener('click', () => attempt(() => { const record = listDesigns().find(item => item.id === button.dataset.renameDesign); if (!record) throw new Error('That design was removed in another tab. Refresh My designs.'); openDesignName({ mode: 'rename', id: record.id, updatedAt: record.updatedAt, name: record.name }); })));
+  $('#saved-designs').querySelectorAll('[data-copy-design]').forEach(button => button.addEventListener('click', async () => {
+    button.disabled = true;
+    try { const source = records.find(record => record.id === button.dataset.copyDesign); const record = await withLibraryLock(() => duplicateDesign(source.id, undefined, { expectedUpdatedAt: source.updatedAt })); renderLibrary(); toast(`“${record.name}” is ready in My designs.`); }
+    catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+  }));
+  $('#saved-designs').querySelectorAll('[data-delete-design]').forEach(button => button.addEventListener('click', async () => {
+    const record = records.find(item => item.id === button.dataset.deleteDesign);
+    if (!window.confirm(`Delete “${record.name}” from My designs? This cannot be undone. The design on your canvas stays open.`)) return;
+    button.disabled = true;
+    try { await withLibraryLock(() => deleteDesign(record.id, undefined, { expectedUpdatedAt: record.updatedAt })); savedBindings.delete(record.id); if (libraryId === record.id) { libraryId = null; historyBindings.set(history.current, null); keepActiveBinding(); } renderLibrary(); toast('Saved design deleted.'); }
+    catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+  }));
+  updateSavedStatus();
+  if (externalChange) { const badge = $('#saved-designs').querySelector('.current-design .saved-design-badge'); if (badge) { badge.hidden = false; badge.textContent = 'Changed elsewhere'; } }
+}
+function openDesignName(options = {}) {
+  if (editingTarget(document.activeElement)) document.activeElement.blur();
+  drag = null; cancelIntake('Insertion cancelled. You opened the design name window.'); renderCanvas();
+  const mode = options.mode ?? 'save', binding = libraryId && savedBindings.get(libraryId);
+  designNameTarget = { ...options, mode, state: captureDesignState(), ...(mode === 'save' && binding ? { id: libraryId, updatedAt: binding.updatedAt } : {}) };
+  const currentName = history.current.title.trim() || 'Untitled design';
+  $('#design-name-heading').textContent = mode === 'rename' ? 'Rename your design' : mode === 'copy' ? 'Save a new copy' : binding ? 'Save your changes' : 'Save your design';
+  $('#design-name').value = mode === 'rename' ? options.name : mode === 'copy' ? `${currentName.slice(0, 145)} copy` : currentName;
+  $('#design-name-hint').textContent = mode === 'rename' ? 'The saved design and its title will use this name.' : mode === 'copy' ? 'Your original saved design stays as it is.' : binding ? 'Update this named design in My designs.' : 'Find it again in My designs on this device.';
+  $('#design-name-save').textContent = mode === 'rename' ? 'Rename design' : mode === 'copy' ? 'Save a copy' : 'Save design';
+  $('#design-name-error').textContent = ''; $('#design-name-dialog').showModal(); $('#design-name').focus(); $('#design-name').select();
+}
+$('#design-name-form').addEventListener('submit', async event => {
+  event.preventDefault(); const target = designNameTarget; if (!target || $('#design-name-save').disabled) return;
+  $('#design-name-save').disabled = true;
+  try {
+    const name = $('#design-name').value.trim();
+    if (!name) throw new Error('Give your design a name.');
+    const requireTarget = () => { if (target !== designNameTarget || !$('#design-name-dialog').open) throw new Error('Saving was cancelled. Your design is still open.'); requireDesignState(target.state); };
+    if (target.mode === 'rename') {
+      const record = await withLibraryLock(() => { requireTarget(); return renameDesign(target.id, name, undefined, { expectedUpdatedAt: target.updatedAt }); });
+      requireDesignState(target.state);
+      const active = libraryId === target.id;
+      savedBindings.set(record.id, { updatedAt: record.updatedAt, baseline: serialiseDocument(record.document) });
+      if (active) { commit({ ...history.current, title: name }); keepActiveBinding(); }
+      $('#design-name-dialog').close(); renderLibrary(); if (storageHealthy) toast('Design renamed.');
+    } else {
+      const document = { ...parseDocument(target.state.document), title: name };
+      const record = await withLibraryLock(() => { requireTarget(); return saveDesign(document, { name, ...(target.id && target.mode !== 'copy' ? { id: target.id, expectedUpdatedAt: target.updatedAt } : {}) }); });
+      requireDesignState(target.state);
+      rememberSaved(record); if (history.current.title !== name) commit(document); else updateSavedStatus();
+      $('#design-name-dialog').close(); renderLibrary();
+      toast(storageHealthy ? target.mode === 'copy' ? 'Your new copy is saved in My designs.' : 'Design saved in My designs.' : 'Your named design is saved in My designs. The open draft could not autosave; download JSON before refreshing.', !storageHealthy);
+    }
+  } catch (error) { if (target === designNameTarget && $('#design-name-dialog').open) $('#design-name-error').textContent = error.message; else toast(error.message, true); }
+  finally { $('#design-name-save').disabled = false; }
+});
+$('#design-name-dialog').addEventListener('close', () => { designNameTarget = null; });
+for (const selector of ['#save-to-library', '#library-save-current']) $(selector).addEventListener('click', () => openDesignName());
+$('#library-save-copy').addEventListener('click', () => openDesignName({ mode: 'copy' }));
+for (const selector of ['#open-designs', '#browse-designs']) $(selector).addEventListener('click', () => { switchLibrary('library'); $('#library-tab').focus(); });
+$('#library-open-file').addEventListener('click', () => $('#document-input').click());
+$('#design-search').addEventListener('input', renderLibrary); $('#design-sort').addEventListener('change', renderLibrary);
+window.addEventListener('storage', event => { if (event.key === LIBRARY_KEY && !$('#library-panel').hidden) renderLibrary(); });
 $('#export-library').addEventListener('click', () => attempt(() => { download(exportLibrary(), 'application/json', 'stencil-studio-library.json'); toast('My designs backup downloaded.'); })); $('#import-library').addEventListener('click', () => $('#library-input').click());
-$('#library-input').addEventListener('change', async event => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { if (file.size > 18 * 1024 * 1024) throw new Error('Choose a library backup under 18 MB.'); importLibrary(await file.text()); renderLibrary(); toast('Backup added to My designs. Your existing designs were kept.'); } catch (error) { toast(error.message, true); } });
+$('#library-input').addEventListener('change', async event => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { if (file.size > 18 * 1024 * 1024) throw new Error('Choose a library backup under 18 MB.'); const payload = await file.text(); await withLibraryLock(() => importLibrary(payload)); renderLibrary(); toast('Backup added to My designs. Your existing designs were kept.'); } catch (error) { toast(error.message, true); } });
 $('#bulk-create').addEventListener('click', () => $('#bulk-dialog').showModal()); $('#load-csv').addEventListener('click', () => $('#csv-input').click());
 $('#csv-input').addEventListener('change', async event => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { if (file.size > 1024 * 1024) throw new Error('Choose a CSV file up to 1 MB.'); $('#bulk-csv').value = await file.text(); } catch (error) { toast(error.message, true); } });
 $('#create-bulk-pages').addEventListener('click', () => attempt(() => { const next = bulkCreate(history.current, pageId, $('#bulk-csv').value); const saved = openDocument(next); $('#bulk-dialog').close(); if (saved) toast(`${next.pages.length} pages created from CSV. Undo restores your previous design.`); }));

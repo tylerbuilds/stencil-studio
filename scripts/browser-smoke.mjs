@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { smokeAssets } from './assets-smoke.mjs';
+import { smokeLibrary } from './library-smoke.mjs';
 const {name} = JSON.parse(await readFile('package.json', 'utf8'));
 const port = 4322;
 const server = spawn(process.execPath, ['scripts/serve.mjs', '--dir', 'dist', '--port', String(port)], {stdio:['ignore','pipe','pipe']});
@@ -122,6 +123,9 @@ try {
     expect(groups).toHaveLength(2);
     expect(groups[0].groupId).toBe(groups[1].groupId);
     await click('#save-to-library');
+    await page.locator('#design-name').fill('Avery design');
+    await page.locator('#design-name-save').click();
+    await expect(page.locator('#design-name-dialog')).not.toBeVisible();
     await page.locator('#library-tab').click();
     await expect(page.locator('[data-open-design]')).toHaveCount(1);
     await page.reload();
@@ -266,6 +270,7 @@ try {
     await expect.poll(() => page.locator('#video-result video').evaluate(video => video.videoWidth)).toBe(saved.pages[0].width);
     await page.locator('[data-close="video-dialog"]').click();
     await smokeAssets({ browser, expect, errors, output, readFile, resolve, url: `http://127.0.0.1:${port}/` });
+    await smokeLibrary({ browser, expect, errors, output, resolve, url: `http://127.0.0.1:${port}/` });
   } else if (name === 'petrealm') {
     await page.locator('#pet-name').fill('Aster');
     await page.locator('#adopt-button').click();

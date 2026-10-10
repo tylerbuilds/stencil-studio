@@ -3,6 +3,7 @@ const encoder = new TextEncoder();
 const bytes = value => typeof value === 'string' ? encoder.encode(value) : value;
 export function buildPDF(pages) {
   if (!Array.isArray(pages) || !pages.length || pages.length > 30) throw new Error("Export 1 to 30 pages as a PDF.");
+  for (let index = 0; index < pages.length; index++) if (!Object.hasOwn(pages, index) || !pages[index] || typeof pages[index] !== 'object') throw new Error("Every PDF page must contain artwork. Export the pages again.");
   const chunks = [], offsets = [0]; let length = 0;
   const write = value => { const chunk = bytes(value); chunks.push(chunk); length += chunk.byteLength; if (length > 100 * 1024 * 1024) throw new Error("This PDF is over 100 MB. Export fewer pages."); };
   const object = (index, content) => { offsets[index] = length; write(`${index} 0 obj\n`); write(content); write('\nendobj\n'); };

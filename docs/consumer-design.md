@@ -48,7 +48,11 @@ Put a placeholder such as `{{name}}` in a text layer or page name. Open **Create
 
 ## Save a copy and download
 
-**File → Save design** keeps a named copy in **My designs**. Open, duplicate or delete it there. **Save a new copy** keeps a separate version; **Back up library** downloads them all.
+**My designs** in the header opens your library. Each card shows its first page, size and saved date. Search for a name or change the sort order, then choose **Open design** to carry on editing. Your current changes are saved before switching; if that fails, the current canvas stays open. **Open a file** lets you continue a Stencil JSON design from your device.
+
+**Save design** asks for a name. **Save changes** updates the named design you opened, while **Save a copy** keeps a separate version. Rename or duplicate from a card. Delete asks before removing the saved design; the current canvas stays open. **Library backups** downloads all your saved designs together or adds designs from a backup.
+
+When another tab changes a saved design, your edits stay on the canvas. Save a copy or reopen the newer version. A stale tab cannot silently replace the latest autosaved draft. Named saves use Web Locks where available; without that browser feature, work in one editing tab at a time because simultaneous saves cannot be made atomic across tabs.
 
 **File → Save JSON** downloads every page as an editable Stencil file. Use **Open JSON** to continue it later. A JSON file dropped onto the canvas asks before replacing your current design. Undo brings the previous design back while the tab remains open.
 

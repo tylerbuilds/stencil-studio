@@ -11,13 +11,13 @@ export function sanitiseAssetSVG(source, colour = '#232a27') {
   if (typeof source !== 'string' || source.length > MAX_ASSET_BYTES || /<!DOCTYPE|<!ENTITY/i.test(source) || !/^#[a-f0-9]{6}$/i.test(colour)) fail('This artwork cannot be opened safely.');
   const document = new DOMParser().parseFromString(source, 'image/svg+xml'), svg = document.documentElement;
   if (svg.localName !== 'svg' || svg.namespaceURI !== SVG_NS || document.querySelector('parsererror')) fail('This artwork is damaged. Choose another asset.');
-  const descendants = [document];
+  const descendants = [document], nodes = []; let visited = 0;
   while (descendants.length) {
     const node = descendants.pop(); if (node.nodeType === 7) fail('This artwork contains an unsupported instruction.');
-    descendants.push(...node.childNodes);
+    if (++visited > 10001 || visited + descendants.length + node.childNodes.length > 10001) fail('This artwork is too complex to open.');
+    if (node.nodeType === 1) nodes.push(node);
+    for (const child of node.childNodes) descendants.push(child);
   }
-  const nodes = [svg, ...svg.querySelectorAll('*')];
-  if (nodes.length > 10000) fail('This artwork is too complex to open.');
   for (const node of nodes) {
     if (node.namespaceURI !== SVG_NS || !TAGS.has(node.localName)) fail('This artwork contains an unsupported drawing.');
     for (const attribute of [...node.attributes]) {
@@ -29,9 +29,10 @@ export function sanitiseAssetSVG(source, colour = '#232a27') {
       if (/(?:https?:|data:|javascript:|file:|\/\/)/i.test(value)) fail('This artwork contains an external reference.');
     }
   }
+  const ids = new Set(nodes.map(node => node.getAttribute('id')).filter(Boolean));
   for (const node of nodes) for (const attribute of [...node.attributes]) {
     const fragment = /^url\(#([a-zA-Z0-9_-]+)\)$/.exec(attribute.value);
-    if (fragment && !nodes.some(candidate => candidate.getAttribute('id') === fragment[1])) fail('This artwork has a missing drawing reference.');
+    if (fragment && !ids.has(fragment[1])) fail('This artwork has a missing drawing reference.');
   }
   const box = (svg.getAttribute('viewBox') ?? '').trim().split(/[ ,]+/).map(Number);
   if (box.length !== 4 || box.some(value => !Number.isFinite(value)) || box[2] <= 0 || box[3] <= 0 || box[2] > 16384 || box[3] > 16384 || box[2] * box[3] > 40000000) fail('This artwork has an invalid size.');

@@ -78,7 +78,7 @@ function validateSchema(value, version) {
   }
   array(value.pages, 'Document pages', 30, 1);
   const seen = new Set();
-  let total = 0;
+  let total = 0, contentBytes = 0;
   const groupPages = new Map();
   for (const page of value.pages) {
     record(page, 'Page');
@@ -165,6 +165,9 @@ function validateSchema(value, version) {
         }
       }
       if (['table', 'chart'].includes(element.type)) validateDataElementFields(element);
+      // Bound aggregate content before serialising a whole imported object with many large images.
+      contentBytes += byteLength(JSON.stringify(element));
+      assert(contentBytes <= MAX_DOCUMENT_BYTES, 'This design is too large. Use a file up to 12 MB.');
     }
   }
   for (const groupId of groupPages.keys()) assert(!seen.has(groupId), "Each group needs its own ID, separate from pages and layers.");
@@ -188,7 +191,7 @@ export function validateDocument(value) {
   return clone(value);
 }
 export function parseDocument(json) {
-  assert(typeof json === 'string' && byteLength(json) <= MAX_DOCUMENT_BYTES, "This design is too large. Use a file up to 12 MB.");
+  assert(typeof json === 'string' && json.length <= MAX_DOCUMENT_BYTES && byteLength(json) <= MAX_DOCUMENT_BYTES, "This design is too large. Use a file up to 12 MB.");
   let value;
   try { value = JSON.parse(json); } catch { throw new Error('This file is not valid JSON.'); }
   return validateDocument(value);
@@ -284,7 +287,8 @@ export function updateElement(document, pageId, elementId, patch) {
   return updateElements(document, pageId, [elementId], patch);
 }
 function selectedElements(page, ids, expandGroups = false) {
-  assert(Array.isArray(ids) && ids.every(item => typeof item === 'string'), "Supply layer IDs as a list.");
+  array(ids, 'Layer IDs', 300);
+  assert(ids.every(item => typeof item === 'string'), "Supply layer IDs as a list.");
   const chosen = new Set(ids);
   assert(ids.every(elementId => page.elements.some(element => element.id === elementId)), "Layer not found.");
   if (expandGroups) {
@@ -367,7 +371,7 @@ export function positionLayers(document, pageId, ids, position, targetId = null)
 export function duplicatePage(document, pageId) {
   const next = validateDocument(document), index = next.pages.findIndex(page => page.id === pageId);
   assert(index >= 0, 'Page not found.');
-  const page = clone(next.pages[index]); page.id = id(); page.name += ' copy';
+  const page = clone(next.pages[index]); page.id = id(); page.name = `${page.name.slice(0, 95)} copy`;
   page.guides.forEach(guide => { guide.id = id(); });
   page.elements = remapElements(page.elements, 0);
   next.pages.splice(index + 1, 0, page);
@@ -517,7 +521,7 @@ export function distributeElements(document, pageId, ids, axis) {
   });
 }
 export class History {
-  constructor(document, limit = 60) { this.current = validateDocument(document); this.past = []; this.future = []; this.limit = limit; }
+  constructor(document, limit = 60) { assert(Number.isInteger(limit) && limit >= 1 && limit <= 100, 'Keep between 1 and 100 undo history states.'); this.current = validateDocument(document); this.past = []; this.future = []; this.limit = limit; }
   commit(next) {
     const valid = validateDocument(next);
     if (JSON.stringify(valid) === JSON.stringify(this.current)) return false;

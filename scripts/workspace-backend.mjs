@@ -188,7 +188,7 @@ export async function createWorkspaceHandler({ dataDirectory, allowedOrigin, val
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== allowedOrigin) throw new TypeError('allowedOrigin must be an HTTP(S) origin without a path.');
   }
   if (!isObject(validators) || Object.values(validators).some(value => typeof value !== 'function' || value.constructor?.name === 'AsyncFunction')) throw new TypeError('validators must contain synchronous validator functions.');
-  let directory; let lockHandle; let closed = false; let active = 0; let serial = Promise.resolve();
+  let directory; let lockHandle; let closed = false; let active = 0; let serial = Promise.resolve(); let closePromise;
   if (dataDirectory !== undefined && dataDirectory !== null && dataDirectory !== '') {
     if (typeof dataDirectory !== 'string' || !path.isAbsolute(dataDirectory)) throw new TypeError('dataDirectory must be an absolute operator-selected path.');
     await mkdir(dataDirectory, { recursive: true, mode: 0o700 });
@@ -335,14 +335,17 @@ export async function createWorkspaceHandler({ dataDirectory, allowedOrigin, val
     }
     return true;
   };
-  handler.close = async () => {
-    if (closed) return;
+  handler.close = () => {
+    if (closePromise) return closePromise;
     closed = true;
-    await serial;
-    if (lockHandle) {
-      await lockHandle.close(); lockHandle = null;
-      await unlink(path.join(directory, '.workspace-service.lock'));
-    }
+    closePromise = (async () => {
+      await serial;
+      if (lockHandle) {
+        await lockHandle.close(); lockHandle = null;
+        await unlink(path.join(directory, '.workspace-service.lock'));
+      }
+    })();
+    return closePromise;
   };
   return handler;
 }

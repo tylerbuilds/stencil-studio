@@ -6,7 +6,7 @@ export function parseCSV(value) {
   const csv = value.replace(/^\uFEFF/, '');
   const rows = [];
   let row = [], field = '', quoted = false, endedQuote = false;
-  const pushField = () => { if (field.length > 10000) fail("Keep each cell to 10,000 characters or fewer."); row.push(field); field = ''; endedQuote = false; };
+  const pushField = () => { if (row.length >= 30) fail('Use up to 30 columns in each CSV row.'); if (field.length > 10000) fail("Keep each cell to 10,000 characters or fewer."); row.push(field); field = ''; endedQuote = false; };
   const pushRow = () => { pushField(); if (row.some(cell => cell !== '')) rows.push(row); row = []; if (rows.length > 31) fail("Create copies from up to 30 data rows at a time."); };
   for (let i = 0; i < csv.length; i++) {
     const ch = csv[i];
@@ -27,8 +27,29 @@ export function parseCSV(value) {
   if (rows.some(values => values.length !== headers.length)) fail("Use the same number of cells in each row as in the column-name row.");
   return { headers, rows: rows.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index]]))) };
 }
+function checkedCSV(value) {
+  const plain = (record, label) => {
+    if (!record || typeof record !== 'object' || Object.getPrototypeOf(record) !== Object.prototype) fail(`${label} must be plain CSV data.`);
+    const descriptors = Object.getOwnPropertyDescriptors(record);
+    if (!Reflect.ownKeys(descriptors).every(key => typeof key === 'string' && descriptors[key].enumerable && Object.hasOwn(descriptors[key], 'value'))) fail(`${label} cannot contain getters or hidden properties.`);
+  };
+  const dense = (array, max, label) => {
+    if (!Array.isArray(array) || Object.getPrototypeOf(array) !== Array.prototype || !array.length || array.length > max) fail(`${label} must contain 1 to ${max} entries.`);
+    const descriptors = Object.getOwnPropertyDescriptors(array);
+    if (!Reflect.ownKeys(descriptors).every(key => key === 'length' || typeof key === 'string' && /^(0|[1-9]\d*)$/.test(key) && Number(key) < array.length && descriptors[key].enumerable && Object.hasOwn(descriptors[key], 'value')) || Object.keys(array).length !== array.length) fail(`${label} must be complete plain data.`);
+  };
+  plain(value, 'CSV');
+  if (Object.keys(value).some(key => !['headers', 'rows'].includes(key))) fail('CSV contains unsupported properties.');
+  dense(value.headers, 30, 'Column names'); dense(value.rows, 30, 'CSV rows');
+  if (value.headers.some(header => typeof header !== 'string' || !header.trim() || header !== header.trim() || header.length > 100 || ['__proto__', 'prototype', 'constructor'].includes(header)) || new Set(value.headers).size !== value.headers.length) fail('Use up to 30 different, unreserved column names of 1 to 100 characters.');
+  for (const row of value.rows) {
+    plain(row, 'CSV row');
+    if (Object.keys(row).length !== value.headers.length || value.headers.some(header => !Object.hasOwn(row, header) || typeof row[header] !== 'string' || row[header].length > 10000) || Object.keys(row).some(key => !value.headers.includes(key))) fail('CSV rows must match their columns and keep each cell to 10,000 characters or fewer.');
+  }
+  return value;
+}
 export function bulkCreate(document, pageId, csv) {
-  const original = validateDocument(document), parsed = typeof csv === 'string' ? parseCSV(csv) : csv;
+  const original = validateDocument(document), parsed = typeof csv === 'string' ? parseCSV(csv) : checkedCSV(csv);
   const base = original.pages.find(page => page.id === pageId);
   if (!base) fail('Select a template page first.');
   if (!parsed || !Array.isArray(parsed.headers) || !Array.isArray(parsed.rows) || !parsed.rows.length || parsed.rows.length > 30) fail("Use 1 to 30 data rows to create copies.");
