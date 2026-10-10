@@ -15,7 +15,7 @@ test('first migrated document save preserves exact source bytes before replacing
   const storage = new Storage(), original = JSON.stringify(oldDocument(), null, 4) + '\n', current = parseDocument(original);
   storage.values.set(key, original); current.title = 'Edited after migration';
   writeWithMigrationBackup(storage, key, serialiseDocument(current));
-  const backup = storage.writes[0]; assert.match(backup, /\.migration\.v3\./); assert.equal(storage.getItem(backup), original);
+  const backup = storage.writes[0]; assert.ok(backup.includes(`.migration.v${VERSION}.`)); assert.equal(storage.getItem(backup), original);
   assert.equal(parseDocument(storage.getItem(key)).title, current.title); assert.equal(JSON.parse(storage.getItem(key)).version, VERSION);
   assert.equal(preserveMigrationSource(storage, key, original), backup); assert.equal(storage.writes.length, 2);
   const reloaded = parseDocument(storage.getItem(key)); assert.equal(reloaded.title, current.title); assert.equal(storage.getItem(backup), original);

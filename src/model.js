@@ -1,12 +1,15 @@
 /** Original, dependency-free design document model. All imports pass this schema. */
 import { TABLE_FIELDS, CHART_FIELDS, defaultsForDataElement, validateDataElementFields, renderDataElement } from './data-elements.js';
 export const SCHEMA = 'stencil-studio';
-export const VERSION = 3;
+export const VERSION = 4;
 export const FONTS = ['Arial', 'Georgia', 'Courier New'];
 export const MAX_DOCUMENT_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024 + 64;
 const LEGACY_TYPES = ['text', 'rect', 'circle', 'image'];
-const TYPES = [...LEGACY_TYPES, 'table', 'chart'];
+const V3_TYPES = [...LEGACY_TYPES, 'table', 'chart'];
+const TYPES = [...V3_TYPES, 'shape', 'freehand'];
+export const SHAPE_KINDS = ['triangle', 'diamond', 'star', 'line', 'arrow'];
+export const MAX_STROKE_POINTS = 2000;
 const LEGACY_COMMON = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'opacity'];
 const COMMON = [...LEGACY_COMMON, 'locked', 'hidden', 'flipX', 'flipY', 'groupId'];
 const LEGACY_TEXT = ['text', 'fontFamily', 'fontSize', 'fontWeight', 'align'];
@@ -15,7 +18,7 @@ const IMAGE = ['src', 'sourceWidth', 'sourceHeight', 'crop', 'filters'];
 const RECT = ['radius'];
 const STROKE = ['stroke', 'strokeWidth'];
 export const DEFAULT_GUIDE_SETTINGS = { visible: true, rulers: false, snapToGuides: true, snapToObjects: true, snapToPage: true, tolerance: 6 };
-const typeFields = (type, version = VERSION) => type === 'text' ? (version === 1 ? LEGACY_TEXT : TEXT) : type === 'image' ? (version === 1 ? ['src'] : IMAGE) : type === 'rect' ? RECT : type === 'table' && version >= 3 ? TABLE_FIELDS : type === 'chart' && version >= 3 ? CHART_FIELDS : [];
+const typeFields = (type, version = VERSION) => type === 'text' ? (version === 1 ? LEGACY_TEXT : TEXT) : type === 'image' ? (version === 1 ? ['src'] : IMAGE) : type === 'rect' ? RECT : type === 'table' && version >= 3 ? TABLE_FIELDS : type === 'chart' && version >= 3 ? CHART_FIELDS : type === 'shape' && version >= 4 ? ['kind', ...STROKE] : type === 'freehand' && version >= 4 ? ['points', 'strokeWidth'] : [];
 export const DEFAULT_BRAND = { colours: ['#f6f1e7', '#e76543', '#232a27', '#c5d6c8', '#6852a1'], fontFamily: 'Arial' };
 export const PRESETS = [
   { key: 'poster', name: 'Poster', width: 720, height: 960 },
@@ -53,7 +56,7 @@ function identifier(value, name, seen) {
 function validateSchema(value, version) {
   record(value, 'Document');
   keys(value, ['schema', 'version', 'title', 'pages', ...(version >= 2 ? ['brand'] : [])], 'Document');
-  assert(value.schema === SCHEMA && value.version === version, 'Unsupported document format or version. Use a Stencil Studio v1, v2 or v3 JSON file.');
+  assert(value.schema === SCHEMA && value.version === version, 'Unsupported document format or version. Use a Stencil Studio v1, v2, v3 or v4 JSON file.');
   string(value.title, 'Document title', 150);
   if (version >= 2) {
     record(value.brand, 'Brand');
@@ -88,7 +91,7 @@ function validateSchema(value, version) {
     assert(total <= 1000, 'A document supports up to 1000 elements.');
     for (const element of page.elements) {
       record(element, 'Element');
-      assert((version >= 3 ? TYPES : LEGACY_TYPES).includes(element.type), 'Unsupported element type.');
+      assert((version >= 4 ? TYPES : version === 3 ? V3_TYPES : LEGACY_TYPES).includes(element.type), 'Unsupported element type.');
       keys(element, [...(version === 1 ? LEGACY_COMMON : COMMON), ...typeFields(element.type, version), ...(version >= 2 && ['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element');
       identifier(element.id, 'Element ID', seen);
       numeric(element.x, 'Element x', -8192, 8192);
@@ -123,6 +126,15 @@ function validateSchema(value, version) {
         }
       }
       if (element.type === 'rect') numeric(element.radius, 'Corner radius', 0, 4096);
+      if (element.type === 'shape') {
+        assert(SHAPE_KINDS.includes(element.kind), 'Unsupported shape.');
+        colour(element.stroke, 'Stroke colour'); numeric(element.strokeWidth, 'Stroke width', 0, 40);
+      }
+      if (element.type === 'freehand') {
+        numeric(element.strokeWidth, 'Brush width', 1, 80);
+        array(element.points, 'Brush points', MAX_STROKE_POINTS, 1);
+        for (const point of element.points) { record(point, 'Brush point'); keys(point, ['x', 'y'], 'Brush point'); numeric(point.x, 'Brush point x', 0, 1); numeric(point.y, 'Brush point y', 0, 1); }
+      }
       if (element.type === 'image') {
         assert(typeof element.src === 'string' && element.src.length <= MAX_IMAGE_BYTES && /^data:image\/(png|jpeg|webp|gif);base64,(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(element.src) && !element.src.endsWith(','), 'Images must be embedded PNG, JPEG, WebP or GIF data (up to 6 MB before encoding).');
         if (version >= 2) {
@@ -150,13 +162,16 @@ function validateSchema(value, version) {
 }
 export function validateDocument(value) {
   record(value, 'Document');
-  assert(value.schema === SCHEMA && [1, 2, VERSION].includes(value.version), 'Unsupported document format or version. Use a Stencil Studio v1, v2 or v3 JSON file.');
+  assert(value.schema === SCHEMA && [1, 2, 3, VERSION].includes(value.version), 'Unsupported document format or version. Use a Stencil Studio v1, v2, v3 or v4 JSON file.');
   validateSchema(value, value.version);
   if (value.version < VERSION) {
     const migrated = clone(value);
     migrated.version = VERSION;
     if (value.version === 1) migrated.brand = clone(DEFAULT_BRAND);
-    for (const page of migrated.pages) { if (value.version === 1) page.elements = page.elements.map(element => createElement(element.type, element)); page.transparentBackground = false; page.guides = []; page.guideSettings = clone(DEFAULT_GUIDE_SETTINGS); }
+    for (const page of migrated.pages) {
+      if (value.version === 1) page.elements = page.elements.map(element => createElement(element.type, element));
+      if (value.version < 3) { page.transparentBackground = false; page.guides = []; page.guideSettings = clone(DEFAULT_GUIDE_SETTINGS); }
+    }
     validateSchema(migrated, VERSION);
     return migrated;
   }
@@ -177,6 +192,8 @@ export function createElement(type, patch = {}) {
   if (type === 'text') Object.assign(element, { text: 'Your next big idea', fill: '#232a27', fontFamily: 'Arial', fontSize: 48, fontWeight: 700, align: 'left', lineHeight: 1.16, letterSpacing: 0 });
   if (type === 'rect') element.radius = 0;
   if (type === 'rect' || type === 'circle') Object.assign(element, { stroke: '#232a27', strokeWidth: 0 });
+  if (type === 'shape') Object.assign(element, { kind: 'triangle', stroke: '#232a27', strokeWidth: patch.kind === 'line' ? 6 : 0, ...(patch.kind === 'line' ? { height: 40 } : {}) });
+  if (type === 'freehand') Object.assign(element, { points: [{ x: 0, y: 0 }, { x: 1, y: 1 }], fill: '#232a27', strokeWidth: 6 });
   if (type === 'image') Object.assign(element, { src: '', sourceWidth: patch.width ?? element.width, sourceHeight: patch.height ?? element.height, crop: { x: 0, y: 0, width: 1, height: 1 }, filters: { brightness: 1, contrast: 1, saturation: 1, grayscale: 0, blur: 0 } });
   if (type === 'table' || type === 'chart') Object.assign(element, { width: 500, height: 300, fill: type === 'table' ? '#ffffff' : '#e76543' }, defaultsForDataElement(type));
   Object.assign(element, clone(patch));
@@ -188,6 +205,20 @@ export function createElement(type, patch = {}) {
 }
 export function createPage(width = 720, height = 960) { return { id: id(), name: 'Untitled page', width, height, background: '#f6f1e7', transparentBackground: false, guides: [], guideSettings: clone(DEFAULT_GUIDE_SETTINGS), elements: [] }; }
 export function createDocument() { return { schema: SCHEMA, version: VERSION, title: 'Untitled design', brand: clone(DEFAULT_BRAND), pages: [createPage()] }; }
+export function createBlankDesign(options = {}) {
+  record(options, 'Blank design options'); keys(options, ['title', 'width', 'height', 'background'], 'Blank design options');
+  const { title = 'Untitled design', width = 720, height = 960, background = '#ffffff' } = options;
+  const document = createDocument(); document.title = title; document.pages[0] = { ...createPage(width, height), background }; return validateDocument(document);
+}
+/** A gesture becomes one editable native stroke. Points are normalised for resizing. */
+export function createBrushStroke(points, fill = '#232a27', strokeWidth = 6, elementId = id()) {
+  array(points, 'Brush points', MAX_STROKE_POINTS, 1); colour(fill, 'Brush colour'); numeric(strokeWidth, 'Brush width', 1, 80);
+  for (const point of points) { record(point, 'Brush point'); keys(point, ['x', 'y'], 'Brush point'); numeric(point.x, 'Brush x', -8192, 8192); numeric(point.y, 'Brush y', -8192, 8192); }
+  const pad = strokeWidth / 2, x = Math.min(...points.map(p => p.x)) - pad, y = Math.min(...points.map(p => p.y)) - pad;
+  const width = Math.max(1, Math.max(...points.map(p => p.x)) - x + pad), height = Math.max(1, Math.max(...points.map(p => p.y)) - y + pad);
+  const stroke = createElement('freehand', { id: elementId, x, y, width, height, fill, strokeWidth, points: points.map(p => ({ x: (p.x - x) / width, y: (p.y - y) / height })) });
+  elementSVG(stroke); return stroke;
+}
 const text = (content, x, y, width, size, fill = '#232a27', other = {}) => createElement('text', { text: content, x, y, width, height: size * (content.split('\n').length * 1.18 + .25), fontSize: size, fill, ...other });
 const rect = (x, y, width, height, fill, radius = 0) => createElement('rect', { x, y, width, height, fill, radius });
 const circle = (x, y, width, height, fill) => createElement('circle', { x, y, width, height, fill });
@@ -302,6 +333,25 @@ export function reorderElement(document, pageId, elementId, direction) {
     const remaining = page.elements.filter(element => !selected.has(element.id));
     const target = direction > 0 ? Math.max(...neighbours.map(element => remaining.indexOf(element))) + 1 : Math.min(...neighbours.map(element => remaining.indexOf(element)));
     remaining.splice(target, 0, ...elements); page.elements = remaining;
+  });
+}
+/** Move whole selected groups to an edge, or beside a target group, atomically. */
+export function positionLayers(document, pageId, ids, position, targetId = null) {
+  assert(['front', 'back', 'before', 'after'].includes(position), 'Unsupported layer position.');
+  return editPage(document, pageId, page => {
+    const elements = selectedElements(page, ids, true);
+    if (!elements.length || elements.some(element => element.locked)) return;
+    const chosen = new Set(elements.map(e => e.id));
+    if (targetId && chosen.has(targetId)) return;
+    const remaining = page.elements.filter(e => !chosen.has(e.id));
+    let index = position === 'back' ? 0 : remaining.length;
+    if (position === 'before' || position === 'after') {
+      assert(typeof targetId === 'string', 'Choose a target layer.');
+      const target = selectedElements(page, [targetId], true).filter(e => !chosen.has(e.id));
+      assert(target.length, 'Target layer not found.');
+      index = position === 'before' ? Math.min(...target.map(e => remaining.indexOf(e))) : Math.max(...target.map(e => remaining.indexOf(e))) + 1;
+    }
+    remaining.splice(index, 0, ...elements); page.elements = remaining;
   });
 }
 export function duplicatePage(document, pageId) {
@@ -501,6 +551,18 @@ function renderElement(element, interactive = false) {
   let inner;
   if (e.type === 'rect') inner = `<rect width="${e.width}" height="${e.height}" rx="${e.radius}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}"/>`;
   else if (e.type === 'circle') inner = `<ellipse cx="${e.width / 2}" cy="${e.height / 2}" rx="${e.width / 2}" ry="${e.height / 2}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}"/>`;
+  else if (e.type === 'shape') {
+    if (e.kind === 'line') inner = `<line x1="0" y1="${e.height / 2}" x2="${e.width}" y2="${e.height / 2}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}" stroke-linecap="round"/>${interactive ? `<line x1="0" y1="${e.height / 2}" x2="${e.width}" y2="${e.height / 2}" stroke="transparent" stroke-width="${Math.max(12, e.strokeWidth)}"/>` : ''}`;
+    else {
+      const points = e.kind === 'triangle' ? [[.5, 0], [1, 1], [0, 1]] : e.kind === 'diamond' ? [[.5, 0], [1, .5], [.5, 1], [0, .5]] : e.kind === 'arrow' ? [[0, .3], [.6, .3], [.6, 0], [1, .5], [.6, 1], [.6, .7], [0, .7]] : Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .22 : .5; return [.5 + Math.cos(a) * r, .5 + Math.sin(a) * r]; });
+      inner = `<polygon points="${points.map(([x, y]) => `${x * e.width},${y * e.height}`).join(' ')}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}" stroke-linejoin="round"/>`;
+    }
+  }
+  else if (e.type === 'freehand') {
+    const points = e.points.map(p => `${p.x * e.width},${p.y * e.height}`).join(' ');
+    inner = e.points.length === 1 ? `<circle cx="${e.points[0].x * e.width}" cy="${e.points[0].y * e.height}" r="${e.strokeWidth / 2}" fill="${e.fill}"/>` : `<polyline points="${points}" fill="none" stroke="${e.fill}" stroke-width="${e.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (interactive && e.points.length > 1) inner += `<polyline points="${points}" fill="none" stroke="transparent" stroke-width="${Math.max(12, e.strokeWidth)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
   else if (e.type === 'image') {
     const crop = e.crop, f = e.filters;
     const filterId = `stencil-filter-${e.id}`, clipId = `stencil-crop-${e.id}`;

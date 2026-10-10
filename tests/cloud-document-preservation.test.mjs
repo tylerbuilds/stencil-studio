@@ -35,17 +35,22 @@ async function service(t) {
 }
 
 function retainedDesign() {
-  assert.equal(VERSION, 3);
+  assert.equal(VERSION, 4);
   const document = createDocument(); document.title = 'Native data · café 日本語';
   const first = document.pages[0]; first.id = 'first-data-page'; first.name = 'Data'; first.transparentBackground = true;
   first.guides = [{ id: 'left-guide', axis: 'x', position: 95 }, { id: 'top-guide', axis: 'y', position: 120 }];
   first.guideSettings = { visible: false, rulers: true, snapToGuides: true, snapToObjects: false, snapToPage: false, tolerance: 9 };
+  const consumerLayers = [
+    createElement('shape', { id: 'retained-star', kind: 'star', x: 600, y: 50, width: 80, height: 80, fill: '#654321', stroke: '#123456', strokeWidth: 2, groupId: 'art-group' }),
+    createElement('freehand', { id: 'retained-brush', x: 610, y: 160, width: 60, height: 70, points: [{ x: .1, y: .2 }, { x: .8, y: .9 }], strokeWidth: 5, groupId: 'art-group' }),
+  ];
   first.elements = [
     createElement('table', { id: 'retained-table', width: 500, height: 220, fontFamily: 'Georgia', fontSize: 18, borderWidth: 3,
       data: { columns: ['Name', 'Notes'], rows: [['Zoë', '<script>literal</script> & café'], ['日本語', 'First\nSecond']] } }),
     createElement('chart', { id: 'retained-pie', x: 50, y: 450, width: 550, height: 250, fontFamily: 'Courier New', showValues: false,
       data: { kind: 'pie', labels: ['Zero', 'Whole'], values: [0, 5] }, palette: ['#123456', '#abcdef'] })
   ];
+  first.elements.push(...consumerLayers);
   const second = createPage(1000, 600); second.id = 'second-data-page'; second.name = 'Trends';
   second.guides = [{ id: 'right-guide', axis: 'x', position: 1000 }];
   second.elements = [createElement('chart', { id: 'retained-line', data: { kind: 'line', labels: ['Start', 'Fraction', 'Maximum'], values: [0, .125, 1_000_000_000] } }), createElement('rect', { id: 'old-shape', x: 50, y: 50, width: 90, height: 60, fill: '#123456' })];
@@ -107,7 +112,7 @@ test('invalid retained data and guide extensions are rejected without changing d
   assert.equal(read.payload.workspace.revision, 1); assert.deepEqual(read.payload.workspace.document, original);
 });
 
-test('v3 document fields preserve existing view/edit permission and revision-conflict boundaries', async t => {
+test('v4 document fields preserve existing view/edit permission and revision-conflict boundaries', async t => {
   const f = await service(t), original = retainedDesign(), created = await f.create(original), id = created.workspace.id;
   const changed = structuredClone(original); changed.pages[0].elements[0].data.values[1] = .5;
   const viewer = await f.request(`/${id}`, { method: 'PUT', token: created.tokens.view, body: { baseRevision: 1, document: changed } });

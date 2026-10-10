@@ -1,4 +1,4 @@
-import { FONTS, TEMPLATES, PRESETS, History, id, createDocument, createPage, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, pageSVG, escapeXML, reorderPage, addPageGuide, updatePageGuide, removePageGuide, setPageGuideSettings, resizePageDocument, snapMovement } from './model.js';
+import { FONTS, TEMPLATES, PRESETS, SHAPE_KINDS, MAX_STROKE_POINTS, History, id, createDocument, createBlankDesign, createBrushStroke, createPage, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, positionLayers, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, pageSVG, escapeXML, reorderPage, addPageGuide, updatePageGuide, removePageGuide, setPageGuideSettings, resizePageDocument, snapMovement } from './model.js';
 import { listDesigns, saveDesign, loadDesign, duplicateDesign, deleteDesign, exportLibrary, importLibrary } from './library.js';
 import { parseCSV, bulkCreate } from './bulk.js';
 import { parseDataCSV, serialiseDataCSV } from './data-csv.js';
@@ -12,15 +12,15 @@ const $ = selector => document.querySelector(selector);
 const STORAGE_KEY = 'stencil-studio.document.v1'; // Retained so earlier installations migrate in place.
 let initial, recoveryMessage, recoveryRaw = null, recoveryPreserved = true, storageHealthy = true, storedRaw = null;
 try {
-  storedRaw = localStorage.getItem(STORAGE_KEY); initial = storedRaw ? parseDocument(storedRaw) : templateDocument('poster');
-  if (storedRaw && needsMigration(storedRaw)) {
+  storedRaw = localStorage.getItem(STORAGE_KEY); initial = storedRaw !== null ? parseDocument(storedRaw) : createBlankDesign();
+  if (storedRaw !== null && needsMigration(storedRaw)) {
     recoveryRaw = storedRaw;
     try { preserveMigrationSource(localStorage, STORAGE_KEY, storedRaw); recoveryMessage = 'Your earlier design is open. Its exact original data is kept in a local migration backup.'; }
     catch { recoveryPreserved = false; recoveryMessage = 'Your earlier design is open, but its migration backup could not be saved. Automatic saves are blocked to preserve the original. Save your new work as JSON.'; }
   }
 }
 catch {
-  initial = templateDocument('poster'); recoveryRaw = storedRaw; recoveryPreserved = false;
+  initial = createBlankDesign(); recoveryRaw = storedRaw; recoveryPreserved = false;
   if (typeof storedRaw === 'string') {
     try {
       let hash = 2166136261; for (let index = 0; index < storedRaw.length; index++) hash = Math.imul(hash ^ storedRaw.charCodeAt(index), 16777619);
@@ -29,9 +29,11 @@ catch {
       localStorage.setItem(key, storedRaw); recoveryPreserved = true;
     } catch { /* Preserve the original active key when a durable recovery copy cannot be written. */ }
   }
-  recoveryMessage = recoveryPreserved ? 'Your previous design could not be loaded. Its original data has been preserved as a recovery copy; a fresh template is open.' : 'Your previous design could not be loaded. Its original data is kept, and automatic saves are blocked until a recovery copy is possible. Save your new work as JSON.';
+  recoveryMessage = recoveryPreserved ? 'Your previous design could not be loaded. Its original data has been preserved as a recovery copy; a fresh blank canvas is open.' : 'Your previous design could not be loaded. Its original data is kept, and automatic saves are blocked until a recovery copy is possible. Save your new work as JSON.';
 }
 const history = new History(initial);
+const pristineDocument = storedRaw === null && recoveryPreserved ? serialiseDocument(initial) : null;
+let drawMode = false, brushColour = '#232a27', brushWidth = 6, layerDrag = null;
 let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
 let intakeGeneration = 0, intakeActive = null, documentRevision = 0, fileDragDepth = 0;
 const page = () => history.current.pages.find(item => item.id === pageId) ?? history.current.pages[0];
@@ -64,7 +66,7 @@ function requireGuideTarget(target = guideTarget) {
   if (!target || target !== guideTarget || target.pageId !== pageId || !$('#guides-dialog').open) throw new Error('The active design changed. Reopen Guides & rulers before applying a change.');
 }
 function openDocument(next, savedId = null) {
-  const valid = validateDocument(next); cancelIntake('Insertion cancelled because a different design was opened.'); closePageTools(); drag = null; cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
+  const valid = validateDocument(next); setDrawMode(false); cancelIntake('Insertion cancelled because a different design was opened.'); closePageTools(); drag = null; cloudGeneration++; if (cloudSession) { cloudStop?.(); cloudStop = null; cloudSession = null; cloudBaseline = null; cloudPending = null; window.history.replaceState(null, '', location.pathname + location.search); } pageId = valid.pages[0].id; selection.clear(); libraryId = savedId; fit = true;
   const unchanged = JSON.stringify(valid) === JSON.stringify(history.current), saved = commit(valid); if (!saved) render(); return unchanged ? storageHealthy : saved;
 }
 function field(label, key, value, options = {}) {
@@ -78,30 +80,32 @@ function checkbox(label, key, value) { return `<label class="checkbox-field"><in
 function bounds(elements) { const left = Math.min(...elements.map(e => e.x)), top = Math.min(...elements.map(e => e.y)); return { x: left, y: top, width: Math.max(...elements.map(e => e.x + e.width)) - left, height: Math.max(...elements.map(e => e.y + e.height)) - top }; }
 function renderProperties() {
   const elements = selectedElements(), element = elements.length === 1 ? elements[0] : null, p = page();
-  $('#inspector-heading').textContent = elements.length > 1 ? `${elements.length} selected` : element ? { text: 'Typography', rect: 'Rectangle', circle: 'Circle', image: 'Image', table: 'Table', chart: 'Chart' }[element.type] : 'Artboard';
+  $('#inspector-heading').textContent = elements.length > 1 ? `${elements.length} selected` : element ? { text: 'Typography', rect: 'Rectangle', circle: 'Circle', image: 'Image', table: 'Table', chart: 'Chart', shape: layerName(element), freehand: 'Brush stroke' }[element.type] : 'Artboard';
   let content = '';
   if (!elements.length) {
     content = field('Page name', 'name', p.name, { type: 'text', maxlength: 100 }) + selectField('Canvas preset', 'preset', '', [['', 'Choose dimensions'], ...PRESETS.map(preset => [preset.key, `${preset.name} · ${preset.width} × ${preset.height}`])]) + '<label class="checkbox-field"><input id="scale-layout" type="checkbox" checked>Scale the layout when resizing</label><div class="property-grid">' + field('Canvas width', 'width', p.width, { min: 64, max: 4096 }) + field('Canvas height', 'height', p.height, { min: 64, max: 4096 }) + '</div>' + colourField('Background', 'background', p.background) + checkbox('Transparent background', 'transparentBackground', p.transparentBackground) + '<p class="panel-hint">Shift-click to select several layers. Drag empty space to select an area. Alt-click edits inside a group.</p>';
   } else {
     content = '<div class="selection-actions"><button id="duplicate-element">Duplicate</button><button id="delete-element" class="danger">Delete</button><button id="deselect">Done</button></div>';
-    if (element?.locked) content += '<p class="selection-summary">This layer is locked. Unlock it to change its design.</p>';
+    if (element && effectivelyLocked(element)) content += '<p class="selection-summary">This layer or its group is locked. Unlock the locked layer to change its design.</p>';
     if (element?.type === 'text') content += `<label class="property-field"><span>Text</span><textarea data-property="text" aria-label="Text" maxlength="10000">${safe(element.text)}</textarea></label>` + selectField('Font', 'fontFamily', element.fontFamily, FONTS.map(font => [font, font])) + '<div class="property-grid">' + field('Font size', 'fontSize', element.fontSize, { min: 4, max: 500 }) + selectField('Weight', 'fontWeight', element.fontWeight, [[400, 'Regular'], [700, 'Bold']]) + field('Line height', 'lineHeight', element.lineHeight, { min: .8, max: 3, step: .05 }) + field('Letter spacing', 'letterSpacing', element.letterSpacing, { min: -10, max: 100 }) + '</div>' + selectField('Alignment', 'align', element.align, [['left', 'Left'], ['center', 'Centre'], ['right', 'Right']]);
     if (element && ['table', 'chart'].includes(element.type)) {
       content += '<button id="edit-data-element" class="quiet-button">Edit data</button>' + selectField('Font', 'fontFamily', element.fontFamily, FONTS.map(font => [font, font])) + field('Font size', 'fontSize', element.fontSize, { min: 4, max: 100 }) + colourField('Text colour', 'textFill', element.textFill);
       if (element.type === 'table') content += checkbox('Show header', 'header', element.header) + colourField('Header colour', 'headerFill', element.headerFill) + colourField('Header text colour', 'headerTextFill', element.headerTextFill) + colourField('Border colour', 'borderColor', element.borderColor) + field('Border width', 'borderWidth', element.borderWidth, { min: 0, max: 10 });
       else content += checkbox('Show labels', 'showLabels', element.showLabels) + checkbox('Show values', 'showValues', element.showValues) + field('Pie palette (comma separated)', 'palette', element.palette.join(', '), { type: 'text', maxlength: 80 });
     }
-    if (element && element.type !== 'image') content += colourField('Colour', 'fill', element.fill);
+    if (element && element.type !== 'image' && !(element.type === 'shape' && element.kind === 'line')) content += colourField(element.type === 'freehand' ? 'Brush colour' : 'Fill colour', 'fill', element.fill);
     if (element) {
       content += '<div class="property-grid">' + field('X position', 'x', element.x, { min: -8192, max: 8192 }) + field('Y position', 'y', element.y, { min: -8192, max: 8192 }) + field('Width', 'width', element.width, { min: 1, max: 8192 }) + field('Height', 'height', element.height, { min: 1, max: 8192 }) + field('Rotation', 'rotation', element.rotation, { min: -360, max: 360 }) + field('Opacity', 'opacity', element.opacity, { min: 0, max: 1, step: .05 }) + '</div>';
       if (element.type === 'rect') content += field('Corner radius', 'radius', element.radius, { min: 0, max: 4096 });
-      if (['rect', 'circle'].includes(element.type)) content += colourField('Outline colour', 'stroke', element.stroke) + field('Outline width', 'strokeWidth', element.strokeWidth, { min: 0, max: 40 });
+      if (['rect', 'circle', 'shape'].includes(element.type)) content += colourField(element.type === 'shape' && element.kind === 'line' ? 'Line colour' : 'Outline colour', 'stroke', element.stroke) + field('Outline width', 'strokeWidth', element.strokeWidth, { min: 0, max: 40 });
+      if (element.type === 'freehand') content += field('Brush width', 'strokeWidth', element.strokeWidth, { min: 1, max: 80 });
       content += '<div class="property-grid">' + checkbox('Flip horizontal', 'flipX', element.flipX) + checkbox('Flip vertical', 'flipY', element.flipY) + checkbox('Lock layer', 'locked', element.locked) + checkbox('Hide layer', 'hidden', element.hidden) + '</div>';
       if (element.type === 'image') content += '<h3 class="property-section-title">Image crop · percent of source</h3><div class="property-grid">' + field('Crop left %', 'crop.x', element.crop.x * 100, { min: 0, max: 99, step: 1 }) + field('Crop top %', 'crop.y', element.crop.y * 100, { min: 0, max: 99, step: 1 }) + field('Crop width %', 'crop.width', element.crop.width * 100, { min: 1, max: 100, step: 1 }) + field('Crop height %', 'crop.height', element.crop.height * 100, { min: 1, max: 100, step: 1 }) + '</div><button id="reset-crop" class="quiet-button">Reset crop</button><h3 class="property-section-title">Photo adjustments</h3>' + ['brightness', 'contrast', 'saturation', 'grayscale', 'blur'].map(key => field(key[0].toUpperCase() + key.slice(1), `filters.${key}`, element.filters[key], { min: 0, max: key === 'blur' ? 20 : key === 'grayscale' ? 1 : 2, step: key === 'blur' ? 1 : .05 })).join('') + '<button id="reset-filters" class="quiet-button">Reset adjustments</button><button id="remove-background-colour" class="quiet-button">Remove a background colour</button>';
     } else {
       const b = bounds(elements); content += `<p class="selection-summary">${Math.round(b.width)} × ${Math.round(b.height)} px · Shift-click to change the selection. Groups keep layers together when you move or copy them.</p>`;
       content += colourField('Selection colour', 'fill', elements.find(e => e.type !== 'image')?.fill ?? '#232a27') + '<div class="selection-controls"><button id="lock-selection">Lock</button><button id="unlock-selection">Unlock</button><button id="hide-selection">Hide</button><button id="flip-selection-x">Flip X</button><button id="flip-selection-y">Flip Y</button></div>';
     }
+    content += '<h3 class="property-section-title">Position in layers</h3><div class="selection-controls"><button id="selection-to-front">Bring to front</button><button id="selection-to-back">Send to back</button></div>';
     content += '<h3 class="property-section-title">Align and distribute</h3><label class="checkbox-field"><input id="align-to-page" type="checkbox"' + (elements.length === 1 ? ' checked' : '') + '>Align to page</label><div class="alignment-buttons">' + [['left', 'Left'], ['centerX', 'Centre X'], ['right', 'Right'], ['top', 'Top'], ['centerY', 'Centre Y'], ['bottom', 'Bottom']].map(([key, label]) => `<button data-align="${key}">${label}</button>`).join('') + '</div><div class="selection-controls"><button data-distribute="horizontal"' + (elements.length < 3 ? ' disabled' : '') + '>Even horizontal</button><button data-distribute="vertical"' + (elements.length < 3 ? ' disabled' : '') + '>Even vertical</button></div>';
   }
   content += '<section class="brand-settings"><h3 class="property-section-title">Design palette</h3><div class="brand-swatches">' + history.current.brand.colours.map(colour => `<button data-swatch="${colour}" style="--swatch:${colour}" aria-label="Apply palette colour ${colour}">${colour}</button>`).join('') + '</div>' + field('Palette colours (comma separated)', 'brand.colours', history.current.brand.colours.join(', '), { type: 'text', maxlength: 80 }) + selectField('Default brand font', 'brand.fontFamily', history.current.brand.fontFamily, FONTS.map(font => [font, font])) + '</section>';
@@ -118,20 +122,26 @@ function renderProperties() {
         next = resizePage(preset.width, preset.height, $('#scale-layout')?.checked);
       } else if (elements.length) {
         if (key.includes('.')) { const [section, prop] = key.split('.'); next = updateElement(history.current, p.id, element.id, { [section]: { ...selected()[section], [prop]: section === 'crop' ? value / 100 : value } }); }
-        else next = updateElements(history.current, p.id, selectionIds(), { [key]: value });
+        else next = updateElements(history.current, p.id, selectionIds(), e => key === 'fill' && e.type === 'shape' && e.kind === 'line' ? { fill: value, stroke: value } : { [key]: value });
       } else if (key === 'width' || key === 'height') next = resizePage(key === 'width' ? value : page().width, key === 'height' ? value : page().height, $('#scale-layout')?.checked);
       else next = editPage(history.current, p.id, nextPage => { nextPage[key] = value; });
-      commit(next, { keepInspector: key !== 'preset' && !key.startsWith('brand.') });
+      commit(next, { keepInspector: key !== 'preset' && !key.startsWith('brand.') && !['locked', 'hidden'].includes(key) });
       if (input.type === 'color') input.closest('.colour-field').querySelector('code').textContent = value.toUpperCase();
     } catch (error) { toast(error.message || 'That change could not be made.', true); restoreInput(input); }
   }));
   $('#delete-element')?.addEventListener('click', deleteSelection); $('#duplicate-element')?.addEventListener('click', duplicateSelection);
+  $('#selection-to-front')?.addEventListener('click', () => attempt(() => commit(positionLayers(history.current, pageId, selectionIds(), 'front'))));
+  $('#selection-to-back')?.addEventListener('click', () => attempt(() => commit(positionLayers(history.current, pageId, selectionIds(), 'back'))));
   $('#deselect')?.addEventListener('click', () => { selection.clear(); render(); });
   $('#reset-crop')?.addEventListener('click', () => applySelection({ crop: { x: 0, y: 0, width: 1, height: 1 } }));
   $('#reset-filters')?.addEventListener('click', () => applySelection({ filters: { brightness: 1, contrast: 1, saturation: 1, grayscale: 0, blur: 0 } }));
   $('#remove-background-colour')?.addEventListener('click', openBackgroundTool);
   $('#edit-data-element')?.addEventListener('click', () => attempt(() => { const current = page().elements.find(item => item.id === element.id); if (!current) throw new Error('Select the current data layer before editing.'); openDataEditor(current.type, current); }));
-  if (element && effectivelyLocked(element)) $('#edit-data-element')?.setAttribute('disabled', '');
+  if (elements.length && elements.every(effectivelyLocked)) {
+    $('#properties').querySelectorAll('[data-property]').forEach(control => { const key = control.dataset.property; if (!['locked', 'hidden'].includes(key) && !key.startsWith('brand.')) control.disabled = true; });
+    $('#properties').querySelectorAll('[data-swatch], [data-align], [data-distribute], #delete-element, #selection-to-front, #selection-to-back, #reset-crop, #reset-filters, #remove-background-colour, #edit-data-element, #flip-selection-x, #flip-selection-y').forEach(control => { control.disabled = true; });
+  }
+  if (elements.some(effectivelyLocked)) for (const selector of ['#selection-to-front', '#selection-to-back']) $(selector)?.setAttribute('disabled', '');
   const actions = { 'lock-selection': { locked: true }, 'unlock-selection': { locked: false }, 'hide-selection': { hidden: true } };
   for (const [buttonId, patch] of Object.entries(actions)) $(`#${buttonId}`)?.addEventListener('click', () => applySelection(patch));
   $('#flip-selection-x')?.addEventListener('click', () => toggleSelection('flipX')); $('#flip-selection-y')?.addEventListener('click', () => toggleSelection('flipY'));
@@ -148,7 +158,7 @@ function restoreInput(input) {
   if (input.type === 'checkbox') input.checked = Boolean(value); else input.value = Array.isArray(value) ? value.join(', ') : value ?? '';
 }
 function resizePage(width, height, scale) { return resizePageDocument(history.current, pageId, width, height, Boolean(scale)); }
-function applySelection(patch) { attempt(() => commit(updateElements(history.current, pageId, selectionIds(), patch))); }
+function applySelection(patch) { attempt(() => commit(updateElements(history.current, pageId, selectionIds(), e => Object.hasOwn(patch, 'fill') && e.type === 'shape' && e.kind === 'line' ? { ...patch, stroke: patch.fill } : patch))); }
 function toggleSelection(key) { attempt(() => commit(updateElements(history.current, pageId, selectionIds(), e => ({ [key]: !e[key] })))); }
 function chooseElement(elementId, shift = false, individual = false) {
   const e = page().elements.find(item => item.id === elementId); if (!e) return;
@@ -158,13 +168,20 @@ function chooseElement(elementId, shift = false, individual = false) {
 }
 function renderLayers() {
   const elements = page().elements; $('#layer-count').textContent = `${elements.length} ${elements.length === 1 ? 'element' : 'elements'}`;
-  $('#layers').innerHTML = elements.length ? [...elements].reverse().map((e, displayIndex) => `<div class="layer-row${selection.has(e.id) ? ' selected' : ''}${e.locked ? ' locked' : ''}${e.hidden ? ' hidden-layer' : ''}" data-layer-id="${safe(e.id)}"><button class="layer-select" data-select="${safe(e.id)}" aria-label="Select ${safe(layerName(e))}" aria-pressed="${selection.has(e.id)}"><span class="layer-symbol${e.type === 'rect' || e.type === 'circle' ? ' shape' : ''}" style="--layer-fill:${e.fill}${e.type === 'circle' ? ';border-radius:50%' : ''}">${e.type === 'text' ? 'T' : e.type === 'image' ? '▧' : ''}</span><span class="layer-name">${e.groupId ? '▣ ' : ''}${safe(layerName(e))}</span></button><div class="layer-actions"><button data-lock="${safe(e.id)}" aria-label="${e.locked ? 'Unlock' : 'Lock'} ${safe(layerName(e))}" class="${e.locked ? 'active' : ''}">${e.locked ? '▣' : '□'}</button><button data-hide="${safe(e.id)}" aria-label="${e.hidden ? 'Show' : 'Hide'} ${safe(layerName(e))}" class="${e.hidden ? 'active' : ''}">${e.hidden ? '○' : '●'}</button><button data-order="1" data-id="${safe(e.id)}" aria-label="Bring ${safe(layerName(e))} forward"${displayIndex === 0 || e.locked ? ' disabled' : ''}>↑</button><button data-order="-1" data-id="${safe(e.id)}" aria-label="Send ${safe(layerName(e))} backward"${displayIndex === elements.length - 1 || e.locked ? ' disabled' : ''}>↓</button><button data-delete="${safe(e.id)}" aria-label="Delete ${safe(layerName(e))}"${e.locked ? ' disabled' : ''}>×</button></div></div>`).join('') : '<div class="empty-layers">Your canvas is ready.<br>Add text, a shape or an image.</div>';
+  $('#layers').innerHTML = elements.length ? [...elements].reverse().map((e, displayIndex) => `<div draggable="${!effectivelyLocked(e) && cloudSession?.role !== 'view'}" class="layer-row${selection.has(e.id) ? ' selected' : ''}${e.locked ? ' locked' : ''}${e.hidden ? ' hidden-layer' : ''}" data-layer-id="${safe(e.id)}"><button class="layer-select" data-select="${safe(e.id)}" aria-label="Select ${safe(layerName(e))}" aria-pressed="${selection.has(e.id)}"><span class="layer-symbol${e.type === 'rect' || e.type === 'circle' ? ' shape' : ''}" style="--layer-fill:${e.fill}${e.type === 'circle' ? ';border-radius:50%' : ''}">${e.type === 'text' ? 'T' : e.type === 'image' ? '▧' : e.type === 'freehand' ? '〰' : e.type === 'shape' ? '◇' : ''}</span><span class="layer-name">${e.groupId ? '▣ ' : ''}${safe(layerName(e))}</span></button><div class="layer-actions"><button data-lock="${safe(e.id)}" title="${e.locked ? 'Unlock' : 'Lock'} ${safe(layerName(e))}" aria-label="${e.locked ? 'Unlock' : 'Lock'} ${safe(layerName(e))}" class="${e.locked ? 'active' : ''}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="${e.locked ? 'M8 10V7a4 4 0 0 1 8 0v3' : 'M8 10V7a4 4 0 0 1 8 0'}"/><path d="M12 14v3"/></svg></button><button data-hide="${safe(e.id)}" title="${e.hidden ? 'Show' : 'Hide'} ${safe(layerName(e))}" aria-label="${e.hidden ? 'Show' : 'Hide'} ${safe(layerName(e))}" class="${e.hidden ? 'active' : ''}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12Q12 1 22 12Q12 23 2 12Z"/><circle cx="12" cy="12" r="3"/>${e.hidden ? '<path d="M3 3L21 21"/>' : ''}</svg></button><button data-order="1" data-id="${safe(e.id)}" aria-label="Bring ${safe(layerName(e))} forward"${displayIndex === 0 || effectivelyLocked(e) ? ' disabled' : ''}>↑</button><button data-order="-1" data-id="${safe(e.id)}" aria-label="Send ${safe(layerName(e))} backward"${displayIndex === elements.length - 1 || effectivelyLocked(e) ? ' disabled' : ''}>↓</button><button data-delete="${safe(e.id)}" aria-label="Delete ${safe(layerName(e))}"${effectivelyLocked(e) ? ' disabled' : ''}>×</button></div></div>`).join('') : '<div class="empty-layers">Your canvas is ready.<br>Add text, a shape or an image.</div>';
+  $('#layers').querySelectorAll('[data-layer-id]').forEach(row => {
+    row.addEventListener('dragstart', event => { const e = page().elements.find(item => item.id === row.dataset.layerId); if (!e || effectivelyLocked(e) || cloudSession?.role === 'view') { event.preventDefault(); return; } layerDrag = { pageId, revision: documentRevision, id: e.id }; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-stencil-layer-order', e.id); row.classList.add('dragging'); });
+    row.addEventListener('dragover', event => { if (!layerDrag || layerDrag.pageId !== pageId || layerDrag.revision !== documentRevision) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; row.classList.add('drop-target'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drop-target'));
+    row.addEventListener('drop', event => { event.preventDefault(); event.stopPropagation(); const moving = layerDrag; layerDrag = null; if (!moving || moving.pageId !== pageId || moving.revision !== documentRevision) { renderLayers(); return; } const above = event.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2; chooseElement(moving.id); attempt(() => commit(positionLayers(history.current, pageId, [moving.id], above ? 'after' : 'before', row.dataset.layerId))); renderLayers(); });
+    row.addEventListener('dragend', () => { layerDrag = null; renderLayers(); });
+  });
   $('#layers').querySelectorAll('[data-select]').forEach(button => button.addEventListener('click', event => { chooseElement(button.dataset.select, event.shiftKey, event.altKey); render(); }));
   $('#layers').querySelectorAll('[data-order]').forEach(button => button.addEventListener('click', () => attempt(() => commit(reorderElement(history.current, pageId, button.dataset.id, Number(button.dataset.order))))));
   $('#layers').querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => attempt(() => commit(removeElement(history.current, pageId, button.dataset.delete)))));
   for (const key of ['locked', 'hidden']) $('#layers').querySelectorAll(key === 'locked' ? '[data-lock]' : '[data-hide]').forEach(button => button.addEventListener('click', () => { const e = page().elements.find(item => item.id === (key === 'locked' ? button.dataset.lock : button.dataset.hide)); attempt(() => commit(updateElement(history.current, pageId, e.id, { [key]: !e[key] }))); }));
 }
-function layerName(e) { return e.type === 'text' ? e.text.replaceAll('\n', ' ').slice(0, 40) || 'Empty text' : e.type === 'rect' ? 'Rectangle' : e.type === 'circle' ? 'Circle' : e.type === 'table' ? 'Table' : e.type === 'chart' ? `${e.data.kind[0].toUpperCase() + e.data.kind.slice(1)} chart` : 'Image'; }
+function layerName(e) { return e.type === 'text' ? e.text.replaceAll('\n', ' ').slice(0, 40) || 'Empty text' : e.type === 'rect' ? 'Rectangle' : e.type === 'circle' ? 'Circle' : e.type === 'table' ? 'Table' : e.type === 'chart' ? `${e.data.kind[0].toUpperCase() + e.data.kind.slice(1)} chart` : e.type === 'freehand' ? 'Brush stroke' : e.type === 'shape' ? e.kind[0].toUpperCase() + e.kind.slice(1) : 'Image'; }
 function calculateZoom() { const area = $('#canvas-area'), p = page(), margin = window.innerWidth <= 1150 ? 48 : 76; return Math.max(.05, Math.min(2, (area.clientWidth - margin) / p.width, (area.clientHeight - margin) / p.height)); }
 function renderCanvas(previewPage = page()) {
   if (fit) zoom = calculateZoom();
@@ -189,13 +206,15 @@ function renderCanvas(previewPage = page()) {
 function render(options = {}) {
   const p = page(); pageId = p.id; selection = new Set([...selection].filter(elementId => p.elements.some(e => e.id === elementId)));
   if (intakeActive && intakeActive.pageId !== pageId) cancelIntake('Insertion cancelled because the active page changed.');
+  $('#draw-tool').disabled = cloudSession?.role === 'view';
+  $('#canvas-mount').classList.toggle('drawing', drawMode);
   $('#copy-selection').disabled = !selection.size; $('#paste-content').disabled = cloudSession?.role === 'view';
   if (document.activeElement !== $('#document-title')) $('#document-title').value = history.current.title;
   $('#page-name-display').textContent = p.name || 'Untitled page'; $('#canvas-size').textContent = `${Math.round(p.width)} × ${Math.round(p.height)} px`;
   $('#undo').disabled = !history.past.length || cloudSession?.role === 'view'; $('#redo').disabled = !history.future.length || cloudSession?.role === 'view'; $('#document-title').disabled = cloudSession?.role === 'view'; $('#delete-page').disabled = history.current.pages.length === 1;
-  $('#group-selection').disabled = selectedElements().filter(e => !e.locked).length < 2; $('#ungroup-selection').disabled = !selectedElements().some(e => e.groupId && !e.locked); $('#selection-count').textContent = selection.size ? `${selection.size} selected` : 'No selection';
+  $('#group-selection').disabled = selectedElements().length < 2 || selectedElements().some(effectivelyLocked); $('#ungroup-selection').disabled = !selectedElements().some(e => e.groupId) || selectedElements().some(effectivelyLocked); $('#selection-count').textContent = selection.size ? `${selection.size} selected` : 'No selection';
   $('#pages').innerHTML = history.current.pages.map((item, index) => `<button class="page-tab" data-page-id="${safe(item.id)}" aria-current="${item.id === pageId}" aria-label="Page ${index + 1}: ${safe(item.name || 'Untitled page')}" title="${safe(item.name)}"><span class="page-number">${index + 1}</span><span class="page-title">${safe(item.name || 'Untitled page')}</span></button>`).join('');
-  $('#pages').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { pageId = button.dataset.pageId; selection.clear(); render(); }));
+  $('#pages').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { drag = null; closePageTools(); pageId = button.dataset.pageId; selection.clear(); render(); }));
   const pages = $('#pages'), activePage = pages.querySelector('[aria-current="true"]');
   if (activePage) { const activeRect = activePage.getBoundingClientRect(), listRect = pages.getBoundingClientRect(); if (activeRect.left < listRect.left) pages.scrollLeft -= listRect.left - activeRect.left; else if (activeRect.right > listRect.right) pages.scrollLeft += activeRect.right - listRect.right; }
   const pageIndex = history.current.pages.findIndex(item => item.id === pageId), readOnly = cloudSession?.role === 'view';
@@ -262,6 +281,13 @@ function startDrag(event) {
   if (editingTarget(document.activeElement)) document.activeElement.blur();
   const guideNode = event.target.closest('[data-guide-id]'), node = event.target.closest('[data-element-id]'), handle = event.target.closest('[data-resize]'), inverse = $('#artboard').getScreenCTM().inverse();
   event.preventDefault(); $('#canvas-mount').setPointerCapture(event.pointerId);
+  if (drawMode && !guideNode) {
+    if (cloudSession?.role === 'view') return;
+    cancelIntake('Insertion cancelled because drawing started.'); selection.clear();
+    const start = clampBrushPoint(svgPoint(event, inverse));
+    drag = { drawing: true, points: [start], fill: brushColour, strokeWidth: brushWidth, elementId: id(), inverse, pointerId: event.pointerId, pageId, revision: documentRevision, preview: null };
+    previewBrush(); return;
+  }
   if (guideNode) {
     if (cloudSession?.role === 'view') return;
     const guide = page().guides.find(item => item.id === guideNode.dataset.guideId);
@@ -276,10 +302,25 @@ function startDrag(event) {
   const originals = selectedElements().filter(e => !effectivelyLocked(e) && !e.hidden); if (!originals.length) { render(); return; }
   drag = { originals: structuredClone(originals), start: svgPoint(event, inverse), inverse, corner: handle?.dataset.resize, moved: false, preview: null, pointerId: event.pointerId, guides: [] }; render();
 }
+function clampBrushPoint(point) { return { x: Math.max(0, Math.min(page().width, point.x)), y: Math.max(0, Math.min(page().height, point.y)) }; }
+function sampleBrush(point, final = false) {
+  if (!drag?.drawing) return; const p = clampBrushPoint(point), last = drag.points.at(-1);
+  if (Math.hypot(p.x - last.x, p.y - last.y) < (final ? .01 : Math.max(.5, 1 / zoom))) return;
+  if (drag.points.length >= MAX_STROKE_POINTS) { const lastPoint = drag.points.at(-1); drag.points = drag.points.filter((_, index) => index % 2 === 0); drag.points.push(lastPoint); }
+  drag.points.push(p);
+}
+function previewBrush() {
+  if (!drag?.drawing) return;
+  if (drag.pageId !== pageId || drag.revision !== documentRevision) { drag = null; render(); return; }
+  try { const e = createBrushStroke(drag.points, drag.fill, drag.strokeWidth, drag.elementId); drag.preview = editPage(history.current, pageId, p => p.elements.push(e)); renderCanvas(drag.preview.pages.find(p => p.id === pageId)); }
+  catch (error) { drag = null; render(); toast(error.message || 'This stroke could not be created. Nothing was changed.', true); }
+}
 function snapDelta(originals, dx, dy) { return snapMovement(page(), originals.map(element => element.id), dx, dy, zoom); }
 window.addEventListener('pointermove', event => {
   if (!drag || event.pointerId !== drag.pointerId) return;
-  const current = svgPoint(event, drag.inverse); if (drag.marquee) { drag.current = current; renderCanvas(); return; }
+  const current = svgPoint(event, drag.inverse);
+  if (drag.drawing) { sampleBrush(current); previewBrush(); return; }
+  if (drag.marquee) { drag.current = current; renderCanvas(); return; }
   if (drag.guideId) {
     const position = Number(Math.max(0, Math.min(page()[drag.axis === 'x' ? 'width' : 'height'], current[drag.axis])).toFixed(3));
     try { drag.preview = updatePageGuide(history.current, pageId, drag.guideId, { position }); renderCanvas(drag.preview.pages.find(item => item.id === pageId)); } catch { /* Retain the last valid guide. */ }
@@ -302,13 +343,15 @@ window.addEventListener('pointermove', event => {
 });
 function endDrag(event) {
   if (!drag || event.pointerId !== drag.pointerId) return;
+  if (drag.drawing) { sampleBrush(svgPoint(event, drag.inverse), true); previewBrush(); if (drag?.pageId !== pageId || drag?.revision !== documentRevision) { drag = null; render(); return; } selection = new Set([drag.elementId]); }
   const currentDrag = drag; drag = null;
   if (currentDrag.marquee && currentDrag.current) {
     const a = currentDrag.start, b = currentDrag.current, left = Math.min(a.x, b.x), right = Math.max(a.x, b.x), top = Math.min(a.y, b.y), bottom = Math.max(a.y, b.y);
     selection = new Set(currentDrag.base); const intersected = page().elements.filter(e => !e.hidden && !effectivelyLocked(e) && e.x < right && e.x + e.width > left && e.y < bottom && e.y + e.height > top); intersected.forEach(e => { selection.add(e.id); if (e.groupId && !currentDrag.individual) page().elements.filter(member => member.groupId === e.groupId).forEach(member => selection.add(member.id)); }); render();
   } else if (currentDrag.preview) attempt(() => commit(currentDrag.preview)); else render();
 }
-window.addEventListener('pointerup', endDrag); window.addEventListener('pointercancel', () => { if (drag) { drag = null; render(); } });
+window.addEventListener('pointerup', endDrag); window.addEventListener('pointercancel', event => { if (drag && event.pointerId === drag.pointerId) { drag = null; render(); } });
+window.addEventListener('blur', () => { if (drag) { drag = null; render(); } });
 function deleteSelection() { attempt(() => commit(removeElements(history.current, pageId, selectionIds()))); }
 function selectNewElements(next) { const old = new Set(page().elements.map(e => e.id)); selection = new Set(next.pages.find(p => p.id === pageId).elements.filter(e => !old.has(e.id)).map(e => e.id)); commit(next); }
 function duplicateSelection() { attempt(() => selectNewElements(duplicateElements(history.current, pageId, selectionIds()))); }
@@ -318,9 +361,44 @@ function addElement(type, patch = {}) {
 function switchLibrary(tab) { for (const key of ['templates', 'elements', 'library']) { $(`#${key}-tab`).setAttribute('aria-selected', String(key === tab)); $(`#${key}-panel`).hidden = key !== tab; } if (tab === 'library') renderLibrary(); }
 for (const tab of ['templates', 'elements', 'library']) $(`#${tab}-tab`).addEventListener('click', () => switchLibrary(tab));
 $('#templates').innerHTML = TEMPLATES.map(template => `<button class="template-button" data-template="${template.key}"><span class="template-preview">${pageSVG(templateDocument(template.key).pages[0])}</span><strong>${safe(template.name)}</strong><small>${safe(template.category)}</small></button>`).join('');
-$('#templates').querySelectorAll('button').forEach(button => button.addEventListener('click', () => attempt(() => { if (openDocument(templateDocument(button.dataset.template))) toast('Template opened. Undo brings back your previous design.'); })));
-$('#blank-design').addEventListener('click', () => { openDocument(createDocument()); switchLibrary('elements'); });
-$('#add-text').addEventListener('click', () => addElement('text')); $('#add-rectangle').addEventListener('click', () => addElement('rect')); $('#add-circle').addEventListener('click', () => addElement('circle'));
+function preserveCurrentDesign() {
+  if (pristineDocument === serialiseDocument(history.current)) return null;
+  if (!recoveryPreserved) throw new Error('Your original recovery data is still protected. Save JSON before starting another design; browser storage could not preserve it.');
+  const name = `Recovery — ${(history.current.title || 'Untitled design').replace(/\s+/g, ' ').trim().slice(0, 110)} — ${new Date().toLocaleString()}`.slice(0, 150);
+  try { return saveDesign(history.current, { name }); }
+  catch { throw new Error('Your current design was kept. A recovery copy could not be saved. Use File → Save JSON, or free space in My designs, then try again.'); }
+}
+function startNewDocument(next) {
+  const valid = validateDocument(next); const recovery = preserveCurrentDesign(); setDrawMode(false);
+  const saved = openDocument(valid); switchLibrary('elements');
+  if (saved) toast(recovery ? 'New design ready. Your previous design is saved in My designs as a recovery copy.' : 'Your blank canvas is ready. Add a shape, text or a brush stroke.');
+  return saved;
+}
+function openNewDesign() {
+  if (editingTarget(document.activeElement)) document.activeElement.blur();
+  drag = null; cancelIntake('Insertion cancelled because New design was opened.'); renderCanvas();
+  $('#new-title').value = 'Untitled design'; $('#new-preset').value = 'poster'; $('#new-width').value = 720; $('#new-height').value = 960; $('#new-background').value = '#ffffff'; $('#new-design-error').textContent = '';
+  $('#new-design-dialog').showModal();
+}
+$('#new-design').addEventListener('click', openNewDesign); $('#blank-design').addEventListener('click', openNewDesign);
+$('#new-preset').addEventListener('change', () => { const preset = PRESETS.find(p => p.key === $('#new-preset').value); if (preset) { $('#new-width').value = preset.width; $('#new-height').value = preset.height; } });
+for (const selector of ['#new-width', '#new-height']) $(selector).addEventListener('input', () => { $('#new-preset').value = ''; });
+$('#new-design-form').addEventListener('submit', event => {
+  event.preventDefault();
+  try { const next = createBlankDesign({ title: $('#new-title').value.trim() || 'Untitled design', width: Number($('#new-width').value), height: Number($('#new-height').value), background: $('#new-background').value }); startNewDocument(next); $('#new-design-dialog').close(); }
+  catch (error) { $('#new-design-error').textContent = error.message; }
+});
+$('#new-export-current').addEventListener('click', () => download(serialiseDocument(history.current), 'application/json', `${filename()}.json`));
+$('#templates').querySelectorAll('button').forEach(button => button.addEventListener('click', () => attempt(() => startNewDocument(templateDocument(button.dataset.template)))));
+function setDrawMode(enabled) {
+  if (enabled && cloudSession?.role === 'view') { toast('This shared design is view-only. Disconnect to draw on a local copy.', true); return; }
+  drag = null; drawMode = Boolean(enabled); $('#draw-tool').setAttribute('aria-pressed', String(drawMode)); $('#draw-tool').textContent = drawMode ? 'Brush on · B' : 'Draw · B'; $('#select-tool').setAttribute('aria-pressed', String(!drawMode)); $('#brush-settings').hidden = !drawMode; $('#canvas-mount').classList.toggle('drawing', drawMode); renderCanvas();
+}
+$('#draw-tool').addEventListener('click', () => setDrawMode(!drawMode)); $('#select-tool').addEventListener('click', () => setDrawMode(false));
+$('#brush-colour').addEventListener('input', event => { brushColour = event.target.value; });
+$('#brush-width').addEventListener('change', event => { const width = Number(event.target.value); if (!Number.isFinite(width) || width < 1 || width > 80) { event.target.value = brushWidth; toast('Brush width must be 1–80 canvas pixels.', true); return; } brushWidth = width; });
+for (const kind of SHAPE_KINDS) $(`#add-${kind}`).addEventListener('click', () => { setDrawMode(false); addElement('shape', { kind, ...(kind === 'line' ? { height: 40, stroke: history.current.brand.colours[1] ?? '#e76543', strokeWidth: 6 } : {}) }); });
+$('#add-text').addEventListener('click', () => { setDrawMode(false); addElement('text'); }); $('#add-rectangle').addEventListener('click', () => { setDrawMode(false); addElement('rect'); }); $('#add-circle').addEventListener('click', () => { setDrawMode(false); addElement('circle'); });
 $('#document-title').addEventListener('change', event => attempt(() => commit({ ...history.current, title: event.target.value }, { keepInspector: true })));
 function undoRedo(redo = false) { const hadDrag = Boolean(drag); drag = null; cancelIntake('Insertion cancelled by Undo or Redo.'); if (cloudSession?.role === 'view') { if (hadDrag) render(); toast('This shared design is view-only. Keep a local copy and disconnect to edit.', true); return; } if (redo ? history.redo() : history.undo()) { documentRevision++; pageId = page().id; selection = new Set([...selection].filter(elementId => page().elements.some(e => e.id === elementId))); persist(); render(); } else if (hadDrag) render(); }
 $('#undo').addEventListener('click', () => undoRedo()); $('#redo').addEventListener('click', () => undoRedo(true));
@@ -341,8 +419,11 @@ window.addEventListener('keydown', event => {
   else if (mod && key === 'y') { event.preventDefault(); undoRedo(true); }
   else if (mod && key === 'a') { event.preventDefault(); $('#select-all').click(); }
   else if (mod && key === 'd') { event.preventDefault(); duplicateSelection(); }
+  else if (mod && ['[', ']'].includes(key)) { event.preventDefault(); if (selection.size) attempt(() => commit(positionLayers(history.current, pageId, selectionIds(), key === ']' ? 'front' : 'back'))); }
+  else if (!mod && key === 'b') { event.preventDefault(); setDrawMode(!drawMode); }
+  else if (!mod && key === 'v') { event.preventDefault(); setDrawMode(false); }
   else if (mod && key === 'g') { event.preventDefault(); (event.shiftKey ? $('#ungroup-selection') : $('#group-selection')).click(); }
-  else if (event.key === 'Escape') { selection.clear(); render(); }
+  else if (event.key === 'Escape') { drag = null; setDrawMode(false); selection.clear(); render(); }
   else if (selection.size && ['Delete', 'Backspace'].includes(event.key)) { event.preventDefault(); deleteSelection(); }
   else if (selection.size && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
     event.preventDefault(); const step = event.shiftKey ? 10 : 1;
@@ -371,6 +452,7 @@ function captureIntake() {
   if (modalOpen()) throw new Error('Finish or close the open dialog before inserting files or pasting onto the canvas.');
   if (editingTarget(document.activeElement)) document.activeElement.blur();
   cancelIntake();
+  if (drag) { drag = null; renderCanvas(); }
   const request = { generation: ++intakeGeneration, revision: documentRevision, pageId, cloudGeneration, base: serialiseDocument(history.current), draft: draftSignature(), page: structuredClone(page()), brand: structuredClone(history.current.brand), controller: new AbortController() };
   intakeActive = request; updateIntakeOverlay(); intakeFeedback('Preparing content. Nothing is inserted until the whole batch is valid.'); return request;
 }
