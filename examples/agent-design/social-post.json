@@ -1,0 +1,20 @@
+{
+  "schema": "stencil-design-request",
+  "version": 1,
+  "title": "Cedar Street Bookshop — Saturday reading",
+  "preset": "social",
+  "brand": { "colours": ["#fff8ec", "#284e46", "#d76e42"], "fontFamily": "DM Sans" },
+  "pages": [
+    {
+      "name": "Saturday reading",
+      "background": "#fff8ec",
+      "elements": [
+        { "type": "circle", "x": 760, "y": -90, "width": 430, "height": 430, "fill": "#d76e42" },
+        { "type": "text", "text": "CEDAR STREET BOOKSHOP", "x": 80, "y": 88, "width": 880, "height": 70, "fontFamily": "DM Sans", "fontSize": 28, "fontWeight": 700, "fill": "#284e46", "letterSpacing": 2 },
+        { "type": "text", "text": "A good book.\nA slow Saturday.", "x": 80, "y": 320, "width": 900, "height": 280, "fontFamily": "Fraunces", "fontSize": 88, "fontWeight": 700, "fill": "#284e46", "lineHeight": 1.15 },
+        { "type": "rect", "x": 80, "y": 730, "width": 920, "height": 4, "fill": "#284e46" },
+        { "type": "text", "text": "Stories, tea and a seat by the window.\nSaturday · 10am–4pm", "x": 80, "y": 785, "width": 900, "height": 140, "fontFamily": "DM Sans", "fontSize": 36, "fontWeight": 400, "fill": "#284e46", "lineHeight": 1.3 }
+      ]
+    }
+  ]
+}

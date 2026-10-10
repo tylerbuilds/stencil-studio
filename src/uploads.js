@@ -1,5 +1,7 @@
 /** A small reusable raster shelf. Records stay on this browser; licence facts are supplied by the user. */
 import { id as createId } from './model.js';
+import { getBrowserStorage } from './durable-storage.js';
+import { StorageConflictError } from './migration-storage.js';
 
 export const UPLOADS_KEY = 'stencil-studio.uploads.v1';
 export const UPLOADS_SCHEMA = 'stencil-studio-uploads';
@@ -274,7 +276,7 @@ function parseShelf(payload) {
 }
 function storageFor(storage) {
   try {
-    const resolved = storage ?? globalThis.localStorage;
+    const resolved = storage ?? getBrowserStorage();
     require(resolved && typeof resolved.getItem === 'function' && typeof resolved.setItem === 'function', 'Browser storage is unavailable. Your image file has not been changed.', 'storage-unavailable'); return resolved;
   } catch (cause) { if (cause instanceof UploadError) throw cause; throw new UploadError('Browser storage is unavailable. Your image file has not been changed.', 'storage-unavailable', cause); }
 }
@@ -360,9 +362,22 @@ let mutationQueue = Promise.resolve();
 export async function withUploadsLock(operation, { locks = globalThis.navigator?.locks, signal } = {}) {
   require(typeof operation === 'function', 'An upload operation is required.');
   const boundedSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000);
-  const run = () => { require(!boundedSignal.aborted, 'Uploads are busy in another tab. Try again.', 'uploads-busy'); return operation(); };
+  let durable = false;
+  const run = () => {
+    require(!boundedSignal.aborted, 'Uploads are busy in another tab. Try again.', 'uploads-busy');
+    const storage = getBrowserStorage(); durable = typeof storage?.run === 'function';
+    return durable ? storage.run(() => {
+      require(!boundedSignal.aborted, 'Uploads are busy in another tab. Try again.', 'uploads-busy');
+      return operation();
+    }) : operation();
+  };
   try {
     if (typeof locks?.request === 'function') return await locks.request(UPLOADS_KEY, { mode: 'exclusive', signal: boundedSignal }, run);
     const next = mutationQueue.then(run, run); mutationQueue = next.catch(() => {}); return await next;
-  } catch (cause) { if (boundedSignal.aborted) throw new UploadError('Uploads are busy in another tab. Try again.', 'uploads-busy', cause); throw cause; }
+  } catch (cause) {
+    if (boundedSignal.aborted) throw new UploadError('Uploads are busy in another tab. Try again.', 'uploads-busy', cause);
+    if (durable && cause instanceof StorageConflictError) throw new UploadError('Your uploads changed in an earlier Stencil tab. Choose File → Earlier tab data to keep both copies, then save again. Keep your original image files.', 'uploads-conflict', cause);
+    if (durable && !(cause instanceof UploadError)) throw new UploadError('Your uploads could not be saved because browser storage is full or unavailable. Previously saved uploads are unchanged. Keep your original image file or export a backup.', 'storage-write-failed', cause);
+    throw cause;
+  }
 }

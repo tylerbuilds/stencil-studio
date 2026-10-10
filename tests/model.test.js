@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { VERSION, DEFAULT_BRAND, PRESETS, TEMPLATES, createDocument, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, elementBounds, boundsOfElements, History, pageSVG, elementSVG, wrapText } from '../src/model.js';
+import { VERSION, DEFAULT_BRAND, PRESETS, TEMPLATES, createDocument, createBlankDesign, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, elementBounds, boundsOfElements, History, pageSVG, elementSVG, wrapText } from '../src/model.js';
 
 test('original templates validate and own their state and identifiers', () => {
-  assert.equal(TEMPLATES.length, 14);
+  assert.equal(TEMPLATES.length, 24);
   for (const { key } of TEMPLATES) {
     const first = templateDocument(key), second = templateDocument(key);
     assert.notEqual(first.pages[0].id, second.pages[0].id);
-    first.pages[0].elements[0].fill = '#ffffff';
+    const originalFill = second.pages[0].elements[0].fill;
+    first.pages[0].elements[0].fill = originalFill === '#ffffff' ? '#abcdef' : '#ffffff';
+    assert.equal(second.pages[0].elements[0].fill, originalFill);
     assert.notEqual(first.pages[0].elements[0].fill, second.pages[0].elements[0].fill);
     assert.deepEqual(parseDocument(serialiseDocument(second)), second);
   }
@@ -69,7 +71,8 @@ test('new document brand state and every preset are independent, valid and usabl
   assert.notEqual(a.brand.colours[0], b.brand.colours[0]);
   assert.notEqual(a.brand.colours, DEFAULT_BRAND.colours);
   for (const preset of PRESETS) {
-    const doc = templateDocument(preset.key), page = doc.pages[0];
+    const doc = createBlankDesign({ width: preset.width, height: preset.height }), page = doc.pages[0];
+    assert.equal(page.elements.length, 0);
     assert.equal(page.width, preset.width); assert.equal(page.height, preset.height);
     assert.ok(pageSVG(page).startsWith('<svg'));
   }

@@ -6,6 +6,8 @@ import { TEXT_STYLE_FIELDS, defaultTextStyles, validateTextStyles, validateGradi
 import { FRAME_FIELDS, defaultsForFrame, validateFrameFields, renderFrameContent } from './frames.js';
 import { defaultVideoSettings, validateVideoSettings } from './video-settings.js';
 import { checkEmbeddedRasterLimits } from './raster-limits.js';
+import { DESIGN_PRESETS } from './design-presets.js';
+import { SOCIAL_TEMPLATES, buildSocialTemplate } from './social-templates.js';
 export const SCHEMA = 'stencil-studio';
 export const VERSION = 5;
 export const FONTS = FONT_FAMILIES;
@@ -29,16 +31,7 @@ const STROKE = ['stroke', 'strokeWidth'];
 export const DEFAULT_GUIDE_SETTINGS = { visible: true, rulers: false, snapToGuides: true, snapToObjects: true, snapToPage: true, tolerance: 6 };
 const typeFields = (type, version = VERSION) => type === 'text' ? (version === 1 ? LEGACY_TEXT : version < 5 ? TEXT : [...TEXT, ...TEXT_STYLE_FIELDS]) : type === 'image' ? (version === 1 ? ['src'] : IMAGE) : type === 'frame' && version >= 5 ? [...IMAGE, ...FRAME_FIELDS] : type === 'rect' ? RECT : type === 'table' && version >= 3 ? TABLE_FIELDS : type === 'chart' && version >= 3 ? CHART_FIELDS : type === 'shape' && version >= 4 ? ['kind', ...STROKE] : type === 'freehand' && version >= 4 ? ['points', 'strokeWidth'] : [];
 export const DEFAULT_BRAND = { colours: ['#f6f1e7', '#e76543', '#232a27', '#c5d6c8', '#6852a1'], fontFamily: 'Arial' };
-export const PRESETS = [
-  { key: 'poster', name: 'Poster', width: 720, height: 960 },
-  { key: 'social', name: 'Square social post', width: 1080, height: 1080 },
-  { key: 'card', name: 'Landscape card', width: 1000, height: 600 },
-  { key: 'presentation', name: 'Presentation', width: 1920, height: 1080 },
-  { key: 'banner', name: 'Web banner', width: 1500, height: 500 },
-  { key: 'story', name: 'Portrait story', width: 1080, height: 1920 },
-  { key: 'resume', name: 'A4 CV', width: 794, height: 1123 },
-  { key: 'menu', name: 'A4 menu', width: 794, height: 1123 }
-];
+export const PRESETS = DESIGN_PRESETS;
 const clone = value => structuredClone(value);
 const byteLength = value => new TextEncoder().encode(value).byteLength;
 export const id = () => globalThis.crypto?.randomUUID?.() ?? `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -275,9 +268,12 @@ export const TEMPLATES = [
   { key: 'launch', name: 'Freshly made', category: 'Product post · 1080 × 1080' },
   { key: 'collage', name: 'Four small moments', category: 'Photo collage · 1080 × 1080' },
   { key: 'quote', name: 'A thought to keep', category: 'Quote card · 1080 × 1080' },
-  { key: 'planner', name: 'This week', category: 'Planner · 1500 × 1000' }
+  { key: 'planner', name: 'This week', category: 'Planner · 1500 × 1000' },
+  ...SOCIAL_TEMPLATES
 ];
 export function templateDocument(key) {
+  const socialTemplate = buildSocialTemplate(key, { createDocument, createPage, createElement });
+  if (socialTemplate) return validateDocument(socialTemplate);
   const doc = createDocument();
   let page = doc.pages[0];
   if (key === 'poster') {
@@ -461,7 +457,8 @@ export function makeSizeCopies(document, pageId, presetKeys, scaleElements = tru
   assert(new Set(presetKeys).size === presetKeys.length && presetKeys.every(key => PRESETS.some(preset => preset.key === key)), 'Choose distinct available sizes.');
   let next = validateDocument(document);
   assert(next.pages.length + presetKeys.length <= 30, 'A design can hold up to 30 pages.');
-  for (const key of presetKeys) {
+  // Insert from the end so the resulting pages keep the user's selected order.
+  for (const key of [...presetKeys].reverse()) {
     const preset = PRESETS.find(item => item.key === key), index = next.pages.findIndex(page => page.id === pageId);
     next = duplicatePage(next, pageId);
     const copyId = next.pages[index + 1].id;

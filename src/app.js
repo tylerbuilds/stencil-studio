@@ -5,10 +5,15 @@ import { parseDataCSV, serialiseDataCSV } from './data-csv.js';
 import { TABLE_FIELDS, CHART_FIELDS } from './data-elements.js';
 import { buildPDF } from './export.js';
 import { getAiStatus, generateWriting } from './ai-client.js';
-import { needsMigration, preserveMigrationSource, writeWithMigrationBackup } from './migration-storage.js';
+import { needsMigration, preserveMigrationSource } from './migration-storage.js';
 import { CLIPBOARD_MIME, CLIPBOARD_PREFIX, encodeSelection, encodeSelectionText, isSelectionText, pasteSelection, insertElements } from './transfer.js';
 import { prepareFiles, textElement } from './browser-intake.js';
-import { collectAssetNotices, assetCredits, appendExportNotices } from './asset-notices.js';
+import { collectAssetNotices, assetCredits } from './asset-notices.js';
+import { renderPageRaster } from './raster-export.js';
+import { buildPageArchive } from './page-archive.js';
+import { filterTemplates } from './template-gallery.js';
+import { DESIGN_PRESET_GROUPS } from './design-presets.js';
+import { availableSocialTextGuides, addSocialTextGuides } from './social-guides.js';
 import { FRAME_SHAPES, collageLayout } from './frames.js';
 import { openCropEditor, coverCrop } from './crop-editor.js';
 import { loadDocumentFonts, documentFontCSS, fontStyleText } from './font-loader.js';
@@ -16,25 +21,31 @@ import { collectPDFTextRuns } from './pdf-text.js';
 import { MAX_SAVED_AUDIO_BYTES, savedAudioBlob, validateVideoSettings } from './video-settings.js';
 import { creditFromUpload, uploadLicenceFromCredit, mediaCreditText } from './media-credit.js';
 import { listUploads, saveUpload, loadUpload, renameUpload, deleteUpload, exportUploads, importUploads, withUploadsLock } from './uploads.js';
+import { createBrowserStorage, configureBrowserStorage } from './durable-storage.js';
+import { createDraftPersistence } from './draft-persistence.js';
 const $ = selector => document.querySelector(selector);
 const STORAGE_KEY = 'stencil-studio.document.v1'; // Retained so earlier installations migrate in place.
+let browserStorage, storageInitError = null;
+try { browserStorage = await createBrowserStorage(); }
+catch (error) { storageInitError = error; try { browserStorage = globalThis.localStorage; } catch { /* Keep the canvas usable when browser storage is blocked. */ } }
+configureBrowserStorage(browserStorage);
+const runStorageWrite = operation => browserStorage?.run ? browserStorage.run(operation) : Promise.resolve().then(operation);
 let initial, recoveryMessage, recoveryRaw = null, recoveryPreserved = true, storageHealthy = true, storedRaw = null;
 try {
-  storedRaw = localStorage.getItem(STORAGE_KEY); initial = storedRaw !== null ? parseDocument(storedRaw) : createBlankDesign();
+  storedRaw = browserStorage.getItem(STORAGE_KEY); initial = storedRaw !== null ? parseDocument(storedRaw) : createBlankDesign({ width: 1080, height: 1080 });
   if (storedRaw !== null && needsMigration(storedRaw)) {
     recoveryRaw = storedRaw;
-    try { preserveMigrationSource(localStorage, STORAGE_KEY, storedRaw); recoveryMessage = 'Your earlier design is open. We kept a backup of the original before updating it.'; }
+    try { await runStorageWrite(() => preserveMigrationSource(browserStorage, STORAGE_KEY, storedRaw)); recoveryMessage = 'Your earlier design is open. We kept a backup of the original before updating it.'; }
     catch { recoveryPreserved = false; recoveryMessage = 'Your earlier design is open, but its backup could not be saved. Autosave is paused to keep the original. Choose File → Save JSON to keep your new work.'; }
   }
 }
 catch {
-  initial = createBlankDesign(); recoveryRaw = storedRaw; recoveryPreserved = false;
+  initial = createBlankDesign({ width: 1080, height: 1080 }); recoveryRaw = storedRaw; recoveryPreserved = false;
   if (typeof storedRaw === 'string') {
     try {
       let hash = 2166136261; for (let index = 0; index < storedRaw.length; index++) hash = Math.imul(hash ^ storedRaw.charCodeAt(index), 16777619);
       let key = `${STORAGE_KEY}.recovery.${(hash >>> 0).toString(16)}`;
-      const previous = localStorage.getItem(key); if (previous !== null && previous !== storedRaw) key += `.${id()}`;
-      localStorage.setItem(key, storedRaw); recoveryPreserved = true;
+      await runStorageWrite(() => { const previous = browserStorage.getItem(key); if (previous !== null && previous !== storedRaw) key += `.${id()}`; browserStorage.setItem(key, storedRaw); }); recoveryPreserved = true;
     } catch { /* Preserve the original active key when a durable recovery copy cannot be written. */ }
   }
   recoveryMessage = recoveryPreserved ? 'Your previous design could not open. We kept its original data and opened a blank canvas. Choose Recovery data in File to download the original.' : 'Your previous design could not open. Its original data is still kept, so autosave is paused. Choose File → Save JSON to keep your new work.';
@@ -45,7 +56,15 @@ let drawMode = false, brushColour = '#232a27', brushWidth = 6, layerDrag = null;
 let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoCreditsURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
 let intakeGeneration = 0, intakeActive = null, documentRevision = 0, fileDragDepth = 0;
 let libraryView = 'all', libraryPage = 1, detailsTarget = null, versionsTarget = null, cropTool = null, resizeTarget = null, mediaShelf = null, replaceMediaId = null, pickerTarget = null, mediaShelfLoading = false;
-let expectedDocumentRaw = storedRaw, designNameTarget = null;
+let designNameTarget = null;
+let draftSaving = false;
+const draftPersistence = createDraftPersistence({ storage: { getItem: key => browserStorage.getItem(key), setItem: (key, value) => browserStorage.setItem(key, value), run: runStorageWrite }, key: STORAGE_KEY, initialRaw: storedRaw, onState: state => {
+  if (state.revision !== documentRevision || state.payload !== serialiseDocument(history.current)) return;
+  draftSaving = state.phase === 'saving';
+  if (state.phase === 'saving') { storageHealthy = false; $('#save-status').textContent = 'Saving…'; keepActiveBinding(); }
+  else if (state.phase === 'saved') { storageHealthy = true; $('#save-status').textContent = 'Saved on this device'; keepActiveBinding(); }
+  else { storageHealthy = false; keepActiveBinding(); $('#save-status').textContent = 'Not saved. Save JSON'; toast(state.error?.name === 'StorageConflictError' || state.error?.code === 'storage-conflict' ? 'Another tab saved a newer draft. Your edits are still here. Save a named copy or download JSON before refreshing.' : 'Your browser could not save this design. Keep it open and choose File → Save JSON to download a copy.', true); }
+} });
 const ACTIVE_DESIGN_KEY = 'stencil-studio.active-design.v1';
 const savedBindings = new Map(), historyBindings = new WeakMap();
 // Detect an ordinary shared-autosave change before restoring a per-tab association.
@@ -83,7 +102,7 @@ const effectivelyLocked = e => e.locked || Boolean(e.groupId && page().elements.
 function toast(message, error = false) { const node = $('#toast'); node.textContent = message; node.classList.toggle('error', error); node.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { node.hidden = true; }, error ? 6500 : 3500); }
 function persist() {
   if (!recoveryPreserved) { storageHealthy = false; $('#save-status').textContent = 'Autosave paused. Save JSON'; toast('Autosave is paused to keep your earlier design. Choose File → Save JSON to keep your new work.', true); return false; }
-  try { const payload = serialiseDocument(history.current); writeWithMigrationBackup(localStorage, STORAGE_KEY, payload, 'document', { expectedRaw: expectedDocumentRaw }); expectedDocumentRaw = payload; $('#save-status').textContent = 'Saved on this device'; storageHealthy = true; keepActiveBinding(); return true; }
+  try { draftPersistence.save(serialiseDocument(history.current), documentRevision); return true; }
   catch (error) { storageHealthy = false; keepActiveBinding(); $('#save-status').textContent = 'Not saved. Save JSON'; toast(error?.name === 'StorageConflictError' || error?.code === 'storage-conflict' ? 'Another tab saved a newer draft. Your edits are still here. Save a named copy or download JSON before refreshing.' : 'Your browser could not save this design. Keep it open and choose File → Save JSON to download a copy.', true); return false; }
 }
 function attempt(operation) { try { return operation(); } catch (error) { toast(error.message || 'That change didn’t work. Try again.', true); return false; } }
@@ -100,7 +119,7 @@ function commit(next, options = {}) {
 function closePageTools() {
   cropTool?.destroy(); cropTool = null; replaceMediaId = null;
   guideTarget = null; dataDraft = null; dataTarget = null; dataCSVDirty = false; dataCSVBaseline = null;
-  for (const selector of ['#guides-dialog', '#table-dialog', '#video-dialog', '#background-dialog']) if ($(selector).open) $(selector).close();
+  for (const selector of ['#guides-dialog', '#table-dialog', '#video-dialog', '#background-dialog', '#image-export-dialog']) if ($(selector).open) $(selector).close();
 }
 function requireGuideTarget(target = guideTarget) {
   if (!target || target !== guideTarget || target.pageId !== pageId || !$('#guides-dialog').open) throw new Error('The design changed. Open Guides & rulers again to make this change.');
@@ -313,6 +332,10 @@ function renderGuideList() {
   }));
   $('#guide-list').querySelectorAll('[data-remove-guide]').forEach(button => button.addEventListener('click', () => attempt(() => { requireGuideTarget(target); commit(removePageGuide(history.current, pageId, button.dataset.removeGuide)); renderGuideList(); })));
   $('#add-guide').disabled = readOnly || p.guides.length >= 40;
+  const socialGuides = availableSocialTextGuides(p);
+  $('#social-guide-options').hidden = !socialGuides.length;
+  $('#social-guide-preset').innerHTML = socialGuides.map(preset => `<option value="${safe(preset.key)}">${safe(preset.safeGuide.label)}</option>`).join('');
+  $('#social-guide-preset').disabled = $('#add-social-guide').disabled = readOnly;
 }
 function openGuides() {
   guideTarget = { pageId };
@@ -330,6 +353,11 @@ $('#guides-dialog').querySelectorAll('[data-guide-setting]').forEach(input => in
   catch (error) { if (input.type === 'checkbox') input.checked = page().guideSettings[key]; else input.value = page().guideSettings[key]; toast(error.message, true); }
 }));
 $('#add-guide').addEventListener('click', () => attempt(() => { requireGuideTarget(); if (!$('#guide-position').value.trim()) throw new Error('Enter a guide position.'); commit(addPageGuide(history.current, pageId, $('#guide-axis').value, Number($('#guide-position').value))); renderGuideList(); }));
+$('#add-social-guide').addEventListener('click', () => attempt(() => {
+  requireGuideTarget(); commit(addSocialTextGuides(history.current, pageId, $('#social-guide-preset').value));
+  $('#guides-dialog').querySelectorAll('[data-guide-setting]').forEach(input => { if (input.type === 'checkbox') input.checked = page().guideSettings[input.dataset.guideSetting]; });
+  renderGuideList(); toast('Pinterest guides added. Check the upload preview before posting.');
+}));
 $('#move-page-earlier').addEventListener('click', () => attempt(() => commit(reorderPage(history.current, pageId, history.current.pages.findIndex(p => p.id === pageId) - 1))));
 $('#move-page-later').addEventListener('click', () => attempt(() => commit(reorderPage(history.current, pageId, history.current.pages.findIndex(p => p.id === pageId) + 1))));
 $('#move-page-to').addEventListener('click', () => { try { const value = $('#page-order-position').value; if (!value.trim()) throw new Error('Enter a page position.'); commit(reorderPage(history.current, pageId, Number(value) - 1)); } catch (error) { $('#page-order-position').value = history.current.pages.findIndex(p => p.id === pageId) + 1; toast(error.message, true); } });
@@ -456,7 +484,18 @@ for (const tab of libraryTabs) {
     switchLibrary(libraryTabs[index]); $(`#${libraryTabs[index]}-tab`).focus();
   });
 }
-$('#templates').innerHTML = TEMPLATES.map(template => `<button class="template-button" data-template="${template.key}"><span class="template-preview">${pageSVG(templateDocument(template.key).pages[0])}</span><strong>${safe(template.name)}</strong><small>${safe(template.category)}</small></button>`).join('');
+function renderTemplates() {
+  const templates = filterTemplates(TEMPLATES, { query: $('#template-search').value, category: $('#template-category').value });
+  $('#template-count').textContent = `${templates.length} ${templates.length === 1 ? 'template' : 'templates'}`;
+  $('#templates').innerHTML = templates.length ? templates.map(template => `<button class="template-button" data-template="${template.key}"><span class="template-preview">${pageSVG(templateDocument(template.key).pages[0])}</span><strong>${safe(template.name)}</strong><small>${safe(template.category)}${template.pageCount > 1 ? ` · ${template.pageCount} editable pages` : ''}</small></button>`).join('') : '<p class="panel-hint">No templates match. Try a shorter search or another type.</p>';
+}
+$('#template-search').addEventListener('input', renderTemplates); $('#template-category').addEventListener('change', renderTemplates); renderTemplates();
+function presetOptions() {
+  return '<option value="">Custom size</option>' + DESIGN_PRESET_GROUPS.map(group => `<optgroup label="${safe(group.name)}">${PRESETS.filter(preset => preset.group === group.key).map(preset => `<option value="${preset.key}">${safe(preset.name)} · ${preset.width} × ${preset.height}</option>`).join('')}</optgroup>`).join('');
+}
+$('#new-preset').innerHTML = presetOptions();
+function updateNewPresetHint() { const preset = PRESETS.find(item => item.key === $('#new-preset').value); $('#new-preset-hint').textContent = preset ? `${preset.aspect.label} · ${preset.hint}` : 'Choose your own pixel size. Check the crop in the app you are posting to.'; }
+
 function designDialogState() { return [...document.querySelectorAll('dialog[open]')].filter(dialog => dialog.id !== 'design-name-dialog').map(dialog => dialog.id).join(','); }
 function captureDesignState() { return { revision: documentRevision, document: serialiseDocument(history.current), draft: draftSignature(), dialogs: designDialogState(), libraryId, updatedAt: savedBindings.get(libraryId)?.updatedAt }; }
 function requireDesignState(state, checkBinding = true) {
@@ -470,8 +509,8 @@ async function preserveCurrentDesign(guard = () => {}) {
   if (binding && state.document === binding.baseline) return null;
   const options = { name: history.current.title.trim() || 'Untitled design', ...(binding ? { id: libraryId, expectedUpdatedAt: binding.updatedAt } : {}) };
   try {
-    const record = await withLibraryLock(() => { guard(); requireDesignState(state); const saved = saveDesign(parseDocument(state.document), options); rememberSaved(saved); return saved; });
-    guard(); requireDesignState(state, false);
+    const record = await withLibraryLock(() => { guard(); requireDesignState(state); return saveDesign(parseDocument(state.document), options); });
+    guard(); requireDesignState(state, false); rememberSaved(record);
     if (libraryId !== record.id || savedBindings.get(record.id)?.updatedAt !== record.updatedAt) throw new Error('A different saved design was opened while this one was being kept.');
     return record;
   } catch (error) { throw new Error(`Your current design is still open. ${error.message} Choose Save a copy or download JSON, then try again.`); }
@@ -485,12 +524,12 @@ async function startNewDocument(next, guard = () => {}) {
 function openNewDesign() {
   if (editingTarget(document.activeElement)) document.activeElement.blur();
   drag = null; cancelIntake('Insertion cancelled. You opened New design.'); renderCanvas();
-  $('#new-title').value = 'Untitled design'; $('#new-preset').value = 'poster'; $('#new-width').value = 720; $('#new-height').value = 960; $('#new-background').value = '#ffffff'; $('#new-design-error').textContent = '';
+  $('#new-title').value = 'Untitled design'; $('#new-preset').value = 'social'; $('#new-width').value = 1080; $('#new-height').value = 1080; $('#new-background').value = '#ffffff'; $('#new-design-error').textContent = ''; updateNewPresetHint();
   $('#new-design-dialog').showModal();
 }
 $('#new-design').addEventListener('click', openNewDesign); $('#blank-design').addEventListener('click', openNewDesign);
-$('#new-preset').addEventListener('change', () => { const preset = PRESETS.find(p => p.key === $('#new-preset').value); if (preset) { $('#new-width').value = preset.width; $('#new-height').value = preset.height; } });
-for (const selector of ['#new-width', '#new-height']) $(selector).addEventListener('input', () => { $('#new-preset').value = ''; });
+$('#new-preset').addEventListener('change', () => { const preset = PRESETS.find(p => p.key === $('#new-preset').value); if (preset) { $('#new-width').value = preset.width; $('#new-height').value = preset.height; } updateNewPresetHint(); });
+for (const selector of ['#new-width', '#new-height']) $(selector).addEventListener('input', () => { $('#new-preset').value = ''; updateNewPresetHint(); });
 $('#new-design-form').addEventListener('submit', async event => {
   event.preventDefault(); if ($('#create-new-design').disabled) return; $('#create-new-design').disabled = true;
   const signature = () => JSON.stringify([...$('#new-design-form').querySelectorAll('input,select')].map(input => input.value)), draft = signature();
@@ -500,7 +539,7 @@ $('#new-design-form').addEventListener('submit', async event => {
   finally { $('#create-new-design').disabled = false; }
 });
 $('#new-export-current').addEventListener('click', () => download(serialiseDocument(history.current), 'application/json', `${filename()}.json`));
-$('#templates').querySelectorAll('button').forEach(button => button.addEventListener('click', async () => { if (button.disabled) return; button.disabled = true; drag = null; renderCanvas(); try { await startNewDocument(templateDocument(button.dataset.template)); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } }));
+$('#templates').addEventListener('click', async event => { const button = event.target.closest?.('[data-template]'); if (!button || !$('#templates').contains(button) || button.disabled) return; button.disabled = true; drag = null; renderCanvas(); try { await startNewDocument(templateDocument(button.dataset.template)); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
 function setDrawMode(enabled) {
   if (enabled && cloudSession?.role === 'view') { toast('You have view-only access. Keep a local copy and disconnect to draw on it.', true); return; }
   drag = null; drawMode = Boolean(enabled); $('#draw-tool').setAttribute('aria-pressed', String(drawMode)); $('#draw-tool').textContent = drawMode ? 'Brush on · B' : 'Draw · B'; $('#select-tool').setAttribute('aria-pressed', String(!drawMode)); $('#brush-settings').hidden = !drawMode; $('#canvas-mount').classList.toggle('drawing', drawMode); renderCanvas();
@@ -706,21 +745,57 @@ function download(content, type, filename) { const url = URL.createObjectURL(new
 const filename = () => (history.current.title || 'stencil-design').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'stencil-design';
 $('#save-document').addEventListener('click', () => attempt(() => { download(serialiseDocument(history.current), 'application/json', `${filename()}.stencil.json`); toast('Design downloaded. Open this JSON file in Stencil to keep editing.'); }));
 $('#import-document').addEventListener('click', () => $('#document-input').click());
-$('#export-svg').addEventListener('click', async () => { try { const captured = structuredClone(page()), css = await documentFontCSS(captured); download(pageSVG(captured, false, true, css), 'image/svg+xml', `${filename()}-page-${history.current.pages.findIndex(p => p.id === pageId) + 1}.svg`); toast('Current page downloaded as SVG.'); } catch (error) { toast(error.message, true); } });
-async function renderRaster(p, type = 'image/png') {
-  await loadDocumentFonts(p); const css = await documentFontCSS(p);
-  const url = URL.createObjectURL(new Blob([pageSVG(p, false, true, css)], { type: 'image/svg+xml' })); let image;
-  try { image = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('This page could not be turned into an image. Try SVG from Download.')); img.src = url; }); } finally { URL.revokeObjectURL(url); }
-  const canvas = document.createElement('canvas'); canvas.width = Math.round(p.width); canvas.height = Math.round(p.height); const context = canvas.getContext('2d'); if (!context) throw new Error('Your browser could not make the image. Try SVG from Download.'); if (type === 'image/jpeg') { context.fillStyle = p.background; context.fillRect(0, 0, canvas.width, canvas.height); } context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, type, .95)); if (!blob) throw new Error('Image export failed. Try SVG instead.');
-  const notices = collectAssetNotices(p.elements); return notices.length ? new Blob([appendExportNotices(new Uint8Array(await blob.arrayBuffer()), type, notices)], { type }) : blob;
+$('#export-svg').addEventListener('click', async () => { try { const captured = structuredClone(page()), exportName = `${filename()}-page-${history.current.pages.findIndex(p => p.id === captured.id) + 1}.svg`, css = await documentFontCSS(captured); download(pageSVG(captured, false, true, css), 'image/svg+xml', exportName); toast('Current page downloaded as SVG.'); } catch (error) { toast(error.message, true); } });
+const renderRaster = (p, type = 'image/png', options = {}) => renderPageRaster(p, type, options);
+$('#export-png').addEventListener('click', async () => { const button = $('#export-png'); button.disabled = true; try { const p = structuredClone(page()), exportName = `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.png`, blob = await renderRaster(p); download(blob, 'image/png', exportName); toast('Current page downloaded as PNG at full size.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
+$('#export-jpg').addEventListener('click', async () => { const button = $('#export-jpg'); button.disabled = true; try { const p = structuredClone(page()), exportName = `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.jpg`; download(await renderRaster(p, 'image/jpeg'), 'image/jpeg', exportName); toast('Current page downloaded as JPEG.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
+let imageExportTarget = null, imageExportController = null, imageExportGeneration = 0;
+function updateImageExportOptions() {
+  const png = $('#image-export-format').value === 'png'; $('#image-export-transparent-field').hidden = !png; $('#image-export-transparent').disabled = !png;
+  $('#image-export-submit').textContent = $('#image-export-scope').value === 'all' ? 'Download ZIP' : 'Download image';
 }
-$('#export-png').addEventListener('click', async () => { const button = $('#export-png'); button.disabled = true; try { const p = structuredClone(page()), blob = await renderRaster(p); download(blob, 'image/png', `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.png`); toast('Current page downloaded as PNG at full size.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
-$('#export-jpg').addEventListener('click', async () => { const button = $('#export-jpg'); button.disabled = true; try { const p = structuredClone(page()); download(await renderRaster(p, 'image/jpeg'), 'image/jpeg', `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.jpg`); toast('Current page downloaded as JPEG.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
+$('#export-images').addEventListener('click', () => {
+  imageExportController?.abort(); imageExportController = null; imageExportGeneration++;
+  imageExportTarget = { document: structuredClone(history.current), pageId, filename: filename() };
+  const current = imageExportTarget.document.pages.find(p => p.id === pageId);
+  $('#image-export-summary').textContent = `${imageExportTarget.document.title || 'Untitled design'} · ${imageExportTarget.document.pages.length} ${imageExportTarget.document.pages.length === 1 ? 'page' : 'pages'} · Current page ${current.width} × ${current.height} px`;
+  $('#image-export-scope').value = imageExportTarget.document.pages.length > 1 ? 'all' : 'current'; $('#image-export-format').value = 'png'; $('#image-export-transparent').checked = current.transparentBackground;
+  $('#image-export-status').textContent = ''; $('#image-export-error').textContent = ''; $('#image-export-submit').disabled = false; $('#image-export-cancel').disabled = true;
+  for (const selector of ['#image-export-scope', '#image-export-format']) $(selector).disabled = false;
+  updateImageExportOptions(); $('#image-export-dialog').showModal();
+});
+$('#image-export-format').addEventListener('change', updateImageExportOptions); $('#image-export-scope').addEventListener('change', updateImageExportOptions);
+$('#image-export-cancel').addEventListener('click', () => imageExportController?.abort());
+$('#image-export-dialog').addEventListener('close', () => { imageExportGeneration++; imageExportController?.abort(); imageExportController = null; imageExportTarget = null; });
+$('#image-export-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (!imageExportTarget || imageExportController) return;
+  const target = imageExportTarget, generation = ++imageExportGeneration, controller = new AbortController(); imageExportController = controller;
+  const format = $('#image-export-format').value, scope = $('#image-export-scope').value, transparent = format === 'png' && $('#image-export-transparent').checked;
+  const snapshot = structuredClone(target.document); snapshot.pages.forEach(p => { p.transparentBackground = transparent; });
+  $('#image-export-error').textContent = ''; $('#image-export-status').textContent = 'Preparing images…'; $('#image-export-submit').disabled = true; $('#image-export-cancel').disabled = false;
+  for (const selector of ['#image-export-scope', '#image-export-format', '#image-export-transparent']) $(selector).disabled = true;
+  const currentJob = () => generation === imageExportGeneration && $('#image-export-dialog').open && !controller.signal.aborted;
+  try {
+    if (!['png', 'jpeg'].includes(format) || !['current', 'all'].includes(scope)) throw new Error('Choose an image format and which pages to download.');
+    if (scope === 'all') {
+      const result = await buildPageArchive(snapshot, { format, renderPage: renderRaster, signal: controller.signal, onProgress: progress => { if (currentJob()) $('#image-export-status').textContent = `Preparing images · ${progress.completed}/${progress.total}`; } });
+      if (!currentJob()) return; download(result.blob, result.mime, result.filename); $('#image-export-status').textContent = `${result.pageCount} numbered images downloaded. Unzip the file, then upload them in order.`;
+    } else {
+      const index = snapshot.pages.findIndex(p => p.id === target.pageId); if (index < 0) throw new Error('This page could not be found. Close Download and try again.');
+      const mime = format === 'png' ? 'image/png' : 'image/jpeg', extension = format === 'png' ? 'png' : 'jpg', blob = await renderRaster(snapshot.pages[index], mime, { signal: controller.signal });
+      if (!currentJob()) return; download(blob, mime, `${target.filename}-page-${index + 1}.${extension}`); $('#image-export-status').textContent = 'Image downloaded at the page’s full pixel size.';
+    }
+  } catch (error) {
+    if (generation === imageExportGeneration && $('#image-export-dialog').open) { $('#image-export-status').textContent = ''; if (error.name === 'AbortError') $('#image-export-status').textContent = 'Download cancelled. You can try again.'; else $('#image-export-error').textContent = error.message || 'The images could not be downloaded. Try fewer pages.'; }
+  } finally {
+    if (imageExportController === controller) imageExportController = null;
+    if (generation === imageExportGeneration && $('#image-export-dialog').open) { $('#image-export-submit').disabled = false; $('#image-export-cancel').disabled = true; for (const selector of ['#image-export-scope', '#image-export-format']) $(selector).disabled = false; updateImageExportOptions(); }
+  }
+});
 $('#export-pdf').addEventListener('click', async () => {
   const button = $('#export-pdf'); button.disabled = true; const pages = structuredClone(history.current.pages), exportName = filename();
   try { if (pages.reduce((sum, p) => sum + p.width * p.height, 0) > 120000000) throw new Error('This PDF is too large. Try fewer pages or a smaller canvas size.'); const rendered = []; for (const p of pages) { $('#save-status').textContent = `Preparing PDF · ${rendered.length + 1}/${pages.length}`; rendered.push({ width: Math.round(p.width), height: Math.round(p.height), jpeg: new Uint8Array(await (await renderRaster(p, 'image/jpeg')).arrayBuffer()), textRuns: collectPDFTextRuns(p) }); } download(buildPDF(rendered), 'application/pdf', `${exportName}.pdf`); toast('PDF downloaded. Your artwork is preserved and native text can be searched and selected.'); }
-  catch (error) { toast(error.message || 'PDF export failed.', true); } finally { button.disabled = false; $('#save-status').textContent = storageHealthy ? 'Saved on this device' : recoveryPreserved ? 'Not saved. Save JSON' : 'Autosave paused. Save JSON'; }
+  catch (error) { toast(error.message || 'PDF export failed.', true); } finally { button.disabled = false; $('#save-status').textContent = draftSaving ? 'Saving…' : storageHealthy ? 'Saved on this device' : recoveryPreserved ? 'Not saved. Save JSON' : 'Autosave paused. Save JSON'; }
 });
 $('#print-design').addEventListener('click', async () => { try { const exportDocument = structuredClone(history.current); await loadDocumentFonts(exportDocument); $('#print-pages').innerHTML = exportDocument.pages.map(p => `<section class="print-page">${pageSVG(p, false, true)}</section>`).join(''); window.print(); } catch (error) { toast(error.message, true); } });
 function updateSavedStatus() {
@@ -799,7 +874,7 @@ function openDesignName(options = {}) {
   const savedRecord = listDesignSummaries().find(record => record.id === (designNameTarget.id ?? libraryId)); fillFolderOptions($('#design-name-folder'), savedRecord?.folderId ?? null);
   $('#design-name-hint').textContent = mode === 'rename' ? 'The saved design and its title will use this name.' : mode === 'copy' ? 'Your original saved design stays as it is.' : binding ? 'Update this named design in My designs.' : 'Find it again in My designs on this device.';
   $('#design-name-save').textContent = mode === 'rename' ? 'Rename design' : mode === 'copy' ? 'Save a copy' : 'Save design';
-  $('#design-name-error').textContent = ''; $('#design-name-dialog').showModal(); $('#design-name').focus(); $('#design-name').select();
+  $('#design-name-error').textContent = ''; $('#design-name-storage-review').hidden = true; $('#design-name-dialog').showModal(); $('#design-name').focus(); $('#design-name').select();
 }
 $('#design-name-form').addEventListener('submit', async event => {
   event.preventDefault(); const target = designNameTarget; if (!target || $('#design-name-save').disabled) return;
@@ -814,16 +889,18 @@ $('#design-name-form').addEventListener('submit', async event => {
       const active = libraryId === target.id;
       savedBindings.set(record.id, { updatedAt: record.updatedAt, baseline: serialiseDocument(record.document) });
       if (active) { commit({ ...history.current, title: name }); keepActiveBinding(); }
+      await draftPersistence.whenSettled(); if (target !== designNameTarget || !$('#design-name-dialog').open) return;
       $('#design-name-dialog').close(); renderLibrary(); if (storageHealthy) toast('Design renamed.');
     } else {
       const document = { ...parseDocument(target.state.document), title: name };
       const record = await withLibraryLock(() => { requireTarget(); return saveDesign(document, { name, folderId: $('#design-name-folder').value || null, ...(target.id && target.mode !== 'copy' ? { id: target.id, expectedUpdatedAt: target.updatedAt } : {}) }); });
       requireDesignState(target.state);
       rememberSaved(record); if (history.current.title !== name) commit(document); else updateSavedStatus();
+      await draftPersistence.whenSettled(); if (target !== designNameTarget || !$('#design-name-dialog').open) return;
       $('#design-name-dialog').close(); renderLibrary();
       toast(storageHealthy ? target.mode === 'copy' ? 'Your new copy is saved in My designs.' : 'Design saved in My designs.' : 'Your named design is saved in My designs. The open draft could not autosave; download JSON before refreshing.', !storageHealthy);
     }
-  } catch (error) { if (target === designNameTarget && $('#design-name-dialog').open) $('#design-name-error').textContent = error.message; else toast(error.message, true); }
+  } catch (error) { if (target === designNameTarget && $('#design-name-dialog').open) { $('#design-name-error').textContent = error.message; $('#design-name-storage-review').hidden = error.code !== 'library-conflict' || !browserStorage?.inspectLegacyChanges; } else toast(error.message, true); }
   finally { $('#design-name-save').disabled = false; }
 });
 $('#design-name-dialog').addEventListener('close', () => { designNameTarget = null; });
@@ -833,6 +910,62 @@ for (const selector of ['#open-designs', '#browse-designs']) $(selector).addEven
 $('#library-open-file').addEventListener('click', () => $('#document-input').click());
 $('#design-search').addEventListener('input', () => { libraryPage = 1; renderLibrary(); }); $('#design-sort').addEventListener('change', renderLibrary);
 window.addEventListener('storage', event => { if (event.key === LIBRARY_KEY && !$('#library-panel').hidden) renderLibrary(); });
+browserStorage?.subscribe?.(({ keys, external }) => {
+  if (!external) return;
+  if (keys.includes(STORAGE_KEY) && browserStorage.getItem(STORAGE_KEY) !== serialiseDocument(history.current)) {
+    storageHealthy = false; keepActiveBinding(); $('#save-status').textContent = 'Newer draft in another tab. Save a copy';
+  }
+  if (keys.includes(LIBRARY_KEY) && !$('#library-panel').hidden) renderLibrary();
+  if (keys.includes('stencil-studio.uploads.v1') && !$('#assets-panel').hidden) renderUploads();
+});
+window.addEventListener('focus', () => browserStorage?.refresh?.().catch(() => {}));
+window.addEventListener('beforeunload', event => { if (draftSaving) { event.preventDefault(); event.returnValue = ''; } });
+let storageReviewGeneration = 0, storageReviewToken = null;
+const downloadedEarlierCopies = new Set();
+function renderEarlierCopies() {
+  const copies = browserStorage.listLegacyRecoveries();
+  $('#earlier-storage-copies').innerHTML = copies.length ? copies.map((copy, index) => `<div class="guide-row earlier-copy-row"><span>Earlier ${safe(copy.kind)} · ${(copy.bytes / 1024 / 1024).toFixed(2)} MiB</span><button type="button" class="quiet-button" data-earlier-copy="${safe(copy.key)}" data-earlier-index="${index + 1}">Download JSON</button><button type="button" class="quiet-button danger" data-remove-earlier-copy="${safe(copy.key)}"${downloadedEarlierCopies.has(copy.key) ? '' : ' disabled'}>Remove</button></div>`).join('') : '<p class="panel-hint">No earlier copies have been kept yet.</p>';
+  $('#earlier-storage-copies').querySelectorAll('[data-earlier-copy]').forEach(button => button.addEventListener('click', () => attempt(() => {
+    const copy = copies.find(copy => copy.key === button.dataset.earlierCopy); if (!copy) throw new Error('This earlier copy has gone. Open Earlier tab data again.');
+    download(browserStorage.readLegacyRecovery(copy.key), 'application/json', `stencil-earlier-${copy.kind}-${button.dataset.earlierIndex}.json`);
+    downloadedEarlierCopies.add(copy.key); renderEarlierCopies();
+  })));
+  $('#earlier-storage-copies').querySelectorAll('[data-remove-earlier-copy]').forEach(button => button.addEventListener('click', async () => {
+    const copy = copies.find(copy => copy.key === button.dataset.removeEarlierCopy), generation = storageReviewGeneration;
+    if (!copy || button.disabled || !downloadedEarlierCopies.has(copy.key) || !$('#storage-recovery-dialog').open) return;
+    if (!window.confirm('Remove this earlier recovery copy from Stencil? Make sure its downloaded JSON is saved somewhere safe. Your current designs and the original transferred data stay kept.')) return;
+    button.disabled = true; $('#storage-recovery-error').textContent = '';
+    try {
+      await browserStorage.removeLegacyRecovery(copy.key); downloadedEarlierCopies.delete(copy.key);
+      if (generation !== storageReviewGeneration || !$('#storage-recovery-dialog').open) return;
+      storageReviewToken = null; $('#keep-both-storage-copies').disabled = true; renderEarlierCopies();
+      $('#storage-recovery-status').textContent = 'Earlier copy removed. Close and reopen this window to review any earlier tab changes.';
+    } catch (error) { if (generation === storageReviewGeneration && $('#storage-recovery-dialog').open) { button.disabled = false; $('#storage-recovery-error').textContent = error.message; } }
+  }));
+}
+async function openEarlierStorage() {
+  if (!browserStorage?.inspectLegacyChanges) { toast('Earlier tab recovery is unavailable in fallback storage. Keep a JSON copy before refreshing.', true); return; }
+  const generation = ++storageReviewGeneration; storageReviewToken = null;
+  $('#storage-recovery-error').textContent = ''; $('#storage-recovery-status').textContent = 'Checking earlier tab data…'; $('#keep-both-storage-copies').disabled = true; $('#storage-recovery-dialog').showModal();
+  try {
+    const inspection = await browserStorage.inspectLegacyChanges(); if (generation !== storageReviewGeneration || !$('#storage-recovery-dialog').open) return;
+    storageReviewToken = inspection.token; $('#storage-recovery-status').textContent = inspection.changes.length ? inspection.changes.map(change => change.deleted ? `Earlier ${change.kind}: removed in the earlier tab.` : `Earlier ${change.kind}: ${(change.bytes / 1024 / 1024).toFixed(2)} MiB to keep.`).join(' ') : 'No earlier tab changes need to be kept.';
+    $('#keep-both-storage-copies').disabled = !inspection.changes.length; renderEarlierCopies();
+  } catch (error) { if (generation === storageReviewGeneration && $('#storage-recovery-dialog').open) { $('#storage-recovery-status').textContent = ''; $('#storage-recovery-error').textContent = error.message; } }
+}
+$('#earlier-storage-data').hidden = !browserStorage?.inspectLegacyChanges;
+$('#earlier-storage-data').addEventListener('click', openEarlierStorage);
+$('#design-name-storage-review').addEventListener('click', () => { $('#design-name-dialog').close(); openEarlierStorage(); });
+$('#storage-recovery-dialog').addEventListener('close', () => { storageReviewGeneration++; storageReviewToken = null; });
+$('#keep-both-storage-copies').addEventListener('click', async () => {
+  const generation = storageReviewGeneration, token = storageReviewToken; if (!token || $('#keep-both-storage-copies').disabled) return;
+  $('#keep-both-storage-copies').disabled = true; $('#storage-recovery-error').textContent = '';
+  try {
+    const result = await browserStorage.keepBothLegacyCopies(token);
+    if (generation !== storageReviewGeneration || !$('#storage-recovery-dialog').open) return;
+    storageReviewToken = null; renderEarlierCopies(); $('#storage-recovery-status').textContent = `${result.kept} earlier ${result.kept === 1 ? 'copy' : 'copies'} kept. You can try Save design again.`; persist();
+  } catch (error) { if (generation === storageReviewGeneration && $('#storage-recovery-dialog').open) { storageReviewToken = null; $('#storage-recovery-error').textContent = `${error.message} Close this window and open Earlier tab data to review again.`; } }
+});
 $('#export-library').addEventListener('click', () => attempt(() => { download(exportLibrary(), 'application/json', 'stencil-studio-library.json'); toast('My designs backup downloaded.'); })); $('#import-library').addEventListener('click', () => $('#library-input').click());
 $('#library-input').addEventListener('change', async event => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { if (file.size > 18 * 1024 * 1024) throw new Error('Choose a library backup under 18 MB.'); const payload = await file.text(); await withLibraryLock(() => importLibrary(payload)); renderLibrary(); toast('Backup added to My designs. Your existing designs were kept.'); } catch (error) { toast(error.message, true); } });
 $('#bulk-create').addEventListener('click', () => $('#bulk-dialog').showModal()); $('#load-csv').addEventListener('click', () => $('#csv-input').click());
@@ -1064,7 +1197,7 @@ $('#add-collage').addEventListener('click', () => attempt(() => {
 $('#make-size-copies').addEventListener('click', () => {
   if (editingTarget(document.activeElement)) document.activeElement.blur();
   resizeTarget = { pageId, revision: documentRevision, signature: serialiseDocument(history.current) };
-  $('#resize-targets').innerHTML = PRESETS.map(preset => `<label class="checkbox-field"><input type="checkbox" value="${preset.key}">${safe(preset.name)} · ${preset.width} × ${preset.height}</label>`).join('');
+  $('#resize-targets').innerHTML = DESIGN_PRESET_GROUPS.map(group => `<fieldset class="resize-size-group"><legend>${safe(group.name)}</legend>${PRESETS.filter(preset => preset.group === group.key).map(preset => `<label class="checkbox-field"><input type="checkbox" value="${preset.key}"><span>${safe(preset.name)}<small>${preset.width} × ${preset.height} · ${preset.aspect.label}</small></span></label>`).join('')}</fieldset>`).join('');
   $('#resize-error').textContent = ''; $('#resize-dialog').showModal();
 });
 $('#resize-form').addEventListener('submit', event => { event.preventDefault(); try {
@@ -1153,5 +1286,8 @@ $('#video-audio').addEventListener('change', async event => {
   try { if (!file.size || file.size > MAX_SAVED_AUDIO_BYTES) throw new Error('Choose an audio file up to 4 MB.'); const mime = file.type || ({ mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', webm: 'audio/webm' }[file.name.split('.').at(-1).toLowerCase()]); const encoded = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('The audio file could not be read.')); reader.readAsDataURL(new Blob([file], { type: mime })); }); if (!$('#video-dialog').open || target.session !== videoSessionGeneration || target.revision !== documentRevision || target.signature !== serialiseDocument(history.current)) throw new Error('The design changed while your audio was loading. Choose the audio again.'); const video = { ...history.current.video, audio: { name: file.name.slice(0, 150), src: encoded } }; validateVideoSettings(video); commit({ ...history.current, video }); $('#saved-audio-name').textContent = video.audio.name; $('#video-status').textContent = 'Audio saved with this design.'; } catch (error) { $('#video-status').textContent = error.message; toast(error.message, true); }
 });
 
-render(); if (!recoveryPreserved) { storageHealthy = false; $('#save-status').textContent = 'Autosave paused. Save JSON'; } if (recoveryMessage) toast(recoveryMessage, true);
+render(); if (storedRaw === null && recoveryPreserved) persist();
+if (!recoveryPreserved) { storageHealthy = false; $('#save-status').textContent = 'Autosave paused. Save JSON'; }
+if (recoveryMessage) toast(recoveryMessage, true);
+else if (storageInitError) toast('Design storage could not open. This browser is using its limited fallback storage. Keep a JSON copy of your work.', true);
 if (new URLSearchParams(location.hash.slice(1)).has('workspace')) connectSharedLink();

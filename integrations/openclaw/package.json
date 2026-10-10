@@ -1,0 +1,10 @@
+{
+  "name": "@tylerbuilds/stencil-studio-openclaw",
+  "version": "0.9.0",
+  "type": "module",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": ["./index.mjs"],
+    "compat": { "pluginApi": ">=2026.9.9", "minGatewayVersion": ">=2026.9.9" }
+  }
+}

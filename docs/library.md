@@ -1,6 +1,8 @@
 # Saved designs and uploads
 
-My designs keeps your work in this browser. Save a named design, organise it in a folder, add tags or mark it as a favourite. The library does not sign you into an account or synchronise between devices. Download a library backup before clearing browser data or moving to another machine.
+Choose **Save design**, give it a name, then open it again from **My designs**. Organise designs in folders, add tags or mark favourites. Your designs stay in this browser; they do not synchronise between devices. Download a library backup before clearing browser data or moving to another machine.
+
+Stencil uses IndexedDB for the open draft, named designs and uploads. This avoids the much smaller localStorage limit shared by other apps on the same website. Existing designs, uploads and recovery copies move into the new store automatically, with their exact original data retained. The earlier localStorage copies are left untouched. A save is confirmed only after the browser commits its transaction.
 
 Deleting a design moves it to Trash. Restore brings back its name, content, folder, tags, favourite and saved versions. Permanent deletion and Empty Trash remove those records from the library. Separate downloaded backups and migration recovery copies are not erased by these actions.
 
@@ -12,7 +14,7 @@ Uploads is a separate raster shelf for reusable PNG, JPEG, WebP and GIF images. 
 
 ## Library API
 
-All storage functions are synchronous. Pass a Storage-compatible object as the documented `storage` argument for tests; omitted storage uses `localStorage`. Returned records are independent clones. `listDesigns` keeps its original `{ id, name, updatedAt }` result shape. `listDesignSummaries` adds `folderId`, `tags`, `favourite`, `versionCount`, lightweight `versions`, `pageCount` and a cloned `firstPage` preview.
+The library functions remain synchronous. Pass a Storage-compatible object as the documented `storage` argument for tests; omitted storage uses the configured browser adapter, or localStorage before one is configured. Browser writes must run inside an awaited `withLibraryLock`. This stages the synchronous changes and resolves only after the IndexedDB commit. Returned records are independent clones. `listDesigns` keeps its original `{ id, name, updatedAt }` result shape. `listDesignSummaries` adds `folderId`, `tags`, `favourite`, `versionCount`, lightweight `versions`, `pageCount` and a cloned `firstPage` preview.
 
 | Function | Result or behaviour |
 | --- | --- |
@@ -42,17 +44,55 @@ Wrap browser mutations with `withLibraryLock` so cooperating tabs take the same 
 
 ```js
 const saved = await withLibraryLock(() =>
-  updateDesignMetadata(design.id, { favourite: true }, localStorage, {
+  updateDesignMetadata(design.id, { favourite: true }, undefined, {
     expectedUpdatedAt: design.updatedAt,
   })
 );
 ```
 
-The lock waits up to five seconds. If Web Locks are unavailable, a local queue and exact stored-value checks detect many stale writes; they cannot guarantee atomic writes between separate tabs. The UI must keep local edits open when a conflict occurs. Capture the active document and binding before waiting; changed edits must never be saved to another design or discarded by a delayed open action.
+The lock waits up to five seconds. IndexedDB also serialises writes between tabs, including browsers without Web Locks. Each transaction reads the current stored data before the synchronous callback runs. A failed commit publishes neither the staged cache nor a successful result. The localStorage fallback retains its earlier drift checks, but cannot make writes atomic between separate tabs; use one editing tab in that mode. The UI keeps local edits open when a conflict occurs. Capture the active document and binding before waiting; changed edits must never be saved to another design or discarded by a delayed open action.
+
+### Initialise a browser integration
+
+```js
+import { createBrowserStorage, configureBrowserStorage } from './src/durable-storage.js';
+import { createBlankDesign } from './src/model.js';
+import { withLibraryLock, saveDesign } from './src/library.js';
+
+const storage = await createBrowserStorage();
+configureBrowserStorage(storage);
+const design = createBlankDesign({ title: 'New poster' });
+const saved = await withLibraryLock(() => saveDesign(design, { name: design.title }));
+console.log(saved.id); // Returned after the transaction completes.
+```
+
+Prepare files and other asynchronous inputs before calling a transaction. The callback must finish synchronously; returning a promise aborts the write. Outside `run`, `storage.getItem(key)` reads the committed cache; inside its callback it reads the fresh transaction snapshot, including staged changes. `storage.run(() => ...)` allows synchronous `setItem`/`removeItem` calls, then commits atomically. Writes outside `run` throw. `storage.refresh()` reloads committed data; `storage.subscribe(({ keys, external }) => ...)` reports changed keys without changing the open canvas. BroadcastChannel refreshes other current-version tabs when available; every write still reads fresh data if that channel is unavailable.
+
+The database is `stencil-studio.local-designs`, version 1, with a `records` object store and `keyPath: 'key'`. Records are `{ key, value }`, with string values. The draft, library and upload keys keep their earlier names. `@legacy:<key>` retains the JSON-encoded exact earlier source; `@legacy-import-complete` prevents a later reload from importing stale localStorage over newer IndexedDB data. Other apps' records are neither copied nor modified. A failed initial transfer leaves its database transaction and all original localStorage records unchanged.
+
+### Keep data changed by an earlier tab
+
+An older Stencil tab can still write localStorage after the transfer. Stencil detects a changed source and pauses writes to that record, keeping your current canvas open. Close the older tab, then choose **File → Earlier tab data**. **Keep both copies** stores an exact recovery file for the earlier tab's data, keeps the current IndexedDB record, and lets you retry your save. Download the earlier design, library or uploads from that window and use the normal JSON or backup import controls if you want its changes. No localStorage records are deleted or overwritten.
+
+The browser adapter exposes the same steps for integrations:
+
+```js
+const review = await storage.inspectLegacyChanges();
+// Show review.changes (key, kind, bytes and deleted) and ask the person to choose.
+const kept = await storage.keepBothLegacyCopies(review.token);
+for (const key of kept.recoveryKeys) {
+  const exactEarlierJSON = storage.readLegacyRecovery(key);
+  // Offer exactEarlierJSON as a downloaded file, then retry the intended save.
+}
+```
+
+Only the latest review token is accepted. The acknowledgement checks the captured earlier source, current record and previous source baseline again inside the transaction. If any changed while the window was open, review again. `listLegacyRecoveries()` returns `{ key, kind, bytes }` for downloadable recovery files. An immutable `@legacy-original:<key>` also retains the exact first transferred source after later acknowledgements. Recovery holds up to six files and 32 MiB of UTF-8 data; reaching either limit blocks acknowledgement without discarding any copy. Download an earlier recovery before explicitly deleting it to make room. Integrations must ask for confirmation before calling `removeLegacyRecovery(key)`, which deletes only that recovery file after a guarded commit. It cannot remove a draft, library, uploads shelf or original transferred source. A browser quota failure also leaves all earlier records unchanged. If the earlier source was deleted, the current record and original transferred source remain kept.
+
+An older tab may also create a migration or recovery file after the initial transfer. When a transaction reads one of those backup keys, Stencil copies its exact earlier bytes into the transaction and checks that the source stayed unchanged before committing. An existing backup with different bytes makes migration choose another name. This preserves earlier recovery files without leaving an otherwise acknowledged save blocked; it does not acknowledge a changed draft, library or uploads record.
 
 ## Format and migration
 
-The storage key stays `stencil-studio.library.v1` for compatibility and so existing tabs use the same lock. The canonical library format is now:
+The record key stays `stencil-studio.library.v1` for compatibility and so existing tabs use the same lock. The canonical library format is now:
 
 ```js
 {
@@ -75,4 +115,6 @@ Licence fields are optional `name`, `creator`, `sourceUrl`, `licenceUrl` and `at
 
 ## Checks
 
-`tests/consumer/library-organisation.test.js` uses fictitious in-memory data to check legacy migration, exact recovery copies, folders and metadata, Trash recovery and count limits, rolling saved versions, quota failures, bounded-history budget failures, stale revisions, malformed imports and concurrent writes during migration. Upload tests cover their separate persistence and validation boundaries. Real mobile devices, browser storage quotas and cross-tab behaviour require the coordinator's browser checks.
+`tests/consumer/library-organisation.test.js` uses fictitious in-memory data to check format migration, exact recovery copies, folders and metadata, Trash recovery and count limits, rolling saved versions, quota failures, bounded-history budget failures, stale revisions, malformed imports and concurrent writes during migration. `tests/consumer/durable-storage.test.js` checks transactional publication, quota/security aborts, a large image design with versions and uploads, two-tab writes without Web Locks, stale drafts, older localStorage writers and cancelled saves. Its atomic backend fixture does not emulate IndexedDB request timing; native browser acceptance tests the real driver. Upload tests cover their separate validation boundaries.
+
+IndexedDB still has browser quotas, and private browsing or clearing site data can remove saved work. Keep downloaded backups. See the [IndexedDB transaction specification](https://www.w3.org/TR/IndexedDB/#transaction-construct) for commit and abort behaviour, and [browser storage limits](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria) for the distinction between localStorage and IndexedDB quotas.

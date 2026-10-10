@@ -2,7 +2,7 @@
 
 [**Try Stencil Studio**](https://tylerbuilds.github.io/stencil-studio/) · [Linux/macOS checks](https://github.com/tylerbuilds/stencil-studio/actions/workflows/verify.yml)
 
-Make a poster, card, presentation or social graphic in your browser. Start with a blank canvas, make a template your own, or draw something from scratch.
+Make social posts, stories, carousels, thumbnails and covers in your browser. Start with a blank canvas, make a template your own, or draw something from scratch. Posters, cards and presentations are here too.
 
 ![A design made in Stencil Studio](docs/screenshots/assets-library-0.6.png)
 
@@ -15,7 +15,9 @@ Make a poster, card, presentation or social graphic in your browser. Start with 
 3. Select something on the canvas to change its colour, size or position. Drag the corner handles to resize it.
 4. Choose **Download** when it is ready, or **File → Save design**, give it a name and choose **Save design** to keep it in **My designs**.
 
-Prefer a starting point? **Templates** has fourteen original designs, including a poster, card, presentation, story and menu. Starting another design keeps your current work in **My designs** first. If its backup cannot be saved, your current design stays open. Download JSON to keep a copy; starting another design stays blocked until the backup can be saved.
+Prefer a starting point? **Templates** has 24 original editable designs, including photo posts, announcements, a five-slide carousel, stories and thumbnails. Search for a subject or filter by use; print and slide designs remain available. Starting another design keeps your current work in **My designs** first. If its backup cannot be saved, your current design stays open. Download JSON to keep a copy; starting another design stays blocked until the backup can be saved.
+
+**New design** starts with a square social canvas. Choose from 21 sizes or enter your own. [Social design steps](docs/social-designs.md) cover photos, carousels and downloads; the [size guide](docs/research/social-sizes.md) distinguishes platform recommendations from useful working sizes.
 
 ## Add, draw and arrange
 
@@ -61,15 +63,23 @@ Your open canvas autosaves in this browser. **Save design** asks for a name and 
 
 **File → Save JSON** downloads all pages so you can reopen and edit them in Stencil. **Library backups** downloads your saved designs together or adds a backup from another browser. The library holds up to 100 designs, including Trash, within 18 MiB; browser storage can fill up sooner.
 
-Download the current page as **PNG**, **JPG** or **SVG**, or all pages as **PDF**. Select the empty canvas and turn on **Transparent background** for transparent PNG or SVG output. JPG and PDF use your background colour. PDF keeps the artwork as images and adds searchable, selectable text for native text, tables and charts. It is not a fully vector or tagged PDF. **Print / Save PDF** opens your browser's print dialog instead. Bundled fonts are embedded in downloaded SVG artwork and image exports; check the result before sharing.
+Choose **Download → Post images** for one PNG or JPG, or an ordered ZIP of all pages. PNG has a transparent-background option; JPG uses the page background colour. Unzip a carousel and upload the numbered images in order. A ZIP holds up to 30 pages, 120 million canvas pixels in total and 64 MiB; download pages separately if they do not fit. Damaged photos stop an image download rather than silently disappearing from it.
+
+The quick **PNG**, **JPG** and **SVG** actions download the current page. Select the empty canvas and turn on **Transparent background** for transparent quick PNG or SVG output. **PDF** downloads all pages using their background colours, keeping the artwork as images and adding searchable, selectable native text, tables and charts. It is not a fully vector or tagged PDF. **Print / Save PDF** opens your browser's print dialog instead. Bundled fonts are embedded in downloaded SVG artwork and used in image exports; check the result before sharing.
 
 **Present** shows your pages as slides. **Video** turns them into a slideshow with cuts or fades and optional audio. Export takes about as long as the video, so keep the tab open. See [making a video](docs/video.md) for steps and limits.
 
+## Make designs with an agent
+
+The [local design CLI](docs/agent-design.md) lets an authorised command worker create editable Stencil JSON, import generated images already on disk, and export artwork. The [OpenClaw plugin](integrations/openclaw/README.md) gives Zeus five dedicated design tools without granting general shell or filesystem access. Both share the editor's presets and validation. Open the result through **File → Open JSON** to adjust text, photos and layers. Stencil can import existing public HTTPS image outputs and saved Replicate responses; it needs no provider keys or social accounts.
+
 ## Keep your work safe
 
-Designs and images stay in this browser unless you download them or use an optional sharing service. There are no accounts or tracking. Clearing browser data can remove saved designs, so keep a JSON backup somewhere safe. Undo works while the tab is open. Named designs separately keep their last five saved versions. If the browser cannot save, keep the design open and download it.
+Designs and images stay in this browser unless you download them or use an optional sharing service. There are no accounts or tracking. Stencil uses IndexedDB for drafts, named designs and uploads, avoiding the small localStorage area shared with other apps on the same website. Earlier localStorage data is copied exactly and kept intact. **Saving…** changes to **Saved on this device** only after the write commits. If that storage cannot open, a warning identifies the limited fallback.
 
-If another tab changes a named design, Stencil keeps your local edits and asks you to save a copy or reopen the newer version. A newer autosaved draft in another tab is also kept. Supported browsers coordinate named saves with a short exclusive lock. In browsers without Web Locks, simultaneous saves have drift checks but cannot be made atomic across tabs; use one editing tab at a time.
+Clearing browser data can remove saved designs, so keep a JSON backup somewhere safe. Undo works while the tab is open. Named designs separately keep their last five saved versions. If the browser cannot save, keep the design open and download it.
+
+If another tab changes a named design, Stencil keeps your local edits and asks you to save a copy or reopen the newer version. A newer autosaved draft in another tab is also kept. IndexedDB transactions protect simultaneous writes even without Web Locks. The limited localStorage fallback uses drift checks and optional locks; use one editing tab at a time in that mode.
 
 **Share** and **AI writing** need a configured server and are unavailable on the online demo. Sharing sends the active design to that server and uses separate owner, editor and viewer links. Anyone with a link can use its access level, so keep the owner link private. AI writing sends only the text and direction shown in its window when you ask for a draft. You decide whether to use the result. See [server setup and data handling](docs/self-hosting.md).
 

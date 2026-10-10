@@ -1,8 +1,10 @@
+import { readCommittedJSON } from './stored-design-smoke.mjs';
+
 /** Saved-design association follows Undo/Redo; opening another design keeps edits. */
 export async function smokeLibrary({browser,expect,errors,output,resolve,url}) {
   const context=await browser.newContext({viewport:{width:1440,height:960},locale:'en-GB'}),page=await context.newPage();
   page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
-  const library=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('stencil-studio.library.v1')));
+  const library=()=>readCommittedJSON(page, 'stencil-studio.library.v1');
   const save=async(name,copy=false)=>{await page.locator('#open-designs').click();if(copy)await page.locator('#library-save-copy').click();else{if(!await page.locator('#file-menu').evaluate(node=>node.open))await page.locator('#file-menu>summary').click();await page.locator('#save-to-library').click();}await page.locator('#design-name').fill(name);await page.locator('#design-name-save').click();await expect(page.locator('#design-name-dialog')).not.toBeVisible();};
   try {
     await page.goto(url,{waitUntil:'networkidle'});await page.locator('#add-rectangle').click();await save('Alpha');

@@ -1,0 +1,23 @@
+{
+  "schema": "stencil-design-request",
+  "version": 1,
+  "title": "Cedar Street Bookshop — generated artwork",
+  "preset": "social",
+  "assets": [
+    {
+      "id": "artwork",
+      "file": "generated-image.png",
+      "credit": { "name": "Bookshop artwork", "creator": "Your name", "sourceUrl": "", "licenceUrl": "", "licence": "Add the actual permission or provider terms" }
+    }
+  ],
+  "pages": [
+    {
+      "name": "Bookshop artwork",
+      "background": "#fff8ec",
+      "elements": [
+        { "type": "image", "asset": "artwork", "x": 80, "y": 80, "width": 920, "height": 720 },
+        { "type": "text", "text": "Find your next chapter.", "x": 80, "y": 870, "width": 920, "height": 110, "fontFamily": "DM Sans", "fontSize": 56, "fill": "#284e46" }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "stencil-studio",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "description": "An original local-first graphic design studio",
   "type": "module",
@@ -14,7 +14,8 @@
     "build": "node scripts/build.mjs",
     "preview": "node scripts/serve.mjs --dir dist --port 4202",
     "test": "node --test",
-    "test:browser": "node scripts/browser-smoke.mjs"
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "agent": "node scripts/agent-design.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0"

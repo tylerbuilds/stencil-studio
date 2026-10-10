@@ -1,3 +1,5 @@
+import { readCommittedJSON } from './stored-design-smoke.mjs';
+
 export async function smokeAssets({ browser, expect, errors, output, readFile, resolve, url }) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'en-GB', acceptDownloads: true });
   const page = await context.newPage();
@@ -13,7 +15,7 @@ export async function smokeAssets({ browser, expect, errors, output, readFile, r
     await expect(page.locator('#asset-status')).toContainText('found');
     await page.locator('#asset-grid [data-asset-id]').first().click();
     await expect(page.locator('#artboard [data-element-id]')).toHaveCount(1);
-    const read = () => page.evaluate(() => JSON.parse(localStorage.getItem('stencil-studio.document.v1')));
+    const read = () => readCommittedJSON(page, 'stencil-studio.document.v1');
     const saved = await read();
     expect(saved.pages[0].elements[0].src).toMatch(/^data:image\/png;base64,/);
     expect(Buffer.from(saved.pages[0].elements[0].src.split(',')[1], 'base64').toString('latin1')).toContain('Stencil Asset Notices');

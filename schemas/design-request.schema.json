@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tylerbuilds.github.io/stencil-studio/schemas/design-request.schema.json",
+  "title": "Stencil Studio agent design request",
+  "description": "Authoring format converted by scripts/agent-design.mjs into the existing editable stencil-studio document. Runtime validation additionally checks native model fields, fonts, IDs, raster headers and the 12 MiB document limit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version"],
+  "properties": {
+    "schema": { "const": "stencil-design-request" },
+    "version": { "const": 1 },
+    "title": { "type": "string", "maxLength": 150 },
+    "preset": { "type": "string", "description": "Current key from the CLI presets command; do not maintain a separate hard-coded platform catalogue." },
+    "template": { "type": "string", "description": "Native template key from the CLI presets command; mutually exclusive with preset and pages." },
+    "brand": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "colours": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "$ref": "#/$defs/colour" } },
+        "fontFamily": { "type": "string", "description": "A font family supported by the native Stencil model." }
+      }
+    },
+    "pages": { "type": "array", "minItems": 1, "maxItems": 30, "items": { "$ref": "#/$defs/page" } },
+    "assets": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/asset" } }
+  },
+  "allOf": [{ "if": { "required": ["template"] }, "then": { "not": { "anyOf": [{ "required": ["preset"] }, { "required": ["pages"] }] } } }],
+  "$defs": {
+    "colour": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "id": { "type": "string", "pattern": "^[a-zA-Z0-9_-]{1,100}$" },
+    "credit": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["name", "creator", "sourceUrl", "licenceUrl", "licence"],
+      "properties": {
+        "name": { "type": "string", "maxLength": 300 }, "creator": { "type": "string", "maxLength": 300 },
+        "sourceUrl": { "type": "string", "maxLength": 1500 }, "licenceUrl": { "type": "string", "maxLength": 1500 },
+        "licence": { "type": "string", "maxLength": 300 }, "attribution": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "asset": {
+      "type": "object", "additionalProperties": false, "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "file": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://", "maxLength": 4000 },
+        "prediction": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "outputIndex": { "type": "integer", "minimum": 0, "maximum": 99 }, "credit": { "$ref": "#/$defs/credit" }
+      },
+      "oneOf": [{ "required": ["file"], "not": { "anyOf": [{ "required": ["url"] }, { "required": ["prediction"] }] } }, { "required": ["url"], "not": { "anyOf": [{ "required": ["file"] }, { "required": ["prediction"] }] } }, { "required": ["prediction"], "not": { "anyOf": [{ "required": ["file"] }, { "required": ["url"] }] } }],
+      "allOf": [{ "if": { "required": ["outputIndex"] }, "then": { "required": ["prediction"] } }]
+    },
+    "page": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 }, "preset": { "type": "string" },
+        "width": { "type": "integer", "minimum": 64, "maximum": 4096 }, "height": { "type": "integer", "minimum": 64, "maximum": 4096 },
+        "background": { "$ref": "#/$defs/colour" }, "transparentBackground": { "type": "boolean" },
+        "backgroundGradient": { "type": ["object", "null"], "description": "Existing native model gradient fields." },
+        "duration": { "type": "number", "minimum": 0.25, "maximum": 30 },
+        "elements": { "type": "array", "maxItems": 300, "items": { "$ref": "#/$defs/layer" } }
+      },
+      "dependentRequired": { "width": ["height"], "height": ["width"] },
+      "allOf": [{ "if": { "required": ["preset"] }, "then": { "not": { "anyOf": [{ "required": ["width"] }, { "required": ["height"] }] } } }]
+    },
+    "layer": {
+      "type": "object", "required": ["type"],
+      "description": "Partial native createElement fields; the native model strictly validates all type-specific properties. Omitted values use the editor defaults. Image/frame asset replaces src/sourceWidth/sourceHeight and cannot be combined with them.",
+      "properties": {
+        "type": { "enum": ["text", "rect", "circle", "image", "table", "chart", "shape", "freehand", "frame"] },
+        "asset": { "$ref": "#/$defs/id" }, "id": { "$ref": "#/$defs/id" },
+        "x": { "type": "number", "minimum": -8192, "maximum": 8192 }, "y": { "type": "number", "minimum": -8192, "maximum": 8192 },
+        "width": { "type": "number", "minimum": 1, "maximum": 8192 }, "height": { "type": "number", "minimum": 1, "maximum": 8192 },
+        "rotation": { "type": "number", "minimum": -360, "maximum": 360 }, "fill": { "$ref": "#/$defs/colour" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }, "text": { "type": "string", "maxLength": 10000 },
+        "fontFamily": { "type": "string" }, "fontSize": { "type": "number", "minimum": 4, "maximum": 500 },
+        "fontWeight": { "enum": [400, 700] }, "align": { "enum": ["left", "center", "right"] },
+        "lineHeight": { "type": "number", "minimum": 0.8, "maximum": 3 }, "letterSpacing": { "type": "number", "minimum": -10, "maximum": 100 }
+      },
+      "allOf": [
+        { "if": { "required": ["asset"] }, "then": { "properties": { "type": { "enum": ["image", "frame"] } }, "not": { "anyOf": [{ "required": ["src"] }, { "required": ["sourceWidth"] }, { "required": ["sourceHeight"] }] } } },
+        { "if": { "properties": { "type": { "const": "image" } }, "required": ["type"] }, "then": { "anyOf": [{ "required": ["asset"] }, { "required": ["src"] }] } }
+      ]
+    }
+  }
+}

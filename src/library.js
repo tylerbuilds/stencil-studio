@@ -1,6 +1,7 @@
 /** Named local designs. A failed validation or storage write never replaces a library. */
 import { VERSION as DOCUMENT_VERSION, id as createId, validateDocument } from './model.js';
 import { StorageConflictError, preserveMigrationSource, writeWithMigrationBackup } from './migration-storage.js';
+import { getBrowserStorage } from './durable-storage.js';
 
 export const LIBRARY_KEY = 'stencil-studio.library.v1';
 export const LIBRARY_SCHEMA = 'stencil-studio-library';
@@ -38,7 +39,7 @@ const require = (condition, message) => { if (!condition) throw new LibraryError
 const byteLength = value => encoder.encode(value).byteLength;
 function storageFor(storage) {
   try {
-    const resolved = storage ?? globalThis.localStorage;
+    const resolved = storage ?? getBrowserStorage();
     require(resolved && typeof resolved.getItem === 'function' && typeof resolved.setItem === 'function', 'Browser storage is unavailable. Export your open design as JSON to keep a copy.');
     return resolved;
   } catch (cause) {
@@ -248,7 +249,7 @@ export function renameDesign(identifier, name, storage, options = {}) {
   options = checkedOptions(options, ['expectedUpdatedAt'], 'Rename options');
   const library = readLibrary(storage), record = findDesign(library, identifier);
   checkExpectedTimestamp(options, record);
-  const nextName = designName(name, typeof name === 'string' && name.trim() === record.name);
+  const nextName = designName(name, typeof name === 'string' && name === record.name);
   if (nextName !== record.name || record.document.title !== nextName) retainVersion(library, record);
   record.name = nextName; record.document.title = record.name; record.updatedAt = timestamp(record.updatedAt);
   writeLibrary(library, storage); return clone(record);
@@ -260,7 +261,7 @@ export function saveDesign(document, options = {}, storage) {
   const existing = options.id === undefined ? null : findDesign(library, options.id);
   checkExpectedTimestamp(options, existing);
   const proposedName = options.name ?? (valid.title.replace(/\s+/g, ' ').trim() || 'Untitled design');
-  const name = designName(proposedName, Boolean(existing && typeof proposedName === 'string' && proposedName.trim() === existing.name));
+  const name = designName(proposedName, Boolean(existing && typeof proposedName === 'string' && proposedName === existing.name));
   if (existing && (name !== existing.name || canonicalJSON(valid) !== canonicalJSON(existing.document))) retainVersion(library, existing);
   const record = { id: existing?.id ?? uniqueId(library), name, updatedAt: timestamp(existing?.updatedAt), document: valid, folderId: existing?.folderId ?? null, tags: existing?.tags ?? [], favourite: existing?.favourite ?? false, versions: existing?.versions ?? [] };
   applyDesignMetadata(library, record, options);
@@ -399,12 +400,22 @@ let localMutationQueue = Promise.resolve();
 export async function withLibraryLock(operation, { locks = globalThis.navigator?.locks, signal } = {}) {
   require(typeof operation === 'function', 'A saved-design operation is required.');
   const boundedSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000);
-  const run = () => { if (boundedSignal.aborted) throw new LibraryError('Saved designs are busy in another tab. Your work is still open. Try again.', 'library-busy'); return operation(); };
+  let durable = false;
+  const run = () => {
+    if (boundedSignal.aborted) throw new LibraryError('Saved designs are busy in another tab. Your work is still open. Try again.', 'library-busy');
+    const storage = getBrowserStorage(); durable = typeof storage?.run === 'function';
+    return durable ? storage.run(() => {
+      if (boundedSignal.aborted) throw new LibraryError('Saved designs are busy in another tab. Your work is still open. Try again.', 'library-busy');
+      return operation();
+    }) : operation();
+  };
   try {
     if (typeof locks?.request === 'function') return await locks.request(LIBRARY_KEY, { mode: 'exclusive', signal: boundedSignal }, run);
     const next = localMutationQueue.then(run, run); localMutationQueue = next.catch(() => {}); return await next;
   } catch (cause) {
     if (boundedSignal.aborted) throw new LibraryError('Saved designs are busy in another tab. Your work is still open. Try again.', 'library-busy', cause);
+    if (durable && cause instanceof StorageConflictError) throw new LibraryError('Your saved designs changed in an earlier Stencil tab. Your local edits are still open. Choose File → Earlier tab data to keep both copies, then save again.', 'library-conflict', cause);
+    if (durable && !(cause instanceof LibraryError)) throw new LibraryError('Your designs could not be saved because browser storage is full or unavailable. Your previously saved designs are unchanged. Export your open design as JSON to keep a copy.', 'storage-write-failed', cause);
     throw cause;
   }
 }

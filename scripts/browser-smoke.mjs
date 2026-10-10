@@ -4,6 +4,8 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { smokeAssets } from './assets-smoke.mjs';
 import { smokeLibrary } from './library-smoke.mjs';
+import { readCommittedJSON } from './stored-design-smoke.mjs';
+import { smokeSocial } from './social-smoke.mjs';
 const {name} = JSON.parse(await readFile('package.json', 'utf8'));
 const port = 4322;
 const server = spawn(process.execPath, ['scripts/serve.mjs', '--dir', 'dist', '--port', String(port)], {stdio:['ignore','pipe','pipe']});
@@ -57,7 +59,7 @@ try {
     const pdf = await page.pdf({path:resolve(output,'cv.pdf'),format:'A4',printBackground:true});
     expect(pdf.subarray(0,4).toString()).toBe('%PDF');
   } else if (name === 'stencil-studio') {
-    const readCanvas = () => page.evaluate(() => JSON.parse(localStorage.getItem('stencil-studio.document.v1')));
+    const readCanvas = () => readCommittedJSON(page, 'stencil-studio.document.v1');
     await expect(page.locator('#artboard [data-element-id]')).toHaveCount(0);
     await expect(page.locator('#new-design')).toBeVisible();
     await page.locator('#new-design').click();
@@ -118,7 +120,7 @@ try {
     await select.nth(1).click({modifiers:['Shift']});
     await expect(page.locator('#selection-count')).toHaveText('2 selected');
     await page.locator('#group-selection').click();
-    let current = JSON.parse(await page.evaluate(() => localStorage.getItem('stencil-studio.document.v1')));
+    let current = await readCanvas();
     const groups = current.pages[0].elements.filter(element => element.groupId);
     expect(groups).toHaveLength(2);
     expect(groups[0].groupId).toBe(groups[1].groupId);
@@ -143,7 +145,7 @@ try {
     await page.locator('#data-csv-panel > summary').click();
     await page.locator('#tool-csv').fill('"\nItem",Value\n"\nFirst",10\nNext,20');
     await page.locator('#create-data-tool').click();
-    current = JSON.parse(await page.evaluate(() => localStorage.getItem('stencil-studio.document.v1')));
+    current = await readCanvas();
     expect(current.pages[1].elements).toHaveLength(1);
     expect(current.pages[1].elements[0].type).toBe('table');
     expect(current.pages[1].elements[0].data.columns[0]).toBe('\nItem');
@@ -165,7 +167,7 @@ try {
     await expect(page.locator('[data-cell-row="0"][data-cell-column="0"]')).toHaveValue('Revised first');
     await page.locator('[data-close="table-dialog"]').click();
     await page.locator('#move-page-earlier').click();
-    current = JSON.parse(await page.evaluate(() => localStorage.getItem('stencil-studio.document.v1')));
+    current = await readCanvas();
     expect(current.pages[0].elements[0].id).toBe(tableId);
     await page.locator('#deselect').click();
     await page.locator('[data-property="transparentBackground"]').check();
@@ -174,7 +176,7 @@ try {
     await page.locator('#guide-position').fill('100');
     await page.locator('#add-guide').click();
     await page.locator('[data-close="guides-dialog"]').click();
-    const readDesign=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('stencil-studio.document.v1')));
+    const readDesign=()=>readCommittedJSON(page, 'stencil-studio.document.v1');
     let retained=await readDesign();
     await page.locator('#document-title').fill('Title before held gesture');await page.locator('#document-title').press('Tab');
     const p=retained.pages[0],box=await page.locator('#artboard').boundingBox(),from=[box.x+p.guides[0].position*box.width/p.width,box.y+box.height*.9];
@@ -224,7 +226,7 @@ try {
     await expect(clipboardTab.locator('#new-design-dialog')).not.toBeVisible();
     await clipboardTab.locator('#canvas-area').click({position:{x:12,y:12}});
     await clipboardTab.keyboard.press(`${clipboardShortcut}+v`);
-    const readClipboardDesign=()=>clipboardTab.evaluate(()=>JSON.parse(localStorage.getItem('stencil-studio.document.v1')));
+    const readClipboardDesign=()=>readCommittedJSON(clipboardTab, 'stencil-studio.document.v1');
     await expect.poll(async()=>(await readClipboardDesign()).pages[0].elements.length).toBe(2);
     let pastedLayers=(await readClipboardDesign()).pages[0].elements;
     expect(pastedLayers.map(layer=>layer.type)).toEqual(['table','chart']);
@@ -288,6 +290,7 @@ try {
     await page.locator('[data-close="video-dialog"]').click();
     await smokeAssets({ browser, expect, errors, output, readFile, resolve, url: `http://127.0.0.1:${port}/` });
     await smokeLibrary({ browser, expect, errors, output, resolve, url: `http://127.0.0.1:${port}/` });
+    await smokeSocial({ browser, expect, errors, output, resolve, url: `http://127.0.0.1:${port}/` });
   } else if (name === 'petrealm') {
     await page.locator('#pet-name').fill('Aster');
     await page.locator('#adopt-button').click();

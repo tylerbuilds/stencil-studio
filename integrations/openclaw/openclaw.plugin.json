@@ -1,0 +1,26 @@
+{
+  "id": "stencil-studio",
+  "name": "Stencil Studio",
+  "description": "Create editable designs, import images and export SVG through five scoped tools.",
+  "version": "0.9.0",
+  "activation": { "onStartup": true },
+  "contracts": { "tools": ["stencil_presets", "stencil_create_design", "stencil_validate_design", "stencil_import_image", "stencil_export_svg"] },
+  "toolMetadata": {
+    "stencil_presets": { "profiles": ["coding"], "optional": true },
+    "stencil_create_design": { "profiles": ["coding"], "optional": true },
+    "stencil_validate_design": { "profiles": ["coding"], "optional": true },
+    "stencil_import_image": { "profiles": ["coding"], "optional": true },
+    "stencil_export_svg": { "profiles": ["coding"], "optional": true }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["releaseSha", "manifestSha256", "outputDirectory"],
+    "properties": {
+      "releaseSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+      "manifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+      "outputDirectory": { "type": "string", "minLength": 1 },
+      "allowedAgentIds": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,80}$" }, "default": ["main"] }
+    }
+  }
+}

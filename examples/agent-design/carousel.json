@@ -1,0 +1,33 @@
+{
+  "schema": "stencil-design-request",
+  "version": 1,
+  "title": "Cedar Street Bookshop — three recommendations",
+  "preset": "social",
+  "pages": [
+    {
+      "name": "Start here",
+      "background": "#284e46",
+      "elements": [
+        { "type": "text", "text": "Three reads\nfor your weekend", "x": 80, "y": 270, "width": 920, "height": 320, "fontFamily": "Fraunces", "fontSize": 92, "fill": "#fff8ec" },
+        { "type": "text", "text": "CEDAR STREET BOOKSHOP · 1/3", "x": 80, "y": 930, "width": 920, "height": 60, "fontFamily": "DM Sans", "fontSize": 28, "fill": "#fff8ec" }
+      ]
+    },
+    {
+      "name": "Something thoughtful",
+      "background": "#fff8ec",
+      "elements": [
+        { "type": "rect", "x": 80, "y": 90, "width": 12, "height": 180, "fill": "#d76e42" },
+        { "type": "text", "text": "A little room\nto think.", "x": 130, "y": 310, "width": 870, "height": 290, "fontFamily": "Fraunces", "fontSize": 92, "fill": "#284e46" },
+        { "type": "text", "text": "Add your first recommendation here.\n2/3", "x": 130, "y": 760, "width": 860, "height": 180, "fontFamily": "DM Sans", "fontSize": 36, "fontWeight": 400, "fill": "#284e46" }
+      ]
+    },
+    {
+      "name": "Visit the shop",
+      "background": "#d76e42",
+      "elements": [
+        { "type": "text", "text": "Your next\nchapter starts\nat Cedar Street.", "x": 80, "y": 220, "width": 920, "height": 440, "fontFamily": "Fraunces", "fontSize": 88, "fill": "#fff8ec" },
+        { "type": "text", "text": "Visit us this Saturday.\n3/3", "x": 80, "y": 820, "width": 920, "height": 140, "fontFamily": "DM Sans", "fontSize": 36, "fontWeight": 400, "fill": "#fff8ec" }
+      ]
+    }
+  ]
+}
