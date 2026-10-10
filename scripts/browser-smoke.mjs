@@ -81,8 +81,11 @@ try {
     await expect(page.locator('[data-element-id]')).toHaveCount(before);
     await page.locator('#redo').click();
     await expect(page.locator('[data-element-id]')).toHaveCount(before + 1);
+    const savedAfterRedo = await readCanvas();
+    expect(savedAfterRedo.pages[0].elements).toHaveLength(before + 1);
     await page.reload();
     await expect(page.locator('#document-title')).toHaveValue('Avery design');
+    expect((await readCanvas()).pages[0].elements).toEqual(savedAfterRedo.pages[0].elements);
     const svg = (await download('#export-svg','design.svg')).toString();
     expect(svg).toMatch(/<svg[^>]+xmlns=/);
     const png = await download('#export-png','design.png');

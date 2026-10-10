@@ -532,7 +532,7 @@
 }
 .toolbox-intro .intro { position: relative; max-width: 29ch; margin-bottom: 18px; }
 .pill { color: #3c6653; background: #e8efe1; border-radius: 5px; }
-.sidebar-tabs { gap: 3px; border-bottom-color: #cdd9cb; }
+.sidebar-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; border-bottom-color: #cdd9cb; }
 .sidebar-tabs button { padding-inline: 4px; border-radius: 8px 8px 0 0; }
 .sidebar-tabs button[aria-selected=true] { color: #245c4d; background: var(--studio-mint); border-bottom-color: var(--studio-teal); }
 .sidebar-tabs button:hover:not(:disabled) { background: #edf2e7; filter: none; }
@@ -637,7 +637,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (max-width: 700px) {
   .library { max-height: min(340px, 38dvh); padding: 10px 14px 14px; overscroll-behavior: contain; scrollbar-width: thin; }
   .toolbox-intro { display: none; }
-  .library .sidebar-tabs { position: sticky; top: -10px; z-index: 3; padding-top: 6px; margin-bottom: 12px; background: #fffdf8; box-shadow: 0 4px 0 #fffdf8; }
+  .library .sidebar-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); position: sticky; top: -10px; z-index: 3; padding-top: 6px; margin-bottom: 12px; background: #fffdf8; box-shadow: 0 4px 0 #fffdf8; }
   .sidebar-tabs button { min-height: 44px; font-size: 12px; }
   .element-buttons { gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .element-buttons button { min-height: 66px; padding: 8px 7px; }
