@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { VERSION, DEFAULT_BRAND, PRESETS, TEMPLATES, createDocument, createElement, templateDocument, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, updateElements, removeElement, removeElements, reorderElement, duplicatePage, duplicateElements, groupElements, ungroupElements, alignElements, distributeElements, copyElements, pasteElements, elementBounds, boundsOfElements, History, pageSVG, elementSVG, wrapText } from '../src/model.js';
 
 test('original templates validate and own their state and identifiers', () => {
-  assert.equal(TEMPLATES.length, 8);
+  assert.equal(TEMPLATES.length, 14);
   for (const { key } of TEMPLATES) {
     const first = templateDocument(key), second = templateDocument(key);
     assert.notEqual(first.pages[0].id, second.pages[0].id);

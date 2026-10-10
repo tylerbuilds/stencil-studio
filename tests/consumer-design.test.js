@@ -3,23 +3,28 @@ import assert from 'node:assert/strict';
 import { createBlankDesign, createDocument, createPage, createElement, createBrushStroke, SHAPE_KINDS, MAX_STROKE_POINTS, VERSION, validateDocument, parseDocument, serialiseDocument, editPage, updateElement, groupElements, positionLayers, History, pageSVG, elementSVG, duplicateElements } from '../src/model.js';
 import { encodeSelection, decodeSelection, pasteSelection } from '../src/transfer.js';
 import { writeWithMigrationBackup } from '../src/migration-storage.js';
-import { saveDesign, loadDesign, LIBRARY_KEY } from '../src/library.js';
+import { saveDesign, loadDesign, LIBRARY_KEY, MAX_DESIGNS } from '../src/library.js';
+function earlier(document, version) {
+ const old = structuredClone(document); old.version = version; delete old.video;
+ for (const page of old.pages) { delete page.backgroundGradient; delete page.duration; if (version < 3) { delete page.guides; delete page.guideSettings; delete page.transparentBackground; } for (const element of page.elements) { for (const key of ['gradient','credit','italic','underline','effect','effectColour','effectSize']) delete element[key]; } }
+ return old;
+}
 class Storage { values = new Map(); fail = false; getItem(k) { return this.values.get(k) ?? null; } setItem(k,v) { if(this.fail) throw new Error('Quota'); this.values.set(k,v); } }
 const key='stencil-studio.document.v1';
 function drawingDocument() { const d=createBlankDesign({width:640,height:480,title:'My own idea'});d.pages[0].elements=[createElement('shape',{id:'triangle',kind:'triangle'}),createBrushStroke([{x:20,y:30},{x:90,y:60},{x:40,y:110}],'#123456',9,'brush')];return validateDocument(d); }
 
 test('blank custom design has no seeded layers and exact validated dimensions, title and background',()=>{
  const d=createBlankDesign({width:873.5,height:612,title:'Original 界',background:'#abcdef'});
- assert.equal(VERSION,4);assert.equal(d.version,4);assert.equal(d.title,'Original 界');assert.equal(d.pages.length,1);assert.equal(d.pages[0].width,873.5);assert.equal(d.pages[0].height,612);assert.equal(d.pages[0].background,'#abcdef');assert.deepEqual(d.pages[0].elements,[]);
+ assert.equal(VERSION,5);assert.equal(d.version,5);assert.equal(d.title,'Original 界');assert.equal(d.pages.length,1);assert.equal(d.pages[0].width,873.5);assert.equal(d.pages[0].height,612);assert.equal(d.pages[0].background,'#abcdef');assert.deepEqual(d.pages[0].elements,[]);
  for(const options of [{width:63},{height:4097},{background:'url(https://example.test)'},{title:'x'.repeat(151)},{extra:true}]) assert.throws(()=>createBlankDesign(options));
  assert.equal(createBlankDesign().pages[0].elements.length,0);assert.notEqual(createBlankDesign().pages[0].id,d.pages[0].id);
 });
 
 test('v3 migration changes only the version and keeps all ordered pages, guides, transparency, groups, image data and native styles',()=>{
- const d=createDocument(),p=d.pages[0];d.version=3;p.transparentBackground=true;p.guides=[{id:'guide',axis:'y',position:25.5}];p.guideSettings={visible:false,rulers:true,snapToGuides:false,snapToObjects:false,snapToPage:true,tolerance:11};
+ let d=createDocument();const p=d.pages[0];p.transparentBackground=true;p.guides=[{id:'guide',axis:'y',position:25.5}];p.guideSettings={visible:false,rulers:true,snapToGuides:false,snapToObjects:false,snapToPage:true,tolerance:11};
  p.elements=[createElement('image',{id:'image',groupId:'old-group',src:'data:image/png;base64,iVBORw0KGgo=',sourceWidth:800,sourceHeight:600,crop:{x:.1,y:.2,width:.7,height:.5},filters:{contrast:1.2,saturation:.4},hidden:true}),createElement('text',{id:'text',groupId:'old-group',text:'Original\n界',lineHeight:1.7,letterSpacing:2}),createElement('table',{id:'table',headerFill:'#123456',data:{columns:['Literal <'],rows:[['First\nSecond']]}}),createElement('chart',{id:'chart',data:{kind:'pie',labels:['Original','More'],values:[2,3]},palette:['#123456','#abcdef']})];
- d.pages.unshift(createPage(900,600));const raw=JSON.stringify(d,null,3)+'\n', old=structuredClone(d), migrated=parseDocument(raw);
- assert.deepEqual(migrated,{...old,version:4});assert.deepEqual(d,old);const storage=new Storage();storage.values.set(key,raw);writeWithMigrationBackup(storage,key,serialiseDocument(migrated));assert.ok([...storage.values].some(([k,v])=>k.includes('.migration.v4.')&&v===raw));assert.deepEqual(parseDocument(storage.getItem(key)),migrated);
+ d.pages.unshift(createPage(900,600));d=earlier(d,3);const raw=JSON.stringify(d,null,3)+'\n', old=structuredClone(d), migrated=parseDocument(raw);
+ assert.deepEqual(earlier(migrated,3),old);assert.equal(migrated.version,VERSION);assert.deepEqual(migrated.video,{transition:'cut',audio:null});assert.ok(migrated.pages.every(page=>page.duration===3&&page.backgroundGradient===null));assert.deepEqual(d,old);const storage=new Storage();storage.values.set(key,raw);writeWithMigrationBackup(storage,key,serialiseDocument(migrated));assert.ok([...storage.values].some(([k,v])=>k.includes(`.migration.v${VERSION}.`)&&v===raw));assert.deepEqual(parseDocument(storage.getItem(key)),migrated);
  const bad=structuredClone(old);bad.pages[1].elements.push(createElement('shape'));assert.throws(()=>validateDocument(bad),/This layer type is not supported here\./);
 });
 
@@ -61,7 +66,7 @@ test('one gesture and one layer-order mutation each make a single Undo step; rej
 });
 
 test('recovery creates an independent full named copy and quota/capacity failures preserve the existing library bytes',()=>{
- const storage=new Storage(),current=drawingDocument(),first=saveDesign(current,{name:'My saved original'},storage);const recovery=saveDesign(current,{name:'Recovery — My own idea'},storage);assert.notEqual(recovery.id,first.id);assert.deepEqual(loadDesign(first.id,storage),current);assert.deepEqual(loadDesign(recovery.id,storage),current);const before=storage.getItem(LIBRARY_KEY);storage.fail=true;assert.throws(()=>saveDesign(current,{name:'Recovery'},storage),/unchanged/);assert.equal(storage.getItem(LIBRARY_KEY),before);storage.fail=false;for(let i=2;i<20;i++)saveDesign(createBlankDesign(),{name:`Saved ${i}`},storage);const full=storage.getItem(LIBRARY_KEY);assert.throws(()=>saveDesign(current,{name:'Recovery'},storage));assert.equal(storage.getItem(LIBRARY_KEY),full);
+ const storage=new Storage(),current=drawingDocument(),first=saveDesign(current,{name:'My saved original'},storage);const recovery=saveDesign(current,{name:'Recovery — My own idea'},storage);assert.notEqual(recovery.id,first.id);assert.deepEqual(loadDesign(first.id,storage),current);assert.deepEqual(loadDesign(recovery.id,storage),current);const before=storage.getItem(LIBRARY_KEY);storage.fail=true;assert.throws(()=>saveDesign(current,{name:'Recovery'},storage),/unchanged/);assert.equal(storage.getItem(LIBRARY_KEY),before);storage.fail=false;for(let i=2;i<MAX_DESIGNS;i++)saveDesign(createBlankDesign(),{name:`Saved ${i}`},storage);const full=storage.getItem(LIBRARY_KEY);assert.throws(()=>saveDesign(current,{name:'Recovery'},storage));assert.equal(storage.getItem(LIBRARY_KEY),full);
 });
 
 test('actual app bootstrap preserves a present empty active key before any edit and blocks saves when its backup fails', async()=>{

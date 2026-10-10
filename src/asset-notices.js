@@ -276,7 +276,7 @@ function readElementNotices(src) {
 export function collectAssetNotices(elements) {
   if (!array(elements, MAX_ASSETS)) fail();
   let records = [];
-  for (const element of elements) if (element?.type === 'image') records = uniqueRecords([...records, ...readElementNotices(element.src)]);
+  for (const element of elements) if (['image', 'frame'].includes(element?.type)) records = uniqueRecords([...records, ...readElementNotices(element.src)]);
   return records;
 }
 

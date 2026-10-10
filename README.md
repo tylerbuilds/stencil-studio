@@ -15,7 +15,7 @@ Make a poster, card, presentation or social graphic in your browser. Start with 
 3. Select something on the canvas to change its colour, size or position. Drag the corner handles to resize it.
 4. Choose **Download** when it is ready, or **File → Save design**, give it a name and choose **Save design** to keep it in **My designs**.
 
-Prefer a starting point? **Templates** has eight original designs, including a poster, card, presentation, story and menu. Starting another design keeps your current work in **My designs** first. If its backup cannot be saved, your current design stays open. Download JSON to keep a copy; starting another design stays blocked until the backup can be saved.
+Prefer a starting point? **Templates** has fourteen original designs, including a poster, card, presentation, story and menu. Starting another design keeps your current work in **My designs** first. If its backup cannot be saved, your current design stays open. Download JSON to keep a copy; starting another design stays blocked until the backup can be saved.
 
 ## Add, draw and arrange
 
@@ -35,6 +35,14 @@ The library loads when you open **Assets**. Only the artwork you add is stored i
 
 The [asset guide](docs/assets.md) lists the sources, licences and size limits. **Credits** opens the collection notices. You can also download the credits for your own design.
 
+## Fonts, frames and photos
+
+Choose from nine fonts, including six small bundled OFL families. Add italic, underline, outline or shadow to text, or use a two-colour gradient on text, shapes or the page. Italic is synthesised for bundled upright fonts. Text styling applies to a whole layer.
+
+**Elements** includes six shaped photo frames and four collage layouts. Select a frame and choose an image, or add one from **Assets**. **Crop & position** lets you drag and zoom a photo inside its frame; ordinary images also have crop aspect choices. **Make size copies** adds independently editable pages in several selected sizes and keeps the original.
+
+**Assets** adds twelve CC0 photos and backgrounds alongside the existing artwork. **Your uploads** keeps reusable images for other designs, within a separate 20-image / 8 MiB shelf. Fonts and media are bundled locally. [Sources and licences](docs/media-assets.md) describe what is included.
+
 ## Bring in your own images and text
 
 Choose **Image** or **File → Insert files**, or drop files onto the canvas. Stencil accepts PNG, JPEG, WebP, GIF and plain-text files. You can add up to 20 files in one go and undo the whole insertion at once. Images can be up to 6 MiB each, with an 8 MiB limit for the batch.
@@ -47,19 +55,19 @@ See [file and clipboard limits](docs/research/core-workflows.md) for the full li
 
 ## Save and download
 
-**My designs** in the header opens your saved-design library. Preview the first page, search by name, or sort by recently saved or name. Choose **Open design** to continue editing. Stencil keeps changes to your current design before switching, and leaves it open if that save fails. **Open a file** opens an editable Stencil JSON design from your device.
+**My designs** in the header opens your saved-design library. Preview the first page, search by name or tags, filter by folder or favourites, or sort by recently saved or name. Choose **Open design** to continue editing. Stencil keeps changes to your current design before switching, and leaves it open if that save fails. **Open a file** opens an editable Stencil JSON design from your device.
 
-Your open canvas autosaves in this browser. **Save design** asks for a name and keeps a separate named version; **Save changes** updates it, and **Save a copy** creates another version. Rename or duplicate a saved design from its card. Delete asks before removing it and keeps the current canvas open.
+Your open canvas autosaves in this browser. **Save design** asks for a name and keeps a separate named version; **Save changes** updates it, and **Save a copy** creates another version. Rename or duplicate a saved design from its card. Delete moves it into Trash, where you can restore it or remove it permanently. Each design keeps its last five saved versions; choose Versions to restore one.
 
-**File → Save JSON** downloads all pages so you can reopen and edit them in Stencil. **Library backups** downloads your saved designs together or adds a backup from another browser. The library holds up to 20 designs within 18 MiB; browser storage can fill up sooner.
+**File → Save JSON** downloads all pages so you can reopen and edit them in Stencil. **Library backups** downloads your saved designs together or adds a backup from another browser. The library holds up to 100 designs, including Trash, within 18 MiB; browser storage can fill up sooner.
 
-Download the current page as **PNG**, **JPG** or **SVG**, or all pages as **PDF**. Select the empty canvas and turn on **Transparent background** for transparent PNG or SVG output. JPG and PDF use your background colour. The PDF download keeps the layout as images; its text is not selectable. **Print / Save PDF** opens your browser's print dialog instead. Check the result before sharing, since fonts can vary between devices.
+Download the current page as **PNG**, **JPG** or **SVG**, or all pages as **PDF**. Select the empty canvas and turn on **Transparent background** for transparent PNG or SVG output. JPG and PDF use your background colour. PDF keeps the artwork as images and adds searchable, selectable text for native text, tables and charts. It is not a fully vector or tagged PDF. **Print / Save PDF** opens your browser's print dialog instead. Bundled fonts are embedded in downloaded SVG artwork and image exports; check the result before sharing.
 
 **Present** shows your pages as slides. **Video** turns them into a slideshow with cuts or fades and optional audio. Export takes about as long as the video, so keep the tab open. See [making a video](docs/video.md) for steps and limits.
 
 ## Keep your work safe
 
-Designs and images stay in this browser unless you download them or use an optional sharing service. There are no accounts or tracking. Clearing browser data can remove saved designs, so keep a JSON backup somewhere safe. Undo works while the tab is open; it is not a saved history. If the browser cannot save, keep the design open and download it.
+Designs and images stay in this browser unless you download them or use an optional sharing service. There are no accounts or tracking. Clearing browser data can remove saved designs, so keep a JSON backup somewhere safe. Undo works while the tab is open. Named designs separately keep their last five saved versions. If the browser cannot save, keep the design open and download it.
 
 If another tab changes a named design, Stencil keeps your local edits and asks you to save a copy or reopen the newer version. A newer autosaved draft in another tab is also kept. Supported browsers coordinate named saves with a short exclusive lock. In browsers without Web Locks, simultaneous saves have drift checks but cannot be made atomic across tabs; use one editing tab at a time.
 

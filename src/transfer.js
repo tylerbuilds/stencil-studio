@@ -1,3 +1,4 @@
+import { defaultVideoSettings } from './video-settings.js';
 /** Validated, local-only artwork transfers. No DOM, network or clipboard access. */
 import {
   SCHEMA, VERSION, DEFAULT_BRAND, DEFAULT_GUIDE_SETTINGS,
@@ -54,11 +55,13 @@ function validateElements(elements, sourcePage) {
   }
   let pageId = 'clipboard-page';
   for (let suffix = 1; used.has(pageId); suffix++) pageId = `clipboard-page-${suffix}`;
-  const validated = validateDocument({
-    schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND),
+  const legacy = elements.every(element => element.type !== 'frame' && ['gradient', 'credit', 'italic', 'underline', 'effect', 'effectColour', 'effectSize'].every(key => !Object.hasOwn(element, key)));
+  const page = { id: pageId, name: '', width: sourcePage.width, height: sourcePage.height, background: '#ffffff', transparentBackground: false, guides: [], guideSettings: clone(DEFAULT_GUIDE_SETTINGS), elements };
+  const validated = validateDocument(legacy ? { schema: SCHEMA, version: 4, title: '', brand: clone(DEFAULT_BRAND), pages: [page] } : {
+    schema: SCHEMA, version: VERSION, title: '', video: defaultVideoSettings(), brand: clone(DEFAULT_BRAND),
     pages: [{
       id: pageId, name: '', width: sourcePage.width, height: sourcePage.height,
-      background: '#ffffff', transparentBackground: false, guides: [],
+      background: '#ffffff', transparentBackground: false, backgroundGradient: null, duration: 3, guides: [],
       guideSettings: clone(DEFAULT_GUIDE_SETTINGS), elements
     }]
   });

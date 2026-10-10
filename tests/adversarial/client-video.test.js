@@ -49,11 +49,12 @@ test('non-HTTP share links and primitive success responses are rejected', async 
   }
 });
 
-test('oversize video image headers are checked before allocating a native decoder', async t => {
+test('video-specific 24 MP image headers are checked before allocating a native decoder', async t => {
   const bytes = new Uint8Array(24); bytes.set([137,80,78,71,13,10,26,10]); bytes.set([73,72,68,82],12);
-  new DataView(bytes.buffer).setUint32(16, 10000); new DataView(bytes.buffer).setUint32(20, 10000);
+  // Within the design's 40 MP limit, still over the stricter video decode limit.
+  new DataView(bytes.buffer).setUint32(16, 5000); new DataView(bytes.buffer).setUint32(20, 5000);
   const src = `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`;
-  const document = createDocument(); document.pages[0].elements.push(createElement('image', { src, sourceWidth: 10000, sourceHeight: 10000 }));
+  const document = createDocument(); document.pages[0].elements.push(createElement('image', { src, sourceWidth: 5000, sourceHeight: 5000 }));
   let decoders = 0;
   class ImageMock { constructor() { decoders++; } set src(value) { if(value) queueMicrotask(() => this.onerror?.()); } }
   const previous = globalThis.Image; globalThis.Image = ImageMock; t.after(() => { if (previous === undefined) delete globalThis.Image; else globalThis.Image = previous; });

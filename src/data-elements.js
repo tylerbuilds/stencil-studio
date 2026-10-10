@@ -1,8 +1,9 @@
 /** Retained chart/table data and SVG artwork. No DOM, network or model imports. */
+import { FONT_FAMILIES } from './font-catalogue.js';
 export const TABLE_FIELDS = ['data', 'fontFamily', 'fontSize', 'header', 'headerFill', 'headerTextFill', 'textFill', 'borderColor', 'borderWidth'];
 export const CHART_FIELDS = ['data', 'fontFamily', 'fontSize', 'textFill', 'showLabels', 'showValues', 'palette'];
-const COMMON_FIELDS = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'opacity', 'locked', 'hidden', 'flipX', 'flipY', 'groupId'];
-const FONTS = ['Arial', 'Georgia', 'Courier New'];
+const COMMON_FIELDS = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'opacity', 'locked', 'hidden', 'flipX', 'flipY', 'groupId', 'gradient', 'credit'];
+const FONTS = FONT_FAMILIES;
 const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 const fail = message => { throw new Error(message); };
 

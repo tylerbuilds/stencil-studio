@@ -1,3 +1,5 @@
+> This is the dated feature snapshot recorded before the consumer gap release on 10 October 2026. Its older limits and missing-feature rows are retained as research evidence. Current capabilities are described in [the consumer guide](../consumer-design.md), [library and versions](../library.md), [photo frames](../frames.md), [fonts and effects](../typography.md), [media sources](../media-assets.md) and [saved video settings](../video.md).
+
 # Canva behaviour ledger
 
 This ledger keeps the 0.2 baseline. The [0.3 changes](parity-next.md) add schema v3, page order, saved guides, transparent backgrounds and editable data elements.

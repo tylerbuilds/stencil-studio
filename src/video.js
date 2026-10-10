@@ -1,5 +1,7 @@
 /** Page-based browser video. No camera, microphone, remote media or service is used. */
 import { validateDocument, pageSVG } from './model.js';
+import { documentFontCSS, loadDocumentFonts } from './font-loader.js';
+import { savedAudioBlob } from './video-settings.js';
 import { identifyRaster } from './browser-intake.js';
 
 export const VIDEO_LIMITS = Object.freeze({ maxEdge: 1280, minSceneSeconds: .25, maxSceneSeconds: 30, maxSeconds: 180, maxAudioBytes: 12 * 1024 * 1024, maxImagePixels: 24_000_000, maxOutputBytes: 128 * 1024 * 1024 });
@@ -8,11 +10,12 @@ const finite = value => typeof value === 'number' && Number.isFinite(value);
 const abortReason = signal => signal?.reason instanceof Error ? signal.reason : new DOMException('Video operation cancelled.', 'AbortError');
 const checkAbort = signal => { if (signal?.aborted) throw abortReason(signal); };
 
-export function createTimeline(document, { sceneSeconds = 3, transition = 'cut', fps = 30 } = {}) {
+export function createTimeline(document, { sceneSeconds, transition, fps = 30 } = {}) {
   const validated = validateDocument(document);
+  if (transition === undefined) transition = validated.video.transition;
   assert(['cut', 'fade'].includes(transition), 'Choose a cut or fade transition.');
   assert([15, 24, 30, 60].includes(fps), 'Choose 15, 24, 30 or 60 frames per second.');
-  const durations = Array.isArray(sceneSeconds) ? Array.from(sceneSeconds) : validated.pages.map(() => sceneSeconds);
+  const durations = sceneSeconds === undefined ? validated.pages.map(page => page.duration) : Array.isArray(sceneSeconds) ? Array.from(sceneSeconds) : validated.pages.map(() => sceneSeconds);
   assert(durations.length === validated.pages.length, "Set a duration for each page.");
   assert(durations.every(seconds => finite(seconds) && seconds >= VIDEO_LIMITS.minSceneSeconds && seconds <= VIDEO_LIMITS.maxSceneSeconds), 'Each scene must last between 0.25 and 30 seconds.');
   let duration = 0;
@@ -94,12 +97,13 @@ async function verifyRaster(src, signal) {
 
 async function rasterScene(page, timeline, signal, checkedImages) {
   checkAbort(signal);
-  for (const element of page.elements) if (element.type === 'image' && !element.hidden && !checkedImages.has(element.src)) { await verifyRaster(element.src, signal); checkedImages.add(element.src); }
+  for (const element of page.elements) if (['image', 'frame'].includes(element.type) && element.src && !element.hidden && !checkedImages.has(element.src)) { await verifyRaster(element.src, signal); checkedImages.add(element.src); }
   const { canvas, context } = canvas2D(timeline.width, timeline.height);
   const scale = Math.min(timeline.width / page.width, timeline.height / page.height);
   const width = Math.max(1, Math.round(page.width * scale)), height = Math.max(1, Math.round(page.height * scale));
   // Keep the original viewBox but bound the decoded SVG bitmap to the output size.
-  const svg = pageSVG(page).replace(/^(<svg[^>]*?) width="[^"]+" height="[^"]+"/, `$1 width="${width}" height="${height}"`);
+  await loadDocumentFonts(page, { signal });
+  const svg = pageSVG(page, false, false, await documentFontCSS(page, { signal })).replace(/^(<svg[^>]*?) width="[^"]+" height="[^"]+"/, `$1 width="${width}" height="${height}"`);
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   const image = new Image();
   try {
@@ -195,6 +199,7 @@ export async function exportTimeline(document, { signal: externalSignal, onProgr
   const support = getVideoSupport(); assert(support.supported, support.reason);
   assert(!globalThis.document.hidden, 'Keep this tab visible while exporting video.');
   const validated = validateDocument(document), timeline = createTimeline(validated, options);
+  audioSrc ??= savedAudioBlob(validated.video.audio);
   const type = selectVideoType(globalThis.MediaRecorder, { audio: audioSrc !== undefined && audioSrc !== null });
   assert(type, "This browser cannot export video with this audio track. Remove the audio or try another browser.");
   const controller = new AbortController(), signal = controller.signal;

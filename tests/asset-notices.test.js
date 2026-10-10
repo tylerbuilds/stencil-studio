@@ -245,3 +245,5 @@ test('editing image pixels retains their notices, including the background-remov
   assert.throws(() => preserveAssetNoticesDataURI(original, 'data:image/jpeg;base64,/9j/2Q=='), /asset credits/);
   assert.throws(() => preserveAssetNoticesDataURI(original, 'data:image/png;base64,aGVsbG8='), /asset credits/);
 });
+
+test('licence notices retained inside a native photo frame reach artwork and export metadata',()=>{const bytes=embedAssetNotice(image(),record('fluent','fluent-fixture','Fictional sticker')),framed={type:'frame',src:element(bytes).src};assert.deepEqual(collectAssetNotices([framed]),[record('fluent','fluent-fixture','Fictional sticker')]);assert.match(assetMetadataXML([framed]),/Fictional sticker/);assert.equal(assetCredits([framed]).length,1);});

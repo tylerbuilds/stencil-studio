@@ -133,8 +133,8 @@ test('design-count and aggregate UTF-8 size limits preserve prior saved data', (
   const first = saveDesign(createDocument(), {}, storage);
   for (let index = 1; index < MAX_DESIGNS; index++) saveDesign(createDocument(), { name: `Design ${index}` }, storage);
   const before = exportLibrary(storage);
-  assert.throws(() => saveDesign(createDocument(), {}, storage), /up to 20/);
-  assert.throws(() => duplicateDesign(first.id, storage), /up to 20/);
+  assert.throws(() => saveDesign(createDocument(), {}, storage), new RegExp(`up to ${MAX_DESIGNS}`));
+  assert.throws(() => duplicateDesign(first.id, storage), new RegExp(`up to ${MAX_DESIGNS}`));
   assert.equal(exportLibrary(storage), before);
   assert.throws(() => importLibrary(' '.repeat(MAX_LIBRARY_BYTES + 1), {}, storage), /too large/);
 

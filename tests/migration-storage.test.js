@@ -3,12 +3,17 @@ import assert from 'node:assert/strict';
 import { createDocument, createElement, serialiseDocument, parseDocument, VERSION } from '../src/model.js';
 import { needsMigration, preserveMigrationSource, writeWithMigrationBackup } from '../src/migration-storage.js';
 import { LIBRARY_KEY, loadDesign, saveDesign, deleteDesign, importLibrary } from '../src/library.js';
+function earlier(document, version) {
+ const old = structuredClone(document); old.version = version; delete old.video;
+ for (const page of old.pages) { delete page.backgroundGradient; delete page.duration; if (version < 3) { delete page.guides; delete page.guideSettings; delete page.transparentBackground; } for (const element of page.elements) { for (const key of ['gradient','credit','italic','underline','effect','effectColour','effectSize']) delete element[key]; } }
+ return old;
+}
 class Storage {
   values = new Map(); writes = []; failBackup = false; failActive = false;
   getItem(key) { return this.values.get(key) ?? null; }
   setItem(key, value) { this.writes.push(key); if (key.includes('.migration.') ? this.failBackup : this.failActive) throw new Error('Quota exceeded'); this.values.set(key, value); }
 }
-function oldDocument() { const document = createDocument(); document.version = 2; document.title = 'Original 界'; document.pages[0].elements.push(createElement('text', { text: '<literal> & original' })); for (const key of ['guides', 'guideSettings', 'transparentBackground']) delete document.pages[0][key]; return document; }
+function oldDocument() { const document = createDocument(); document.version = 2; document.title = 'Original 界'; document.pages[0].elements.push(createElement('text', { text: '<literal> & original' })); for (const key of ['guides', 'guideSettings', 'transparentBackground']) delete document.pages[0][key]; return earlier(document,2); }
 const key = 'stencil-studio.document.v1';
 
 test('first migrated document save preserves exact source bytes before replacing its active key', () => {

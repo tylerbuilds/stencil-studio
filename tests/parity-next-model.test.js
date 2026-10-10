@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { VERSION, DEFAULT_GUIDE_SETTINGS, createDocument, createPage, createElement, validateDocument, parseDocument, serialiseDocument, pageSVG, History, reorderPage, duplicatePage, addPageGuide, updatePageGuide, removePageGuide, setPageGuideSettings, resizePageDocument, snapMovement, updateElement, duplicateElements, groupElements } from '../src/model.js';
 import { bulkCreate } from '../src/bulk.js';
 
+function earlier(document, version) {
+ const old = structuredClone(document); old.version = version; delete old.video;
+ for (const page of old.pages) { delete page.backgroundGradient; delete page.duration; if (version < 3) { delete page.guides; delete page.guideSettings; delete page.transparentBackground; } for (const element of page.elements) { for (const key of ['gradient','credit','italic','underline','effect','effectColour','effectSize']) delete element[key]; } }
+ return old;
+}
 function v2Fixture() {
   const document = createDocument(); document.version = 2;
   document.pages.push(createPage(400, 300), createPage(500, 400));
@@ -10,7 +15,7 @@ function v2Fixture() {
   document.pages[0].elements = [createElement('text', { text: 'Keep <markup> & Unicode 界', x: -4, fontFamily: 'Georgia' }), createElement('rect', { locked: true, hidden: true, rotation: 17 })];
   const groupId = 'original-chart-group';
   document.pages[1].elements = [createElement('rect', { groupId, width: 88 }), createElement('text', { groupId, text: 'Original primitive chart' })];
-  return document;
+  return earlier(document,2);
 }
 
 test('strict v2 migration preserves all original fields, identifiers, ordered content and primitive groups', () => {
@@ -18,7 +23,8 @@ test('strict v2 migration preserves all original fields, identifiers, ordered co
   assert.equal(migrated.version, VERSION); assert.equal(JSON.stringify(original), bytes);
   assert.deepEqual(migrated.brand, original.brand);
   migrated.pages.forEach((page, index) => {
-    const { transparentBackground, guides, guideSettings, ...oldFields } = page;
+    const { transparentBackground, guides, guideSettings } = page;
+    const oldFields = earlier({version:VERSION,pages:[page]},2).pages[0];
     assert.deepEqual(oldFields, original.pages[index]); assert.equal(transparentBackground, false);
     assert.deepEqual(guides, []); assert.deepEqual(guideSettings, DEFAULT_GUIDE_SETTINGS);
   });

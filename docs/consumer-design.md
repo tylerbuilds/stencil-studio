@@ -56,12 +56,26 @@ When another tab changes a saved design, your edits stay on the canvas. Save a c
 
 **File → Save JSON** downloads every page as an editable Stencil file. Use **Open JSON** to continue it later. A JSON file dropped onto the canvas asks before replacing your current design. Undo brings the previous design back while the tab remains open.
 
-Choose **Download** for PNG, JPG, SVG or an all-page PDF. For a transparent PNG or SVG, click empty canvas space and enable **Transparent background**. JPG and PDF use the chosen background colour. The PDF download keeps the layout as images, so its text is not selectable. **Print / Save PDF** uses your browser's print dialog.
+Choose **Download** for PNG, JPG, SVG or an all-page PDF. For a transparent PNG or SVG, click empty canvas space and enable **Transparent background**. JPG and PDF use the chosen background colour. PDF keeps the layout as images and adds positioned searchable, selectable native text. It is not a fully vector or tagged PDF. **Print / Save PDF** uses your browser's print dialog.
 
 ## File limits and older designs
 
-A design can have 30 pages, 300 layers per page and 1,000 layers in total. Canvas sizes run from 64 to 4,096 pixels per side. JSON files can be up to 12 MiB, and the library holds up to 20 designs within an 18 MiB limit. Your browser can run out of storage sooner.
+A design can have 30 pages, 300 layers per page and 1,000 layers in total. Canvas sizes run from 64 to 4,096 pixels per side. Images are limited to 16,384 pixels on either side and 40 million pixels in total, including images embedded in imported designs or library backups. JSON files can be up to 12 MiB, and the library holds up to 100 designs, including Trash, within an 18 MiB limit. Your browser can run out of storage sooner.
 
 Stencil updates older designs when you open them and keeps their original JSON before overwriting a saved copy. If that backup cannot be saved, autosave and New design pause to keep the original. **Recovery data** in File downloads the original when available; **Save JSON** downloads your new work. Downloading alone does not resume saving or unlock New design. Once browser saving works again, download your new work and the original file (if offered) before reloading to retry the original backup. Then open your new JSON file to continue. Clearing browser data removes local copies, so keep the downloads somewhere safe.
 
-New files use version 4 and cannot be opened in the older version 3 app. Use the original backup if you need to go back. Existing data, pages, guides, crops, groups and image settings are kept when updating an older design. [File and clipboard details](research/core-workflows.md) and [release checks](verification.md) cover the technical limits and checks.
+New files use version 5 and cannot be opened in the older version 4 app. Use the original backup if you need to go back. Existing data, pages, guides, crops, groups and image settings are kept when updating an older design. [File and clipboard details](research/core-workflows.md) and [release checks](verification.md) cover the technical limits and checks.
+
+## Organise and reuse
+
+In **My designs**, create folders, add tags under **Details**, or star a favourite. Search covers names and tags. Twelve previews appear at a time; use Previous and Next to browse a larger library. Deleted designs stay in **Trash** until restored or permanently removed. Library backups include folders, Trash and saved versions.
+
+**Versions** keeps the previous five named saves. Restore one to open it for editing. Large images or audio can fill the library byte limit before those five versions fit; remove saved versions or download a backup to free space. No version is silently discarded to bypass a storage failure.
+
+Use **Your uploads** in Assets to keep reusable images. An uploaded image becomes embedded when placed in a design. Removing the shelf copy leaves existing designs intact. Upload backups are separate from design-library backups.
+
+## Fonts and photo frames
+
+Select text to change its font, italic, underline, shadow or outline. Effects apply to the whole text layer. Six open font families are bundled, with synthetic italic for upright faces. Gradient controls apply to text, filled shapes and the page background.
+
+Add a frame or collage in **Elements**. Collage frames are individually selectable. Choose one image per selected frame, then use **Crop & position** to drag or zoom it inside the shape. Ordinary images can be turned into frames or cropped to common aspect ratios. SVG exports embed the chosen bundled fonts; image, video and PDF exports use them too.

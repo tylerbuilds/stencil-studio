@@ -35,7 +35,7 @@ async function service(t) {
 }
 
 function retainedDesign() {
-  assert.equal(VERSION, 4);
+  assert.equal(VERSION, 5);
   const document = createDocument(); document.title = 'Native data · café 日本語';
   const first = document.pages[0]; first.id = 'first-data-page'; first.name = 'Data'; first.transparentBackground = true;
   first.guides = [{ id: 'left-guide', axis: 'x', position: 95 }, { id: 'top-guide', axis: 'y', position: 120 }];
@@ -112,7 +112,7 @@ test('invalid retained data and guide extensions are rejected without changing d
   assert.equal(read.payload.workspace.revision, 1); assert.deepEqual(read.payload.workspace.document, original);
 });
 
-test('v4 document fields preserve existing view/edit permission and revision-conflict boundaries', async t => {
+test('v5 document fields preserve existing view/edit permission and revision-conflict boundaries', async t => {
   const f = await service(t), original = retainedDesign(), created = await f.create(original), id = created.workspace.id;
   const changed = structuredClone(original); changed.pages[0].elements[0].data.values[1] = .5;
   const viewer = await f.request(`/${id}`, { method: 'PUT', token: created.tokens.view, body: { baseRevision: 1, document: changed } });

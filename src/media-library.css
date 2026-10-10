@@ -1,0 +1,20 @@
+.media-library { margin-top: 1rem; color: var(--ink, #232a27); }
+.media-library h3 { margin: 0 0 .75rem; font-size: .95rem; }
+.media-controls { display: grid; gap: .65rem; margin-bottom: .85rem; }
+.media-controls label { display: grid; gap: .3rem; font-size: .75rem; font-weight: 600; }
+.media-controls input, .media-controls select { width: 100%; min-width: 0; min-height: 38px; padding: .5rem .6rem; border: 1px solid #d1d3cb; border-radius: 8px; background: #fffdf8; color: inherit; font: inherit; }
+.media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.media-card { overflow: hidden; border: 1px solid #dedfd8; border-radius: 10px; background: #fffdf8; }
+.media-add { display: flex; width: 100%; min-height: 44px; flex-direction: column; align-items: stretch; border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; text-align: left; }
+.media-add img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; background: #ecebe4; }
+.media-name { display: block; padding: .45rem .5rem .2rem; font-size: .72rem; font-weight: 600; }
+.media-credit { display: block; width: fit-content; margin: .1rem .5rem .45rem; color: #526758; font-size: .65rem; text-decoration: underline; text-underline-offset: .15em; }
+.media-add:disabled { opacity: .55; cursor: wait; }
+.media-add:focus-visible, .media-credit:focus-visible, .media-pager button:focus-visible { outline: 3px solid #6852a1; outline-offset: -3px; }
+.media-status { min-height: 2.5em; margin: .8rem 0 .4rem; font-size: .75rem; line-height: 1.45; }
+.media-status.error { color: #a42f22; }
+.media-pager { display: flex; align-items: center; justify-content: space-between; gap: .35rem; }
+.media-pager button { min-height: 36px; border: 1px solid #d1d3cb; border-radius: 7px; padding: .4rem .55rem; background: #fffdf8; color: inherit; font: inherit; font-size: .75rem; cursor: pointer; }
+.media-pager button:disabled { opacity: .45; cursor: default; }
+.media-pager span, .media-empty { font-size: .75rem; }
+@media (max-width: 700px) { .media-controls input, .media-controls select, .media-pager button { min-height: 44px; } }

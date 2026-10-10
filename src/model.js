@@ -1,25 +1,33 @@
 /** Original, dependency-free design document model. All imports pass this schema. */
 import { TABLE_FIELDS, CHART_FIELDS, defaultsForDataElement, validateDataElementFields, renderDataElement } from './data-elements.js';
 import { assetMetadataXML } from './asset-notices.js';
+import { FONT_FAMILIES } from './font-catalogue.js';
+import { TEXT_STYLE_FIELDS, defaultTextStyles, validateTextStyles, validateGradient, gradientSVG, fillReference, renderStyledText } from './typography.js';
+import { FRAME_FIELDS, defaultsForFrame, validateFrameFields, renderFrameContent } from './frames.js';
+import { defaultVideoSettings, validateVideoSettings } from './video-settings.js';
+import { checkEmbeddedRasterLimits } from './raster-limits.js';
 export const SCHEMA = 'stencil-studio';
-export const VERSION = 4;
-export const FONTS = ['Arial', 'Georgia', 'Courier New'];
+export const VERSION = 5;
+export const FONTS = FONT_FAMILIES;
+const LEGACY_FONTS = ['Arial', 'Georgia', 'Courier New'];
 export const MAX_DOCUMENT_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024 + 64;
 const LEGACY_TYPES = ['text', 'rect', 'circle', 'image'];
 const V3_TYPES = [...LEGACY_TYPES, 'table', 'chart'];
-const TYPES = [...V3_TYPES, 'shape', 'freehand'];
+const V4_TYPES = [...V3_TYPES, 'shape', 'freehand'];
+const TYPES = [...V4_TYPES, 'frame'];
 export const SHAPE_KINDS = ['triangle', 'diamond', 'star', 'line', 'arrow'];
 export const MAX_STROKE_POINTS = 2000;
 const LEGACY_COMMON = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'opacity'];
-const COMMON = [...LEGACY_COMMON, 'locked', 'hidden', 'flipX', 'flipY', 'groupId'];
+const V4_COMMON = [...LEGACY_COMMON, 'locked', 'hidden', 'flipX', 'flipY', 'groupId'];
+const COMMON = [...V4_COMMON, 'gradient', 'credit'];
 const LEGACY_TEXT = ['text', 'fontFamily', 'fontSize', 'fontWeight', 'align'];
 const TEXT = [...LEGACY_TEXT, 'lineHeight', 'letterSpacing'];
 const IMAGE = ['src', 'sourceWidth', 'sourceHeight', 'crop', 'filters'];
 const RECT = ['radius'];
 const STROKE = ['stroke', 'strokeWidth'];
 export const DEFAULT_GUIDE_SETTINGS = { visible: true, rulers: false, snapToGuides: true, snapToObjects: true, snapToPage: true, tolerance: 6 };
-const typeFields = (type, version = VERSION) => type === 'text' ? (version === 1 ? LEGACY_TEXT : TEXT) : type === 'image' ? (version === 1 ? ['src'] : IMAGE) : type === 'rect' ? RECT : type === 'table' && version >= 3 ? TABLE_FIELDS : type === 'chart' && version >= 3 ? CHART_FIELDS : type === 'shape' && version >= 4 ? ['kind', ...STROKE] : type === 'freehand' && version >= 4 ? ['points', 'strokeWidth'] : [];
+const typeFields = (type, version = VERSION) => type === 'text' ? (version === 1 ? LEGACY_TEXT : version < 5 ? TEXT : [...TEXT, ...TEXT_STYLE_FIELDS]) : type === 'image' ? (version === 1 ? ['src'] : IMAGE) : type === 'frame' && version >= 5 ? [...IMAGE, ...FRAME_FIELDS] : type === 'rect' ? RECT : type === 'table' && version >= 3 ? TABLE_FIELDS : type === 'chart' && version >= 3 ? CHART_FIELDS : type === 'shape' && version >= 4 ? ['kind', ...STROKE] : type === 'freehand' && version >= 4 ? ['points', 'strokeWidth'] : [];
 export const DEFAULT_BRAND = { colours: ['#f6f1e7', '#e76543', '#232a27', '#c5d6c8', '#6852a1'], fontFamily: 'Arial' };
 export const PRESETS = [
   { key: 'poster', name: 'Poster', width: 720, height: 960 },
@@ -58,6 +66,13 @@ function embeddedRaster(value) {
   // valid images. The linear character scan keeps exactly the same base64 bounds.
   return encoded.length > 0 && encoded.length % 4 === 0 && /^[a-zA-Z0-9+/]+={0,2}$/.test(encoded);
 }
+export function validateCredit(value) {
+  if (value === null) return;
+  record(value, 'Image credit'); keys(value, ['name', 'creator', 'sourceUrl', 'licenceUrl', 'licence', 'attribution'], 'Image credit');
+  for (const key of ['name', 'creator', 'licence']) string(value[key], `Image credit ${key}`, 300);
+  if (Object.hasOwn(value, 'attribution')) string(value.attribution, 'Image credit attribution', 1000);
+  for (const key of ['sourceUrl', 'licenceUrl']) { string(value[key], `Image credit ${key}`, 1500); if (value[key] === '') continue; let url; try { url = new URL(value[key]); } catch { throw new Error('Image credit links must be HTTP or HTTPS.'); } assert(['https:', 'http:'].includes(url.protocol) && !url.username && !url.password, 'Image credit links must be HTTP or HTTPS.'); }
+}
 function identifier(value, name, seen) {
   string(value, name, 100);
   assert(value.length > 0 && /^[\w-]+$/.test(value) && !seen.has(value), `${name} must be a unique identifier.`);
@@ -65,8 +80,8 @@ function identifier(value, name, seen) {
 }
 function validateSchema(value, version) {
   record(value, 'Document');
-  keys(value, ['schema', 'version', 'title', 'pages', ...(version >= 2 ? ['brand'] : [])], 'Document');
-  assert(value.schema === SCHEMA && value.version === version, "This design format or version is not supported. Open a Stencil Studio v1, v2, v3 or v4 JSON file.");
+  keys(value, ['schema', 'version', 'title', 'pages', ...(version >= 2 ? ['brand'] : []), ...(version >= 5 ? ['video'] : [])], 'Document');
+  assert(value.schema === SCHEMA && value.version === version, "This design format or version is not supported. Open a Stencil Studio v1, v2, v3, v4 or v5 JSON file.");
   string(value.title, 'Document title', 150);
   if (version >= 2) {
     record(value.brand, 'Brand');
@@ -74,20 +89,22 @@ function validateSchema(value, version) {
     array(value.brand.colours, 'Brand colours', 8, 1);
     value.brand.colours.forEach(item => colour(item, 'Brand colour'));
     assert(new Set(value.brand.colours.map(item => item.toLowerCase())).size === value.brand.colours.length, 'Brand colours must be unique.');
-    assert(FONTS.includes(value.brand.fontFamily), "Choose a brand font available in Stencil Studio.");
+    assert((version < 5 ? LEGACY_FONTS : FONTS).includes(value.brand.fontFamily), "Choose a brand font available in Stencil Studio.");
   }
+  if (version >= 5) validateVideoSettings(value.video);
   array(value.pages, 'Document pages', 30, 1);
   const seen = new Set();
   let total = 0, contentBytes = 0;
   const groupPages = new Map();
   for (const page of value.pages) {
     record(page, 'Page');
-    keys(page, ['id', 'name', 'width', 'height', 'background', 'elements', ...(version >= 3 ? ['transparentBackground', 'guides', 'guideSettings'] : [])], 'Page');
+    keys(page, ['id', 'name', 'width', 'height', 'background', 'elements', ...(version >= 3 ? ['transparentBackground', 'guides', 'guideSettings'] : []), ...(version >= 5 ? ['backgroundGradient', 'duration'] : [])], 'Page');
     identifier(page.id, 'Page ID', seen);
     string(page.name, 'Page name', 100);
     numeric(page.width, "Page width", 64, 4096);
     numeric(page.height, "Page height", 64, 4096);
     colour(page.background, 'Background');
+    if (version >= 5) { validateGradient(page.backgroundGradient); numeric(page.duration, 'Scene duration', .25, 30); }
     if (version >= 3) {
       assert(typeof page.transparentBackground === 'boolean', 'Transparent background must be true or false.');
       record(page.guideSettings, 'Guide settings'); keys(page.guideSettings, Object.keys(DEFAULT_GUIDE_SETTINGS), 'Guide settings');
@@ -101,8 +118,8 @@ function validateSchema(value, version) {
     assert(total <= 1000, "A design can hold up to 1,000 layers.");
     for (const element of page.elements) {
       record(element, 'Element');
-      assert((version >= 4 ? TYPES : version === 3 ? V3_TYPES : LEGACY_TYPES).includes(element.type), "This layer type is not supported here.");
-      keys(element, [...(version === 1 ? LEGACY_COMMON : COMMON), ...typeFields(element.type, version), ...(version >= 2 && ['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element');
+      assert((version >= 5 ? TYPES : version === 4 ? V4_TYPES : version === 3 ? V3_TYPES : LEGACY_TYPES).includes(element.type), "This layer type is not supported here.");
+      keys(element, [...(version === 1 ? LEGACY_COMMON : version < 5 ? V4_COMMON : COMMON), ...typeFields(element.type, version), ...(version >= 2 && ['rect', 'circle'].includes(element.type) ? STROKE : [])], 'Element');
       identifier(element.id, 'Element ID', seen);
       numeric(element.x, 'Element x', -8192, 8192);
       numeric(element.y, 'Element y', -8192, 8192);
@@ -111,6 +128,7 @@ function validateSchema(value, version) {
       numeric(element.rotation, 'Rotation', -360, 360);
       numeric(element.opacity, 'Opacity', 0, 1);
       colour(element.fill, 'Element colour');
+      if (version >= 5) { validateGradient(element.gradient); validateCredit(element.credit); }
       if (version >= 2) {
         for (const prop of ['locked', 'hidden', 'flipX', 'flipY']) assert(typeof element[prop] === 'boolean', `${prop} must be true or false.`);
         if (element.groupId !== null) {
@@ -126,7 +144,8 @@ function validateSchema(value, version) {
       }
       if (element.type === 'text') {
         string(element.text, 'Element text', 10000);
-        assert(FONTS.includes(element.fontFamily), "Choose a font available in Stencil Studio.");
+        if (version >= 5) validateTextStyles(element);
+        assert((version < 5 ? LEGACY_FONTS : FONTS).includes(element.fontFamily), "Choose a font available in Stencil Studio.");
         numeric(element.fontSize, 'Font size', 4, 500);
         assert([400, 700].includes(element.fontWeight), 'Font weight must be 400 or 700.');
         assert(['left', 'center', 'right'].includes(element.align), "Align text to the left, centre or right.");
@@ -145,8 +164,10 @@ function validateSchema(value, version) {
         array(element.points, 'Brush points', MAX_STROKE_POINTS, 1);
         for (const point of element.points) { record(point, 'Brush point'); keys(point, ['x', 'y'], 'Brush point'); numeric(point.x, 'Brush point x', 0, 1); numeric(point.y, 'Brush point y', 0, 1); }
       }
+      if (element.type === 'frame') validateFrameFields(element);
       if (element.type === 'image') {
         assert(embeddedRaster(element.src), "Images must be embedded in the design as PNG, JPEG, WebP or GIF, up to 6 MB before encoding.");
+        checkEmbeddedRasterLimits(element.src, version >= 2 ? element.sourceWidth : undefined, version >= 2 ? element.sourceHeight : undefined);
         if (version >= 2) {
           numeric(element.sourceWidth, 'Source width', 1, 65535);
           numeric(element.sourceHeight, 'Source height', 1, 65535);
@@ -164,7 +185,7 @@ function validateSchema(value, version) {
           numeric(element.filters.blur, 'Blur', 0, 20);
         }
       }
-      if (['table', 'chart'].includes(element.type)) validateDataElementFields(element);
+      if (['table', 'chart'].includes(element.type)) { if (version < 5) assert(LEGACY_FONTS.includes(element.fontFamily), 'Choose a font available in Stencil Studio.'); validateDataElementFields(element); }
       // Bound aggregate content before serialising a whole imported object with many large images.
       contentBytes += byteLength(JSON.stringify(element));
       assert(contentBytes <= MAX_DOCUMENT_BYTES, 'This design is too large. Use a file up to 12 MB.');
@@ -175,15 +196,18 @@ function validateSchema(value, version) {
 }
 export function validateDocument(value) {
   record(value, 'Document');
-  assert(value.schema === SCHEMA && [1, 2, 3, VERSION].includes(value.version), "This design format or version is not supported. Open a Stencil Studio v1, v2, v3 or v4 JSON file.");
+  assert(value.schema === SCHEMA && [1, 2, 3, 4, VERSION].includes(value.version), "This design format or version is not supported. Open a Stencil Studio v1, v2, v3, v4 or v5 JSON file.");
   validateSchema(value, value.version);
   if (value.version < VERSION) {
     const migrated = clone(value);
     migrated.version = VERSION;
     if (value.version === 1) migrated.brand = clone(DEFAULT_BRAND);
+    migrated.video = defaultVideoSettings();
     for (const page of migrated.pages) {
       if (value.version === 1) page.elements = page.elements.map(element => createElement(element.type, element));
       if (value.version < 3) { page.transparentBackground = false; page.guides = []; page.guideSettings = clone(DEFAULT_GUIDE_SETTINGS); }
+      page.backgroundGradient = null; page.duration = 3;
+      for (const element of page.elements) { element.gradient = null; element.credit = null; if (element.type === 'text') Object.assign(element, defaultTextStyles()); }
     }
     validateSchema(migrated, VERSION);
     return migrated;
@@ -201,8 +225,10 @@ export function createElement(type, patch = {}) {
   assert(TYPES.includes(type), "This layer type is not supported here.");
   record(patch, 'Element patch');
   keys(patch, [...COMMON, ...typeFields(type), ...(['rect', 'circle'].includes(type) ? STROKE : [])], 'Element patch');
-  const element = { id: id(), type, x: 64, y: 64, width: type === 'text' ? 360 : 200, height: type === 'text' ? 130 : 200, rotation: 0, fill: '#e76543', opacity: 1, locked: false, hidden: false, flipX: false, flipY: false, groupId: null };
-  if (type === 'text') Object.assign(element, { text: 'Your next big idea', fill: '#232a27', fontFamily: 'Arial', fontSize: 48, fontWeight: 700, align: 'left', lineHeight: 1.16, letterSpacing: 0 });
+  const element = { id: id(), type, x: 64, y: 64, width: type === 'text' ? 360 : 200, height: type === 'text' ? 130 : 200, rotation: 0, fill: '#e76543', opacity: 1, locked: false, hidden: false, flipX: false, flipY: false, groupId: null, gradient: null, credit: null };
+  if (type === 'text') Object.assign(element, { text: 'Your text', fill: '#232a27', fontFamily: 'Arial', fontSize: 48, fontWeight: 700, align: 'left', lineHeight: 1.16, letterSpacing: 0 });
+  if (type === 'text') Object.assign(element, defaultTextStyles());
+  if (type === 'frame') Object.assign(element, defaultsForFrame(patch));
   if (type === 'rect') element.radius = 0;
   if (type === 'rect' || type === 'circle') Object.assign(element, { stroke: '#232a27', strokeWidth: 0 });
   if (type === 'shape') Object.assign(element, { kind: 'triangle', stroke: '#232a27', strokeWidth: patch.kind === 'line' ? 6 : 0, ...(patch.kind === 'line' ? { height: 40 } : {}) });
@@ -210,14 +236,14 @@ export function createElement(type, patch = {}) {
   if (type === 'image') Object.assign(element, { src: '', sourceWidth: patch.width ?? element.width, sourceHeight: patch.height ?? element.height, crop: { x: 0, y: 0, width: 1, height: 1 }, filters: { brightness: 1, contrast: 1, saturation: 1, grayscale: 0, blur: 0 } });
   if (type === 'table' || type === 'chart') Object.assign(element, { width: 500, height: 300, fill: type === 'table' ? '#ffffff' : '#e76543' }, defaultsForDataElement(type));
   Object.assign(element, clone(patch));
-  if (type === 'image') {
+  if (type === 'image' || type === 'frame') {
     element.crop = { x: 0, y: 0, width: 1, height: 1, ...patch.crop };
     element.filters = { brightness: 1, contrast: 1, saturation: 1, grayscale: 0, blur: 0, ...patch.filters };
   }
   return element;
 }
-export function createPage(width = 720, height = 960) { return { id: id(), name: 'Untitled page', width, height, background: '#f6f1e7', transparentBackground: false, guides: [], guideSettings: clone(DEFAULT_GUIDE_SETTINGS), elements: [] }; }
-export function createDocument() { return { schema: SCHEMA, version: VERSION, title: 'Untitled design', brand: clone(DEFAULT_BRAND), pages: [createPage()] }; }
+export function createPage(width = 720, height = 960) { return { id: id(), name: 'Untitled page', width, height, background: '#f6f1e7', transparentBackground: false, backgroundGradient: null, duration: 3, guides: [], guideSettings: clone(DEFAULT_GUIDE_SETTINGS), elements: [] }; }
+export function createDocument() { return { schema: SCHEMA, version: VERSION, title: 'Untitled design', brand: clone(DEFAULT_BRAND), video: defaultVideoSettings(), pages: [createPage()] }; }
 export function createBlankDesign(options = {}) {
   record(options, 'Blank design options'); keys(options, ['title', 'width', 'height', 'background'], 'Blank design options');
   const { title = 'Untitled design', width = 720, height = 960, background = '#ffffff' } = options;
@@ -243,7 +269,13 @@ export const TEMPLATES = [
   { key: 'banner', name: 'Room to grow', category: 'Banner · 1500 × 500', colours: ['#c5d6c8', '#232a27', '#f6f1e7'] },
   { key: 'story', name: 'Today is yours', category: 'Story · 1080 × 1920', colours: ['#6852a1', '#eadbe6', '#f6f1e7'] },
   { key: 'resume', name: 'A clear introduction', category: 'CV · 794 × 1123', colours: ['#ffffff', '#232a27', '#c5d6c8'] },
-  { key: 'menu', name: 'At our table', category: 'Menu · 794 × 1123', colours: ['#f6f1e7', '#232a27', '#e76543'] }
+  { key: 'menu', name: 'At our table', category: 'Menu · 794 × 1123', colours: ['#f6f1e7', '#232a27', '#e76543'] },
+  { key: 'invitation', name: 'Save the date', category: 'Invitation · 720 × 960' },
+  { key: 'journal', name: 'A weekend away', category: 'Photo journal · 720 × 960' },
+  { key: 'launch', name: 'Freshly made', category: 'Product post · 1080 × 1080' },
+  { key: 'collage', name: 'Four small moments', category: 'Photo collage · 1080 × 1080' },
+  { key: 'quote', name: 'A thought to keep', category: 'Quote card · 1080 × 1080' },
+  { key: 'planner', name: 'This week', category: 'Planner · 1500 × 1000' }
 ];
 export function templateDocument(key) {
   const doc = createDocument();
@@ -273,6 +305,24 @@ export function templateDocument(key) {
   } else if (key === 'menu') {
     doc.title = 'At our table'; page.width = 794; page.height = 1123; page.name = 'The menu';
     page.elements = [circle(619, -90, 240, 240, '#e76543'), text('AT OUR TABLE', 60, 73, 675, 54, '#232a27', { fontFamily: 'Georgia', align: 'center' }), text('SEASONAL FOOD / GOOD COMPANY', 60, 156, 674, 18, '#232a27', { fontWeight: 400, align: 'center' }), rect(64, 213, 665, 2, '#232a27'), text('SMALL PLATES', 65, 252, 664, 24), text('Roasted carrots, herby yoghurt          £7\nWarm focaccia, olive oil                    £5\nTomato salad, basil                         £8', 65, 302, 665, 23, '#232a27', { fontWeight: 400 }), text('FROM THE KITCHEN', 65, 476, 664, 24), text('Mushroom risotto                            £16\nMarket vegetables, lentils                 £14\nHouse pasta, seasonal greens             £15', 65, 526, 665, 23, '#232a27', { fontWeight: 400 }), text('SOMETHING SWEET', 65, 705, 664, 24), text('Lemon cake, fresh cream                   £7\nChocolate tart, sea salt                    £8', 65, 755, 665, 23, '#232a27', { fontWeight: 400 }), rect(64, 938, 665, 2, '#232a27'), text('Please tell us about dietary requirements.\nA sample menu, ready for your own dishes.', 65, 980, 665, 18, '#232a27', { fontWeight: 400, align: 'center' })];
+  } else if (key === 'invitation') {
+    doc.title = 'Save the date'; page.name = 'Invitation'; page.background = '#f4e9db';
+    page.elements = [createElement('frame', { x: 210, y: 70, width: 300, height: 320, shape: 'arch', fill: '#c5d6c8' }), text('SAVE THE DATE', 70, 446, 580, 20, '#536353', { fontFamily: 'DM Sans', fontWeight: 400, align: 'center', letterSpacing: 3 }), text('Alex & Jamie', 40, 510, 640, 66, '#35453b', { fontFamily: 'Fraunces', align: 'center', fontWeight: 400 }), text('Saturday 21 June\nA gathering with our favourite people', 70, 650, 580, 23, '#35453b', { fontFamily: 'Libre Baskerville', fontWeight: 400, align: 'center', lineHeight: 1.5 }), text('Your venue · Your city', 70, 833, 580, 20, '#536353', { fontFamily: 'DM Sans', fontWeight: 400, align: 'center' })];
+  } else if (key === 'journal') {
+    doc.title = 'A weekend away'; page.name = 'Journal'; page.background = '#faf7ef';
+    page.elements = [text('A weekend away', 44, 50, 630, 60, '#232a27', { fontFamily: 'Fraunces', fontWeight: 400 }), createElement('frame', { x: 44, y: 158, width: 632, height: 510, shape: 'rect', fill: '#c5d6c8' }), text('01 / A PLACE TO REMEMBER', 44, 716, 630, 18, '#6852a1', { fontFamily: 'IBM Plex Mono', fontWeight: 400 }), text('Add a photo, a few words,\nand the details you want to keep.', 44, 766, 625, 28, '#232a27', { fontFamily: 'DM Sans', fontWeight: 400, lineHeight: 1.5 })];
+  } else if (key === 'launch') {
+    doc.title = 'Freshly made'; page.name = 'Product post'; page.width = page.height = 1080; page.background = '#ecf0df';
+    page.elements = [text('FRESHLY\nMADE.', 68, 58, 720, 112, '#253a30', { fontFamily: 'Bricolage Grotesque', lineHeight: .98 }), createElement('frame', { x: 450, y: 358, width: 560, height: 575, shape: 'rounded', cornerRadius: 80, fill: '#c5d6c8' }), text('A new addition\nto your everyday.', 68, 563, 345, 46, '#253a30', { fontFamily: 'DM Sans', fontWeight: 400 }), text('YOUR BRAND / YOUR PRODUCT', 68, 980, 920, 22, '#253a30', { fontFamily: 'IBM Plex Mono', fontWeight: 400 })];
+  } else if (key === 'collage') {
+    doc.title = 'Four small moments'; page.name = 'Photo collage'; page.width = page.height = 1080; page.background = '#fff9f0';
+    page.elements = [text('Four small moments', 64, 47, 950, 57, '#4d4b38', { fontFamily: 'Libre Baskerville', fontWeight: 400 }), ...[[64,156],[550,156],[64,559],[550,559]].map(([x,y]) => createElement('frame', { x,y,width:466,height:383,shape:'rounded',cornerRadius:12,fill:'#d1d9be' })), text('A little collection of things you love.', 64, 992, 950, 25, '#4d4b38', { fontFamily: 'DM Sans', fontWeight: 400 })];
+  } else if (key === 'quote') {
+    doc.title = 'A thought to keep'; page.name = 'Quote'; page.width = page.height = 1080; page.background = '#eadbe6'; page.backgroundGradient = {from:'#eadbe6',to:'#dddbe9',angle:135};
+    page.elements = [text('“', 65, 87, 700, 205, '#6852a1', { fontFamily: 'Fraunces', fontWeight: 400 }), text('Make room\nfor the things\nthat matter.', 82, 325, 935, 95, '#37314f', { fontFamily: 'Space Grotesk', lineHeight: 1.15 }), rect(82, 848, 180, 5, '#6852a1'), text('A THOUGHT TO KEEP', 82, 904, 880, 22, '#6852a1', { fontFamily: 'IBM Plex Mono', fontWeight: 400 })];
+  } else if (key === 'planner') {
+    doc.title = 'This week'; page.name = 'Weekly planner'; page.width = 1500; page.height = 1000; page.background = '#f9f6ef';
+    page.elements = [text('This week', 65, 55, 1000, 76, '#232a27', { fontFamily: 'Bricolage Grotesque' }), text('WEEK BEGINNING: ______________', 66, 166, 1320, 20, '#526358', { fontFamily: 'IBM Plex Mono', fontWeight: 400 }), createElement('table', {x:65,y:242,width:1370,height:595,fontFamily:'DM Sans',fontSize:24,headerFill:'#c5d6c8',headerTextFill:'#232a27',borderColor:'#bac9bd',data:{columns:['Day','Plans','Remember'],rows:[['Monday','',''],['Tuesday','',''],['Wednesday','',''],['Thursday','',''],['Friday','',''],['Weekend','','']]}}), text('ONE GOOD THING TO MAKE TIME FOR:', 65, 898, 1350, 22, '#526358', {fontFamily:'DM Sans',fontWeight:400})];
   } else throw new Error("This template is not available. Choose another template.");
   return validateDocument(doc);
 }
@@ -305,11 +355,12 @@ function applyPatch(element, patch, blocked = false) {
     return;
   }
   const next = clone(patch);
-  if (element.type === 'image') {
+  if (element.type === 'image' || element.type === 'frame') {
     if (Object.hasOwn(patch, 'crop')) { record(patch.crop, 'Image crop'); next.crop = { ...element.crop, ...patch.crop }; }
     if (Object.hasOwn(patch, 'filters')) { record(patch.filters, 'Image filters'); next.filters = { ...element.filters, ...patch.filters }; }
   }
   Object.assign(element, next);
+  if (element.type === 'frame' && !Object.hasOwn(patch, 'cornerRadius')) element.cornerRadius = Math.min(element.cornerRadius, element.width / 2, element.height / 2);
 }
 export function updateElements(document, pageId, ids, patch) {
   return editPage(document, pageId, page => {
@@ -398,15 +449,30 @@ export function resizePageDocument(document, pageId, width, height, scaleElement
   numeric(width, "Page width", 64, 4096); numeric(height, "Page height", 64, 4096); assert(typeof scaleElements === 'boolean', 'Scale layout must be true or false.');
   return editPage(document, pageId, page => {
     const sx = width / page.width, sy = height / page.height, lockedGroups = new Set(page.elements.filter(element => element.locked && element.groupId).map(element => element.groupId));
-    if (scaleElements) page.elements.forEach(element => { if (element.locked || lockedGroups.has(element.groupId)) return; element.x *= sx; element.y *= sy; element.width *= sx; element.height *= sy; if (['text', 'table', 'chart'].includes(element.type)) element.fontSize = Math.max(4, Math.min(element.type === 'text' ? 500 : 100, element.fontSize * Math.min(sx, sy))); });
+    if (scaleElements) page.elements.forEach(element => { if (element.locked || lockedGroups.has(element.groupId)) return; element.x *= sx; element.y *= sy; element.width = Math.max(1, element.width * sx); element.height = Math.max(1, element.height * sy); if (element.type === 'frame') element.cornerRadius = Math.min(element.cornerRadius * Math.min(sx, sy), element.width / 2, element.height / 2); if (['text', 'table', 'chart'].includes(element.type)) element.fontSize = Math.max(4, Math.min(element.type === 'text' ? 500 : 100, element.fontSize * Math.min(sx, sy))); });
     page.guides.forEach(guide => { const limit = guide.axis === 'x' ? width : height; guide.position = Math.min(limit, scaleElements ? guide.position * (guide.axis === 'x' ? sx : sy) : guide.position); });
     page.width = width; page.height = height;
   });
 }
 /** Screen-pixel snapping with independent sources; guides win equal-distance ties. */
+/** Keep the original page and make independently editable copies in chosen sizes. */
+export function makeSizeCopies(document, pageId, presetKeys, scaleElements = true) {
+  array(presetKeys, 'Target sizes', PRESETS.length, 1);
+  assert(new Set(presetKeys).size === presetKeys.length && presetKeys.every(key => PRESETS.some(preset => preset.key === key)), 'Choose distinct available sizes.');
+  let next = validateDocument(document);
+  assert(next.pages.length + presetKeys.length <= 30, 'A design can hold up to 30 pages.');
+  for (const key of presetKeys) {
+    const preset = PRESETS.find(item => item.key === key), index = next.pages.findIndex(page => page.id === pageId);
+    next = duplicatePage(next, pageId);
+    const copyId = next.pages[index + 1].id;
+    next = resizePageDocument(next, copyId, preset.width, preset.height, scaleElements);
+    next = editPage(next, copyId, page => { page.name = preset.name; });
+  }
+  return next;
+}
 export function snapMovement(page, ids, dx, dy, zoom = 1) {
   numeric(dx, 'Movement x', -16384, 16384); numeric(dy, 'Movement y', -16384, 16384); numeric(zoom, 'Zoom', .05, 3);
-  const p = validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [page] }).pages[0];
+  const p = validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), video: defaultVideoSettings(), pages: [page] }).pages[0];
   const elements = selectedElements(p, ids), b = boundsOfElements(elements), chosen = new Set(ids), targets = { x: [], y: [] };
   const add = (axis, values, source) => values.forEach(value => targets[axis].push({ value, source }));
   if (p.guideSettings.snapToGuides) p.guides.forEach(guide => add(guide.axis, [guide.position], 'guide'));
@@ -438,7 +504,7 @@ export function pasteElements(document, pageId, elements, offset = 24) {
   assert(Array.isArray(elements) && elements.length <= 300, "Copy or paste up to 300 layers at a time.");
   return editPage(document, pageId, page => {
     // Validate the clipboard before remapping so unsupported fields cannot be erased accidentally.
-    validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [{ ...createPage(), elements }] });
+    validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), video: defaultVideoSettings(), pages: [{ ...createPage(), elements }] });
     page.elements.push(...remapElements(elements, offset));
   });
 }
@@ -563,20 +629,22 @@ function renderElement(element, interactive = false) {
   const flip = e.flipX || e.flipY ? ` translate(${e.flipX ? e.width : 0} ${e.flipY ? e.height : 0}) scale(${e.flipX ? -1 : 1} ${e.flipY ? -1 : 1})` : '';
   const transform = `translate(${e.x} ${e.y}) rotate(${e.rotation} ${e.width / 2} ${e.height / 2})${flip}`;
   let inner;
-  if (e.type === 'rect') inner = `<rect width="${e.width}" height="${e.height}" rx="${e.radius}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}"/>`;
-  else if (e.type === 'circle') inner = `<ellipse cx="${e.width / 2}" cy="${e.height / 2}" rx="${e.width / 2}" ry="${e.height / 2}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}"/>`;
+  const fillId = `stencil-element-fill-${e.id}`, fill = fillReference(fillId, e.fill, e.gradient), defs = gradientSVG(fillId, e.gradient);
+  if (e.type === 'rect') inner = `<rect width="${e.width}" height="${e.height}" rx="${e.radius}" fill="${fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}"/>`;
+  else if (e.type === 'circle') inner = `<ellipse cx="${e.width / 2}" cy="${e.height / 2}" rx="${e.width / 2}" ry="${e.height / 2}" fill="${fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}"/>`;
   else if (e.type === 'shape') {
     if (e.kind === 'line') inner = `<line x1="0" y1="${e.height / 2}" x2="${e.width}" y2="${e.height / 2}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}" stroke-linecap="round"/>${interactive ? `<line x1="0" y1="${e.height / 2}" x2="${e.width}" y2="${e.height / 2}" stroke="transparent" stroke-width="${Math.max(12, e.strokeWidth)}"/>` : ''}`;
     else {
       const points = e.kind === 'triangle' ? [[.5, 0], [1, 1], [0, 1]] : e.kind === 'diamond' ? [[.5, 0], [1, .5], [.5, 1], [0, .5]] : e.kind === 'arrow' ? [[0, .3], [.6, .3], [.6, 0], [1, .5], [.6, 1], [.6, .7], [0, .7]] : Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .22 : .5; return [.5 + Math.cos(a) * r, .5 + Math.sin(a) * r]; });
-      inner = `<polygon points="${points.map(([x, y]) => `${x * e.width},${y * e.height}`).join(' ')}" fill="${e.fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}" stroke-linejoin="round"/>`;
+      inner = `<polygon points="${points.map(([x, y]) => `${x * e.width},${y * e.height}`).join(' ')}" fill="${fill}" stroke="${e.stroke}" stroke-width="${e.strokeWidth}" stroke-linejoin="round"/>`;
     }
   }
   else if (e.type === 'freehand') {
     const points = e.points.map(p => `${p.x * e.width},${p.y * e.height}`).join(' ');
-    inner = e.points.length === 1 ? `<circle cx="${e.points[0].x * e.width}" cy="${e.points[0].y * e.height}" r="${e.strokeWidth / 2}" fill="${e.fill}"/>` : `<polyline points="${points}" fill="none" stroke="${e.fill}" stroke-width="${e.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    inner = e.points.length === 1 ? `<circle cx="${e.points[0].x * e.width}" cy="${e.points[0].y * e.height}" r="${e.strokeWidth / 2}" fill="${fill}"/>` : `<polyline points="${points}" fill="none" stroke="${e.fill}" stroke-width="${e.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`;
     if (interactive && e.points.length > 1) inner += `<polyline points="${points}" fill="none" stroke="transparent" stroke-width="${Math.max(12, e.strokeWidth)}" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
+  else if (e.type === 'frame') inner = renderFrameContent(e, escapeXML, interactive);
   else if (e.type === 'image') {
     const crop = e.crop, f = e.filters;
     const filterId = `stencil-filter-${e.id}`, clipId = `stencil-crop-${e.id}`;
@@ -589,21 +657,23 @@ function renderElement(element, interactive = false) {
   }
   else if (e.type === 'table' || e.type === 'chart') { inner = renderDataElement(e, escapeXML); if (interactive) inner += `<rect width="${e.width}" height="${e.height}" fill="transparent"/>`; }
   else {
-    const anchor = e.align === 'center' ? 'middle' : e.align === 'right' ? 'end' : 'start';
-    const x = e.align === 'center' ? e.width / 2 : e.align === 'right' ? e.width : 0;
-    inner = `<text fill="${e.fill}" font-family="${e.fontFamily}" font-size="${e.fontSize}" font-weight="${e.fontWeight}" letter-spacing="${e.letterSpacing}" text-anchor="${anchor}" dominant-baseline="hanging">${wrapText(e).map((line, index) => `<tspan x="${x}" y="${index * e.fontSize * e.lineHeight}">${escapeXML(line)}</tspan>`).join('')}</text>`;
+    inner = renderStyledText(e, wrapText(e), escapeXML);
     if (interactive) inner = `<rect width="${e.width}" height="${e.height}" fill="transparent"/>${inner}`;
   }
-  return `<g${attrs} transform="${transform}" opacity="${e.opacity}">${inner}</g>`;
+  return `<g${attrs} transform="${transform}" opacity="${e.opacity}">${defs}${inner}</g>`;
 }
 export function elementSVG(element, interactive = false) {
   const page = createPage(); page.elements = [element];
-  validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [page] });
+  validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), video: defaultVideoSettings(), pages: [page] });
   return renderElement(element, interactive);
 }
-export function pageSVG(page, interactive = false, includeCredits = false) {
+export function pageSVG(page, interactive = false, includeCredits = false, fontCSS = '') {
   // Validate at the export boundary as well; direct caller data must never become markup.
-  validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [page] });
+  validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), video: defaultVideoSettings(), pages: [page] });
+  assert(typeof fontCSS === 'string' && fontCSS.length <= 2 * 1024 * 1024 && !/[<>]/.test(fontCSS), 'Font embedding contains unsupported markup.');
+  const fontRules = fontCSS.replace(/\/\*[\s\S]*?\*\//g, '').trim(), rules = [...fontRules.matchAll(/@font-face\{([^{}]*)\}/g)];
+  assert(fontRules.replace(/@font-face\{[^{}]*\}/g, '').trim() === '', 'Only embedded font rules can be exported.');
+  for (const [, rule] of rules) { const urls = [...rule.matchAll(/url\(([^)]*)\)/g)]; assert(!/[\\@<>]/.test(rule) && urls.length === 1 && /^'data:font\/woff2;base64,[A-Za-z0-9+/]+={0,2}'$/.test(urls[0][1]), 'Exported fonts must be embedded WOFF2 files.'); }
   let content = '', currentGroup = null, groupRun = 0;
   for (const element of page.elements) {
     if (element.hidden) continue;
@@ -615,6 +685,6 @@ export function pageSVG(page, interactive = false, includeCredits = false) {
     content += renderElement(element, interactive);
   }
   if (currentGroup) content += '</g>';
-  const background = !page.transparentBackground || interactive ? `<rect width="100%" height="100%" fill="${page.transparentBackground ? 'transparent' : page.background}"/>` : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design canvas" role="img"' : ''}>${!interactive && includeCredits ? assetMetadataXML(page.elements.filter(element => !element.hidden)) : ''}${background}${content}</svg>`;
+  const background = !page.transparentBackground || interactive ? `<rect width="100%" height="100%" fill="${page.transparentBackground ? 'transparent' : fillReference(`stencil-page-fill-${page.id}`, page.background, page.backgroundGradient)}"/>` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design canvas" role="img"' : ''}>${!interactive && includeCredits ? assetMetadataXML(page.elements.filter(element => !element.hidden)) + `<metadata id="stencil-media-credits">${escapeXML(JSON.stringify(page.elements.filter(element => !element.hidden && element.credit).map(element => element.credit)))}</metadata>` : ''}<style>text{font-synthesis:style}${escapeXML(fontCSS)}</style>${gradientSVG(`stencil-page-fill-${page.id}`, page.backgroundGradient)}${background}${content}</svg>`;
 }

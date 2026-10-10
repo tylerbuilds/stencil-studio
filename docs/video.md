@@ -12,11 +12,11 @@ Pages play in design order. Each starts at 3 seconds; you can choose from 0.25 t
 
 The first page sets the video shape. Other page sizes fit inside that frame with space around them where needed. The longest edge is at most 1,280 pixels, and smaller designs are not enlarged.
 
-Timing, transitions and audio last for this export session. They are not saved in the design JSON, so finish or export your video before closing the window.
+Timing, transitions and embedded audio are saved in the design JSON and named designs. Reopening Video restores them. Remove audio to reduce the design size.
 
 ## Add sound
 
-Choose an optional audio file up to 12 MiB. It starts with the first page. Long audio stops when the video ends; short audio leaves the rest silent. The browser must be able to read the file. Audio can be up to 300 seconds with one or two channels, and stays in memory for the export.
+Choose an optional MP3, WAV, Ogg, M4A or WebM audio file up to 4 MiB. It starts with the first page. Long audio stops when the video ends; short audio leaves the rest silent. The browser must be able to read the file. Audio can be up to 300 seconds with one or two channels, and is stored with the design. Large audio also counts towards document and library storage limits.
 
 ## Check the downloaded file
 
@@ -59,7 +59,7 @@ const result = await exportTimeline(document, {
 // result: { blob, mime, extension }
 ```
 
-`sceneSeconds` may be one number for all pages or an array with exactly one value per page. `createTimeline` validates the design through the same schema used for JSON imports and does not change the original document. It returns scene start/end times, total duration, frame rate and output dimensions. `frameAt` clamps finite numeric times to the timeline's bounds; an exact cut boundary selects the next page. Its result includes the current page, next page where a fade is active, blend amount, scene progress and whether the timeline has ended.
+When omitted, `sceneSeconds` uses each saved page duration and `transition` uses the saved design setting. An omitted `audioSrc` uses the saved embedded audio for export. The lower-level export API still accepts an explicitly supplied local audio Blob up to 12 MiB, without storing it. `sceneSeconds` may be one number for all pages or an array with exactly one value per page. `createTimeline` validates the design through the same schema used for JSON imports and does not change the original document. It returns scene start/end times, total duration, frame rate and output dimensions. `frameAt` clamps finite numeric times to the timeline's bounds; an exact cut boundary selects the next page. Its result includes the current page, next page where a fade is active, blend amount, scene progress and whether the timeline has ended.
 
 `getVideoSupport()` returns `{ supported, mime, extension, reason }`. Its detection is a capability check, not a completed encoding test. `previewTimeline` prepares the canvas without autoplay and returns `play`, `pause`, `seek` and `stop` methods plus `duration`. `stop` releases its resources and is terminal. Both preview and export accept an `AbortSignal`. Progress callbacks also include seconds, duration and the current page index; preview callbacks use phase `preview`.
 
