@@ -8,6 +8,7 @@ import { getAiStatus, generateWriting } from './ai-client.js';
 import { needsMigration, preserveMigrationSource, writeWithMigrationBackup } from './migration-storage.js';
 import { CLIPBOARD_MIME, CLIPBOARD_PREFIX, encodeSelection, encodeSelectionText, isSelectionText, pasteSelection, insertElements } from './transfer.js';
 import { prepareFiles, textElement } from './browser-intake.js';
+import { collectAssetNotices, assetCredits, appendExportNotices } from './asset-notices.js';
 const $ = selector => document.querySelector(selector);
 const STORAGE_KEY = 'stencil-studio.document.v1'; // Retained so earlier installations migrate in place.
 let initial, recoveryMessage, recoveryRaw = null, recoveryPreserved = true, storageHealthy = true, storedRaw = null;
@@ -34,7 +35,7 @@ catch {
 const history = new History(initial);
 const pristineDocument = storedRaw === null && recoveryPreserved ? serialiseDocument(initial) : null;
 let drawMode = false, brushColour = '#232a27', brushWidth = 6, layerDrag = null;
-let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
+let pageId = initial.pages[0].id, selection = new Set(), libraryId = null, zoom = 1, fit = true, drag = null, snap = true, toastTimer, presentationIndex = 0, dataTool = 'table', dataDraft = null, dataTarget = null, dataCSVDirty = false, dataCSVBaseline = null, guideTarget = null, aiController = null, aiGeneration = 0, aiTarget = null, aiEnabled = false, backgroundTarget = null, backgroundResult = null, videoController = null, videoURL = null, videoCreditsURL = null, videoPreview = null, videoPreviewController = null, videoPreviewGeneration = 0, videoSessionGeneration = 0, cloudSession = null, cloudClient = null, cloudStop = null, cloudBaseline = null, cloudPending = null, cloudGeneration = 0;
 let intakeGeneration = 0, intakeActive = null, documentRevision = 0, fileDragDepth = 0;
 const page = () => history.current.pages.find(item => item.id === pageId) ?? history.current.pages[0];
 const selectedElements = () => page().elements.filter(element => selection.has(element.id));
@@ -181,7 +182,14 @@ function renderLayers() {
   $('#layers').querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => attempt(() => commit(removeElement(history.current, pageId, button.dataset.delete)))));
   for (const key of ['locked', 'hidden']) $('#layers').querySelectorAll(key === 'locked' ? '[data-lock]' : '[data-hide]').forEach(button => button.addEventListener('click', () => { const e = page().elements.find(item => item.id === (key === 'locked' ? button.dataset.lock : button.dataset.hide)); attempt(() => commit(updateElement(history.current, pageId, e.id, { [key]: !e[key] }))); }));
 }
-function layerName(e) { return e.type === 'text' ? e.text.replaceAll('\n', ' ').slice(0, 40) || 'Empty text' : e.type === 'rect' ? 'Rectangle' : e.type === 'circle' ? 'Circle' : e.type === 'table' ? 'Table' : e.type === 'chart' ? `${e.data.kind[0].toUpperCase() + e.data.kind.slice(1)} chart` : e.type === 'freehand' ? 'Brush stroke' : e.type === 'shape' ? e.kind[0].toUpperCase() + e.kind.slice(1) : 'Image'; }
+const imageLayerNames = new WeakMap();
+function imageLayerName(element) {
+  if (imageLayerNames.has(element)) return imageLayerNames.get(element);
+  let name = 'Image';
+  try { const notices = collectAssetNotices([element]); if (notices.length === 1) name = notices[0].name; } catch { /* An unknown uploaded image must still be selectable. */ }
+  imageLayerNames.set(element, name); return name;
+}
+function layerName(e) { return e.type === 'text' ? e.text.replaceAll('\n', ' ').slice(0, 40) || 'Empty text' : e.type === 'rect' ? 'Rectangle' : e.type === 'circle' ? 'Circle' : e.type === 'table' ? 'Table' : e.type === 'chart' ? `${e.data.kind[0].toUpperCase() + e.data.kind.slice(1)} chart` : e.type === 'freehand' ? 'Brush stroke' : e.type === 'shape' ? e.kind[0].toUpperCase() + e.kind.slice(1) : imageLayerName(e); }
 function calculateZoom() { const area = $('#canvas-area'), p = page(), margin = window.innerWidth <= 1150 ? 48 : 76; return Math.max(.05, Math.min(2, (area.clientWidth - margin) / p.width, (area.clientHeight - margin) / p.height)); }
 function renderCanvas(previewPage = page()) {
   if (fit) zoom = calculateZoom();
@@ -358,8 +366,45 @@ function duplicateSelection() { attempt(() => selectNewElements(duplicateElement
 function addElement(type, patch = {}) {
   return attempt(() => { const p = page(), element = createElement(type, { x: Math.round(p.width * .12), y: Math.round(p.height * .15), width: Math.min(type === 'text' ? 420 : 220, p.width * .7), height: Math.min(type === 'text' ? 140 : 220, p.height * .5), fill: type === 'text' ? history.current.brand.colours[2] ?? history.current.brand.colours[0] : history.current.brand.colours[1] ?? history.current.brand.colours[0], ...(type === 'text' ? { fontFamily: history.current.brand.fontFamily } : {}), ...patch }); const next = editPage(history.current, p.id, updated => updated.elements.push(element)); selection = new Set([element.id]); return commit(next); });
 }
-function switchLibrary(tab) { for (const key of ['templates', 'elements', 'library']) { $(`#${key}-tab`).setAttribute('aria-selected', String(key === tab)); $(`#${key}-panel`).hidden = key !== tab; } if (tab === 'library') renderLibrary(); }
-for (const tab of ['templates', 'elements', 'library']) $(`#${tab}-tab`).addEventListener('click', () => switchLibrary(tab));
+const libraryTabs = ['templates', 'elements', 'assets', 'library'];
+let assetBrowser = null, assetBrowserLoading = null;
+async function openAssets() {
+  try {
+    if (!assetBrowserLoading) assetBrowserLoading = import('./asset-browser.js').then(({ createAssetBrowser }) => {
+      assetBrowser = createAssetBrowser({
+        insert: (asset, source, colour) => runIntake(async request => {
+          const { prepareAssetFile } = await import('./asset-svg.js');
+          const file = await prepareAssetFile(asset, source, { colour, signal: request.controller.signal });
+          const result = await prepareFiles([file], { page: request.page, brand: request.brand, signal: request.controller.signal });
+          const element = result.elements[0], edge = Math.min(source.kind === 'illustration' ? 360 : 220, request.page.width * .55, request.page.height * .55), scale = edge / Math.max(element.sourceWidth, element.sourceHeight);
+          element.width = element.sourceWidth * scale; element.height = element.sourceHeight * scale; element.x = (request.page.width - element.width) / 2; element.y = (request.page.height - element.height) / 2;
+          return result;
+        }, asset.name), credits: downloadAssetCredits
+      }); return assetBrowser;
+    });
+    await assetBrowserLoading; await assetBrowser.open();
+  } catch { assetBrowserLoading = null; $('#asset-status').textContent = 'The asset library could not open. Switch tabs, then choose Assets to try again.'; }
+}
+function downloadAssetCredits() {
+  attempt(() => {
+    const records = assetCredits(history.current.pages.flatMap(p => p.elements));
+    if (!records.length) { toast('This design has no library assets yet.'); return; }
+    const content = records.map(record => `${record.collection}\n${record.source}\n${record.license}\n\n${record.notice}`).join('\n\n────\n\n');
+    download(content, 'text/plain;charset=utf-8', `${filename()}-asset-credits.txt`); toast('Asset credits downloaded. Keep them with artwork you share.');
+  });
+}
+function switchLibrary(tab) {
+  for (const key of libraryTabs) { const selected = key === tab; $(`#${key}-tab`).setAttribute('aria-selected', String(selected)); $(`#${key}-tab`).tabIndex = selected ? 0 : -1; $(`#${key}-panel`).hidden = !selected; }
+  if (tab === 'library') renderLibrary(); if (tab === 'assets') openAssets();
+}
+for (const tab of libraryTabs) {
+  const button = $(`#${tab}-tab`); button.addEventListener('click', () => switchLibrary(tab));
+  button.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault(); event.stopPropagation(); const current = libraryTabs.indexOf(tab), index = event.key === 'Home' ? 0 : event.key === 'End' ? libraryTabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + libraryTabs.length) % libraryTabs.length;
+    switchLibrary(libraryTabs[index]); $(`#${libraryTabs[index]}-tab`).focus();
+  });
+}
 $('#templates').innerHTML = TEMPLATES.map(template => `<button class="template-button" data-template="${template.key}"><span class="template-preview">${pageSVG(templateDocument(template.key).pages[0])}</span><strong>${safe(template.name)}</strong><small>${safe(template.category)}</small></button>`).join('');
 function preserveCurrentDesign() {
   if (pristineDocument === serialiseDocument(history.current)) return null;
@@ -476,11 +521,12 @@ async function runIntake(prepare, description = 'Content') {
     intakeActive = null; updateIntakeOverlay(); selection = new Set(ids);
     const saved = commit(next); intakeFeedback(saved ? `${description} inserted · ${ids.length} ${ids.length === 1 ? 'layer' : 'layers'}. Undo removes everything you just added.` : 'Added to this design, but your browser could not save it. Choose File → Save JSON to keep your work.', !saved);
     if (saved) toast(`${ids.length} ${ids.length === 1 ? 'layer' : 'layers'} inserted. Undo removes everything you just added.`);
+    return true;
   } catch (error) {
-    if (request && request.generation !== intakeGeneration) return;
+    if (request && request.generation !== intakeGeneration) return false;
     if (request) { intakeActive = null; updateIntakeOverlay(); }
     const message = error.name === 'AbortError' ? 'Insertion cancelled. Your design is unchanged.' : error.message || 'This could not be added to the canvas.';
-    intakeFeedback(message, true); toast(message, true);
+    intakeFeedback(message, true); toast(message, true); return false;
   }
 }
 function insertFiles(files, point, confirmDocument = true) { return runIntake(async request => ({ ...await prepareFiles(files, { page: request.page, brand: request.brand, point, signal: request.controller.signal }), confirmDocument }), 'Files'); }
@@ -587,12 +633,13 @@ function download(content, type, filename) { const url = URL.createObjectURL(new
 const filename = () => (history.current.title || 'stencil-design').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'stencil-design';
 $('#save-document').addEventListener('click', () => attempt(() => { download(serialiseDocument(history.current), 'application/json', `${filename()}.stencil.json`); toast('Design downloaded. Open this JSON file in Stencil to keep editing.'); }));
 $('#import-document').addEventListener('click', () => $('#document-input').click());
-$('#export-svg').addEventListener('click', () => attempt(() => { download(pageSVG(page()), 'image/svg+xml', `${filename()}-page-${history.current.pages.findIndex(p => p.id === pageId) + 1}.svg`); toast('Current page downloaded as SVG.'); }));
+$('#export-svg').addEventListener('click', () => attempt(() => { download(pageSVG(page(), false, true), 'image/svg+xml', `${filename()}-page-${history.current.pages.findIndex(p => p.id === pageId) + 1}.svg`); toast('Current page downloaded as SVG.'); }));
 async function renderRaster(p, type = 'image/png') {
-  const url = URL.createObjectURL(new Blob([pageSVG(p)], { type: 'image/svg+xml' })); let image;
+  const url = URL.createObjectURL(new Blob([pageSVG(p, false, true)], { type: 'image/svg+xml' })); let image;
   try { image = await new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('This page could not be turned into an image. Try SVG from Download.')); img.src = url; }); } finally { URL.revokeObjectURL(url); }
   const canvas = document.createElement('canvas'); canvas.width = Math.round(p.width); canvas.height = Math.round(p.height); const context = canvas.getContext('2d'); if (!context) throw new Error('Your browser could not make the image. Try SVG from Download.'); if (type === 'image/jpeg') { context.fillStyle = p.background; context.fillRect(0, 0, canvas.width, canvas.height); } context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, type, .95)); if (!blob) throw new Error('Image export failed. Try SVG instead.'); return blob;
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, type, .95)); if (!blob) throw new Error('Image export failed. Try SVG instead.');
+  const notices = collectAssetNotices(p.elements); return notices.length ? new Blob([appendExportNotices(new Uint8Array(await blob.arrayBuffer()), type, notices)], { type }) : blob;
 }
 $('#export-png').addEventListener('click', async () => { const button = $('#export-png'); button.disabled = true; try { const p = structuredClone(page()), blob = await renderRaster(p); download(blob, 'image/png', `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.png`); toast('Current page downloaded as PNG at full size.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
 $('#export-jpg').addEventListener('click', async () => { const button = $('#export-jpg'); button.disabled = true; try { const p = structuredClone(page()); download(await renderRaster(p, 'image/jpeg'), 'image/jpeg', `${filename()}-page-${history.current.pages.findIndex(item => item.id === p.id) + 1}.jpg`); toast('Current page downloaded as JPEG.'); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
@@ -601,7 +648,7 @@ $('#export-pdf').addEventListener('click', async () => {
   try { if (pages.reduce((sum, p) => sum + p.width * p.height, 0) > 120000000) throw new Error('This PDF is too large. Try fewer pages or a smaller canvas size.'); const rendered = []; for (const p of pages) { $('#save-status').textContent = `Preparing PDF · ${rendered.length + 1}/${pages.length}`; rendered.push({ width: Math.round(p.width), height: Math.round(p.height), jpeg: new Uint8Array(await (await renderRaster(p, 'image/jpeg')).arrayBuffer()) }); } download(buildPDF(rendered), 'application/pdf', `${filename()}.pdf`); toast('PDF downloaded. It keeps your page layouts as images.'); }
   catch (error) { toast(error.message || 'PDF export failed.', true); } finally { button.disabled = false; $('#save-status').textContent = storageHealthy ? 'Saved on this device' : recoveryPreserved ? 'Not saved. Save JSON' : 'Autosave paused. Save JSON'; }
 });
-$('#print-design').addEventListener('click', () => { $('#print-pages').innerHTML = history.current.pages.map(p => `<section class="print-page">${pageSVG(p)}</section>`).join(''); window.print(); });
+$('#print-design').addEventListener('click', () => attempt(() => { $('#print-pages').innerHTML = history.current.pages.map(p => `<section class="print-page">${pageSVG(p, false, true)}</section>`).join(''); window.print(); }));
 function renderLibrary() {
   try { const records = listDesigns(); $('#saved-designs').innerHTML = records.length ? records.map(record => `<article class="saved-design"><button class="saved-open" data-open-design="${safe(record.id)}">${safe(record.name)}</button><small>Updated ${safe(new Date(record.updatedAt).toLocaleDateString())}</small><div class="saved-design-actions"><button data-copy-design="${safe(record.id)}">Duplicate</button><button data-delete-design="${safe(record.id)}">Delete</button></div></article>`).join('') : '<div class="empty-layers">Save a design to find it here<br>next time.</div>'; }
   catch (error) { $('#saved-designs').textContent = error.message; return; }
@@ -677,8 +724,8 @@ $('#video-design').addEventListener('click', async () => {
   $('#video-dialog').showModal(); try { const { getVideoSupport } = await import('./video.js'), support = getVideoSupport(); $('#video-status').textContent = support.supported ? `Video format: ${support.mime}. Export takes about as long as your video. Keep this tab open. Export when ready. Timing settings are not saved with the design.` : support.reason; $('#video-export').disabled = !support.supported; } catch (error) { $('#video-status').textContent = error.message; $('#video-export').disabled = true; }
 });
 $('#video-export').addEventListener('click', async () => {
-  if (videoController) return; const controller = new AbortController(), sessionGeneration = videoSessionGeneration; videoController = controller; $('#video-export').disabled = true; $('#video-cancel').disabled = false;
-  try { const { exportTimeline } = await import('./video.js'); const sceneSeconds = [...$('#scene-durations').querySelectorAll('input')].map(input => Number(input.value)); const result = await exportTimeline(history.current, { sceneSeconds, transition: $('#video-transition').value, fps: 30, signal: controller.signal, ...($('#video-audio').files?.[0] ? { audioSrc: $('#video-audio').files[0] } : {}), onProgress: progress => { if (videoSessionGeneration !== sessionGeneration || !$('#video-dialog').open) return; if (typeof progress === 'number') $('#video-status').textContent = `Exporting video · ${Math.round(progress * 100)}%`; else $('#video-status').textContent = `${progress?.phase === 'preparing' ? 'Preparing pages' : 'Exporting video'}${Number.isFinite(progress?.progress) ? ` · ${Math.round(progress.progress * 100)}%` : '…'}`; } }); if (controller.signal.aborted || !$('#video-dialog').open || videoSessionGeneration !== sessionGeneration) return; if (videoURL) URL.revokeObjectURL(videoURL); videoURL = URL.createObjectURL(result.blob); $('#video-result').innerHTML = `<video controls src="${safe(videoURL)}" aria-label="Slideshow preview"></video>`; download(result.blob, result.mime, `${filename()}.${result.extension}`); $('#video-status').textContent = 'Your video has downloaded. Play it below.'; }
+  if (videoController) return; const controller = new AbortController(), sessionGeneration = videoSessionGeneration, exportDocument = structuredClone(history.current), exportName = filename(); videoController = controller; $('#video-export').disabled = true; $('#video-cancel').disabled = false;
+  try { const credits = assetCredits(exportDocument.pages.flatMap(p => p.elements)); const { exportTimeline } = await import('./video.js'); const sceneSeconds = [...$('#scene-durations').querySelectorAll('input')].map(input => Number(input.value)); const result = await exportTimeline(exportDocument, { sceneSeconds, transition: $('#video-transition').value, fps: 30, signal: controller.signal, ...($('#video-audio').files?.[0] ? { audioSrc: $('#video-audio').files[0] } : {}), onProgress: progress => { if (videoSessionGeneration !== sessionGeneration || !$('#video-dialog').open) return; if (typeof progress === 'number') $('#video-status').textContent = `Exporting video · ${Math.round(progress * 100)}%`; else $('#video-status').textContent = `${progress?.phase === 'preparing' ? 'Preparing pages' : 'Exporting video'}${Number.isFinite(progress?.progress) ? ` · ${Math.round(progress.progress * 100)}%` : '…'}`; } }); if (controller.signal.aborted || !$('#video-dialog').open || videoSessionGeneration !== sessionGeneration) return; if (videoURL) URL.revokeObjectURL(videoURL); videoURL = URL.createObjectURL(result.blob); $('#video-result').innerHTML = `<video controls src="${safe(videoURL)}" aria-label="Slideshow preview"></video>`; download(result.blob, result.mime, `${exportName}.${result.extension}`); if (videoCreditsURL) { URL.revokeObjectURL(videoCreditsURL); videoCreditsURL = null; } if (credits.length) { const content = credits.map(record => `${record.collection}\n${record.source}\n${record.license}\n\n${record.notice}`).join('\n\n'); videoCreditsURL = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' })); const note = document.createElement('p'), link = document.createElement('a'); link.href = videoCreditsURL; link.download = `${exportName}-asset-credits.txt`; link.textContent = 'Download asset credits'; note.append(link, document.createTextNode(' · Keep these credits with the video.')); $('#video-result').append(note); } $('#video-status').textContent = 'Your video has downloaded. Play it below.'; }
   catch (error) { if (videoSessionGeneration === sessionGeneration) $('#video-status').textContent = controller.signal.aborted ? 'Video export cancelled.' : error.message || 'The video could not be exported. Try again with this tab open.'; }
   finally { if (videoController === controller) videoController = null; if (videoSessionGeneration === sessionGeneration) { $('#video-export').disabled = false; $('#video-cancel').disabled = true; } }
 });
@@ -691,7 +738,7 @@ $('#video-preview-start').addEventListener('click', async () => {
   catch (error) { if (current()) $('#video-status').textContent = error.message || 'The preview could not be loaded. Try again.'; } finally { if (current()) button.disabled = false; }
 });
 $('#video-preview-play').addEventListener('click', () => videoPreview?.play()); $('#video-preview-pause').addEventListener('click', () => videoPreview?.pause()); $('#video-seek').addEventListener('input', event => videoPreview?.seek(Number(event.target.value) / 100 * videoPreview.duration));
-$('#video-dialog').addEventListener('close', () => { videoSessionGeneration++; videoPreviewGeneration++; videoController?.abort(); videoPreviewController?.abort(); videoPreviewController = null; videoPreview?.stop(); videoPreview = null; $('#video-live-preview').hidden = true; $('#video-preview-play').disabled = true; $('#video-preview-pause').disabled = true; $('#video-seek').disabled = true; $('#video-result video')?.pause(); if (videoURL) { URL.revokeObjectURL(videoURL); videoURL = null; $('#video-result').innerHTML = ''; } });
+$('#video-dialog').addEventListener('close', () => { videoSessionGeneration++; videoPreviewGeneration++; videoController?.abort(); videoPreviewController?.abort(); videoPreviewController = null; videoPreview?.stop(); videoPreview = null; $('#video-live-preview').hidden = true; $('#video-preview-play').disabled = true; $('#video-preview-pause').disabled = true; $('#video-seek').disabled = true; $('#video-result video')?.pause(); if (videoCreditsURL) { URL.revokeObjectURL(videoCreditsURL); videoCreditsURL = null; } if (videoURL) { URL.revokeObjectURL(videoURL); videoURL = null; $('#video-result').innerHTML = ''; } });
 async function getCloudClient() { if (!cloudClient) { const module = await import('./cloud-client.mjs'); cloudClient = module.createCloudClient({ baseURL: '/api/workspaces' }); } return cloudClient; }
 function cloudDirty() { const active = document.activeElement, editing = active?.matches('input,textarea,select') && (active.id === 'document-title' || active.closest('#properties,#table-dialog,#guides-dialog,.page-order')); return cloudBaseline !== null && (Boolean(editing) || Boolean(drag) || Boolean(intakeActive) || $('#table-dialog').open || $('#guides-dialog').open || serialiseDocument(history.current) !== cloudBaseline); }
 async function openCloudSnapshot(snapshot, token) {

@@ -1,5 +1,6 @@
 /** Original, dependency-free design document model. All imports pass this schema. */
 import { TABLE_FIELDS, CHART_FIELDS, defaultsForDataElement, validateDataElementFields, renderDataElement } from './data-elements.js';
+import { assetMetadataXML } from './asset-notices.js';
 export const SCHEMA = 'stencil-studio';
 export const VERSION = 4;
 export const FONTS = ['Arial', 'Georgia', 'Courier New'];
@@ -48,6 +49,15 @@ const keys = (value, allowed, name) => assert(Object.keys(value).every(key => al
 const string = (value, name, max = 500) => assert(typeof value === 'string' && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value), `${name} must be valid text (up to ${max} characters).`);
 const numeric = (value, name, low, high) => assert(typeof value === 'number' && Number.isFinite(value) && value >= low && value <= high, `${name} must be between ${low} and ${high}.`);
 const colour = (value, name) => assert(typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value), `${name} must be a six-digit hex colour.`);
+function embeddedRaster(value) {
+  if (typeof value !== 'string' || value.length > MAX_IMAGE_BYTES) return false;
+  const prefix = /^data:image\/(?:png|jpeg|webp|gif);base64,/.exec(value);
+  if (!prefix) return false;
+  const encoded = value.slice(prefix[0].length);
+  // A repeated four-character capture can exhaust the regexp stack on large
+  // valid images. The linear character scan keeps exactly the same base64 bounds.
+  return encoded.length > 0 && encoded.length % 4 === 0 && /^[a-zA-Z0-9+/]+={0,2}$/.test(encoded);
+}
 function identifier(value, name, seen) {
   string(value, name, 100);
   assert(value.length > 0 && /^[\w-]+$/.test(value) && !seen.has(value), `${name} must be a unique identifier.`);
@@ -136,7 +146,7 @@ function validateSchema(value, version) {
         for (const point of element.points) { record(point, 'Brush point'); keys(point, ['x', 'y'], 'Brush point'); numeric(point.x, 'Brush point x', 0, 1); numeric(point.y, 'Brush point y', 0, 1); }
       }
       if (element.type === 'image') {
-        assert(typeof element.src === 'string' && element.src.length <= MAX_IMAGE_BYTES && /^data:image\/(png|jpeg|webp|gif);base64,(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(element.src) && !element.src.endsWith(','), "Images must be embedded in the design as PNG, JPEG, WebP or GIF, up to 6 MB before encoding.");
+        assert(embeddedRaster(element.src), "Images must be embedded in the design as PNG, JPEG, WebP or GIF, up to 6 MB before encoding.");
         if (version >= 2) {
           numeric(element.sourceWidth, 'Source width', 1, 65535);
           numeric(element.sourceHeight, 'Source height', 1, 65535);
@@ -587,7 +597,7 @@ export function elementSVG(element, interactive = false) {
   validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [page] });
   return renderElement(element, interactive);
 }
-export function pageSVG(page, interactive = false) {
+export function pageSVG(page, interactive = false, includeCredits = false) {
   // Validate at the export boundary as well; direct caller data must never become markup.
   validateDocument({ schema: SCHEMA, version: VERSION, title: '', brand: clone(DEFAULT_BRAND), pages: [page] });
   let content = '', currentGroup = null, groupRun = 0;
@@ -602,5 +612,5 @@ export function pageSVG(page, interactive = false) {
   }
   if (currentGroup) content += '</g>';
   const background = !page.transparentBackground || interactive ? `<rect width="100%" height="100%" fill="${page.transparentBackground ? 'transparent' : page.background}"/>` : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design canvas" role="img"' : ''}>${background}${content}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"${interactive ? ' id="artboard" aria-label="Design canvas" role="img"' : ''}>${!interactive && includeCredits ? assetMetadataXML(page.elements.filter(element => !element.hidden)) : ''}${background}${content}</svg>`;
 }

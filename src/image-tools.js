@@ -1,4 +1,5 @@
 // Original colour-key background editing, performed entirely on this device.
+import { preserveAssetNoticesDataURI } from './asset-notices.js';
 const MAX_PIXELS=4_000_000;
 function colourChannels(colour, pixels) {
   if(colour===undefined || colour==='') return [...pixels.slice(0,3)];
@@ -43,5 +44,5 @@ export async function removeBackground(src,options={}) {
   const data=context.getImageData(0,0,width,height);
   data.data.set(keyBackgroundPixels(data.data,width,height,options));
   context.putImageData(data,0,0);
-  return canvas.toDataURL('image/png');
+  return preserveAssetNoticesDataURI(src, canvas.toDataURL('image/png'));
 }

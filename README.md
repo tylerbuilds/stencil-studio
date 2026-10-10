@@ -4,14 +4,14 @@
 
 Make a poster, card, presentation or social graphic in your browser. Start with a blank canvas, make a template your own, or draw something from scratch.
 
-![A design made in Stencil Studio](docs/screenshots/design-tools-0.5.1.png)
+![A design made in Stencil Studio](docs/screenshots/assets-library-0.6.png)
 
-[On a phone](docs/screenshots/design-tools-mobile-0.5.1.png)
+[On a phone](docs/screenshots/assets-library-mobile-0.6.png)
 
 ## Create your first design
 
 1. Choose **New design**, give it a name and pick a size. Choose **Create design** to open your canvas.
-2. Add text, shapes or images from **Elements**. Choose **Draw** to sketch with a brush.
+2. Add text, shapes or images from **Elements**, or find free artwork in **Assets**. Choose **Draw** to sketch with a brush.
 3. Select something on the canvas to change its colour, size or position. Drag the corner handles to resize it.
 4. Choose **Download** when it is ready, or **File → Save design** to keep it in **My designs**.
 
@@ -26,6 +26,14 @@ Add rectangles, circles, triangles, diamonds, stars, lines and arrows. Resize a 
 Add a table or bar, line or pie chart from **Elements**. Fill in the grid, then reopen **Edit data** whenever you need to change the values. You can also create personalised pages from CSV, such as a set of cards with different names.
 
 The [design guide](docs/consumer-design.md) covers drawing, layers, tables, pages, guides and backups.
+
+## Find free artwork
+
+**Assets** has 7,145 free icons, colour stickers and illustrations. Search for a subject such as flower, party, coffee or heart, or choose a collection and subject to browse. Choose an icon colour before adding it, then move, resize, crop or arrange the artwork in **Layers**.
+
+The library loads when you open **Assets**. Only the artwork you add is stored in your design; it keeps working without the library. Artwork becomes a transparent image, up to 2,048 pixels on its longest side, so it travels with JSON backups and downloads. Icons become images too, rather than editable vector paths.
+
+The [asset guide](docs/assets.md) lists the sources, licences and size limits. **Credits** opens the collection notices. You can also download the credits for your own design.
 
 ## Bring in your own images and text
 

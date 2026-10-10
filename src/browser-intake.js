@@ -1,4 +1,5 @@
 import { createElement, parseDocument } from './model.js';
+import { collectAssetNotices } from './asset-notices.js';
 
 export const MAX_FILES = 20;
 export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
@@ -110,6 +111,8 @@ export async function prepareFiles(files, { page, brand, point, signal } = {}) {
     const blob = new Blob([bytes], { type: raster.type }), dimensions = await decodeImage(blob, signal); abort(signal);
     checkImageDimensions(dimensions.width, dimensions.height);
     const src = await readDataURL(blob, signal); abort(signal);
+    // Ordinary uploads stay unchanged; recognised library credits must be intact.
+    collectAssetNotices([{ type: 'image', src }]);
     const scale = Math.min(1, page.width * .65 / dimensions.width, page.height * .65 / dimensions.height), width = Math.max(1, dimensions.width * scale), height = Math.max(1, dimensions.height * scale);
     elements.push(createElement('image', { src, sourceWidth: dimensions.width, sourceHeight: dimensions.height, width, height, ...placement(page, width, height, point, index) }));
   }
