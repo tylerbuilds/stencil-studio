@@ -469,3 +469,5 @@
 .gradient-fields { border:0; margin:0; padding:0; min-width:0; }
 .gradient-fields:disabled { opacity:.5; }
 #canvas-mount svg text,.template-preview svg text,.saved-design-preview svg text,#print-pages svg text { font-synthesis:style; }
+
+#toast{pointer-events:none}
