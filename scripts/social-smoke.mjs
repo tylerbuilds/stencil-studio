@@ -18,6 +18,26 @@ function archiveEntries(bytes, expect) {
   return entries;
 }
 
+function damagePNGData(bytes) {
+  const damaged = Buffer.from(bytes); let offset = 8, changed = 0;
+  while (offset + 12 <= damaged.length) {
+    const length = damaged.readUInt32BE(offset), end = offset + 12 + length;
+    if (end > damaged.length) throw new Error('The original test PNG is incomplete.');
+    if (damaged.toString('ascii', offset + 4, offset + 8) === 'IDAT') {
+      damaged.fill(0, offset + 8, end - 4);
+      let crc = 0xffffffff;
+      for (const byte of damaged.subarray(offset + 4, end - 4)) {
+        crc ^= byte;
+        for (let bit = 0; bit < 8; bit++) crc = crc & 1 ? 0xedb88320 ^ crc >>> 1 : crc >>> 1;
+      }
+      damaged.writeUInt32BE((crc ^ 0xffffffff) >>> 0, end - 4); changed++;
+    }
+    offset = end;
+  }
+  if (!changed) throw new Error('The original test PNG has no image data.');
+  return damaged;
+}
+
 export async function smokeSocial({ browser, expect, errors, output, resolve, url }) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'en-GB' }), page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message)); page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -80,6 +100,22 @@ export async function smokeSocial({ browser, expect, errors, output, resolve, ur
     const svg = (await download('#export-svg', 'agent-consumer.svg')).bytes.toString(); expect(svg).toContain('CEDAR STREET — NEW CHAPTER');
     const agentPNG = await download('#export-png', 'agent-consumer.png'), agentImage = await pixels(agentPNG.bytes, 'image/png'); expect([agentImage.width, agentImage.height]).toEqual([1080, 1080]);
     await page.reload({ waitUntil: 'networkidle' }); expect((await state()).pages[0].elements.find(element => element.id === text.id).text).toBe('CEDAR STREET — NEW CHAPTER');
+    // A valid header must not let unreadable photo pixels disappear from exports.
+    const originalPNG = Buffer.from(await page.evaluate(() => {
+      const canvas = document.createElement('canvas'); canvas.width = 72; canvas.height = 48;
+      const context = canvas.getContext('2d'); context.fillStyle = '#d76548'; context.fillRect(0, 0, 72, 48);
+      return canvas.toDataURL('image/png').split(',')[1];
+    }), 'base64');
+    const damagedPhoto = `data:image/png;base64,${damagePNGData(originalPNG).toString('base64')}`;
+    const refused = await page.evaluate(async source => {
+      const { createPage, createElement, pageSVG } = await import('./src/model.js');
+      const { renderPageRaster } = await import('./src/raster-export.js');
+      const canvas = createPage(72, 64, 'Damaged photo test');
+      canvas.elements = [createElement('image', { src: source, sourceWidth: 72, sourceHeight: 48 })];
+      pageSVG(canvas); // Plausible geometry and image headers remain model-valid.
+      try { await renderPageRaster(canvas); return null; } catch (error) { return error.message; }
+    }, damagedPhoto);
+    expect(refused).toMatch(/photo.*could not be read/);
     await page.screenshot({ path: resolve(output, 'social-agent-editor.png'), fullPage: true });
   } finally { await context.close(); }
 }

@@ -133,9 +133,12 @@ try {
     await expect(page.locator('#design-name-dialog')).not.toBeVisible();
     await page.locator('#library-tab').click();
     await expect(page.locator('[data-open-design]')).toHaveCount(1);
+    const savedLibrary = await readCommittedJSON(page, 'stencil-studio.library.v1');
+    expect(savedLibrary.designs).toHaveLength(1);
     await page.reload();
     await page.locator('#library-tab').click();
     await expect(page.locator('[data-open-design]')).toHaveCount(1);
+    expect(await readCommittedJSON(page, 'stencil-studio.library.v1')).toEqual(savedLibrary);
     await page.locator('[data-open-design]').click();
     await expect(page.locator('#document-title')).toHaveValue('Avery design');
     await page.locator('#add-page').click();
@@ -161,8 +164,13 @@ try {
     await page.locator('[data-column="0"]').fill('\nItem revised');
     await page.locator('[data-cell-row="0"][data-cell-column="0"]').fill('Revised first');
     await page.locator('#create-data-tool').click();
-    await page.reload();
     const tableId=current.pages[1].elements[0].id;
+    const savedTable = (await readCanvas()).pages[1].elements.find(element => element.id === tableId);
+    expect(savedTable.data.columns[0]).toBe('\nItem revised');
+    expect(savedTable.data.rows[0][0]).toBe('Revised first');
+    expect(savedTable.headerFill).toBe('#123456');
+    await page.reload();
+    expect((await readCanvas()).pages[1].elements.find(element => element.id === tableId)).toEqual(savedTable);
     await page.locator(`#pages [data-page-id="${current.pages[1].id}"]`).click();
     await page.locator(`[data-select="${tableId}"]`).click();
     await page.locator('#edit-data-element').click();
